@@ -26,5 +26,5 @@ Each app has its own `CLAUDE.md` under `apps/<app>/` (or `platform/<svc>/`), loa
 
 ## Build order
 
-Full suite before first end-to-end run (operator's decision). Suggested sequence within that: platform (`auth`, `proxy`) → `board`, `notes` → `mission-control` → `drive`, `chat`, `pdf` → the critical-infra trio (`gateway`, `vault`, `cmdb`) last, after the others exist to integrate against.
+Full suite before first end-to-end run (operator's decision). Suggested sequence within that: platform (`auth`, `proxy`) → `board`, `notes` → `agent-runtime` (the workforce layer — Mission Control's liveness model depends on its heartbeats, and its two early research spikes gate Board/Notes Stage 2; see `platform/agent-runtime/CLAUDE.md`) → `mission-control` → `drive`, `chat`, `pdf` → the critical-infra trio (`gateway`, `vault`, `cmdb`) last, after the others exist to integrate against.
 

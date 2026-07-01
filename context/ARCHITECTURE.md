@@ -39,7 +39,7 @@ The agent orchestrates all four but holds no credentials and cannot approve its 
 
 **Escalation is the default failure mode.** A stuck agent files a `needs_review`/escalation explaining the blocker instead of spinning or retrying blindly. A host going unreachable escalates immediately and is never blind-retried.
 
-## 4. App inventory (9 apps + 2 platform layers)
+## 4. App inventory (9 apps + 3 platform layers)
 
 | App | Role | Agent surface | Human surface | Risk class |
 |-----|------|--------------|--------------|-----------|
@@ -53,23 +53,25 @@ The agent orchestrates all four but holds no credentials and cannot approve its 
 | **vault** | Secrets store (deliberate two-view exception) | reference cred by handle only; **never** plaintext | manage secrets, rotation, access audit | **Critical-infra** |
 | **cmdb** | Inventory + policy brain | query policy (tier, window, in-window?) | manage fleet + policies | **Critical-infra** |
 | *platform:* **auth** | Identity gateway; agents are first-class users with roles, scoped permissions, budgets | authenticate, authorize | manage identities/roles/budgets | Critical-infra |
+| *platform:* **agent-runtime** | **The workforce** — hosts the agent processes, the agent loop, and the local model stack; holds the per-agent TPM-sealed signing keys; the client half of heartbeats/drain/kill | none — it *runs* agents; its control surface faces the operator/MC | fleet process status (surfaced via Mission Control) | **Critical-infra** |
 | *platform:* **proxy** | Reverse proxy, subdomains, TLS | n/a | n/a | Standard |
 
 Notes:
 - **Wazuh is NOT an app you build.** It is existing infrastructure the system *reads from* and *verifies against*. A small connector (living in or beside the Gateway) talks to its API. Wazuh detects and tracks remediation; it never patches. The patching capability is the Gateway.
 - **Chat is deliberately human-facing.** Start as a one-way notification stream + operator broadcast. Do NOT build agent-to-agent chat here; deliberation lives in Notes (see §6).
 - **Vault inverts the two-view rule:** agents get almost no read surface — only handle references, redeemable to plaintext solely by the Gateway.
+- **The agent-runtime is the client half of every guardrail.** Leases, heartbeats, WIP limits, budgets, and the kill switch are enforced *server-side* by Board/MC/Gateway — and obeyed *client-side* by the runtime that hosts the agent processes. It is Critical-infra because it physically holds the per-agent signing keys (auth's "true root credential") and the local model stack (a supply-chain surface: one poisoned model compromises every role, including the Adversarial Reviewer). It holds identity key material only — never host credentials, never approval or execution authority. See `platform/agent-runtime/CLAUDE.md`. *(Added 2026-07-01, gap 1.1.)*
 
 ## 5. Cross-cutting mechanics
 
-**Ticket lifecycle:** `todo → in_progress → (awaiting_approval →) needs_review → done`, plus `blocked`. Additions this system requires:
+**Ticket lifecycle:** `todo → in_progress → (awaiting_approval →) needs_review → done`, plus `blocked`. This shorthand remains the human-visible core; the **authoritative superset** — including the execution-window states (`approved`, `executing`), external-verification (`verifying`), the terminal set (`done`/`failed`/`cancelled`), per-transition authority, and the single ceremony-phase authority — is **`context/specs/TICKET_STATE_MACHINE.md`** (Board-owned; binding on all consumers, including the auth PDP). Additions this system requires:
 - **Epic / standing tickets** that spawn children on a trigger (the "maintain & improve" mandate is standing, not do-once).
 - **Recurring / event kickoffs:** three kickoff types — human-filed, scheduled (e.g. weekly rescan), event-driven (e.g. Wazuh new-CVE alert). Design the Board to accept all three.
 - **Resource-level locking:** the claim must lock the real-world resource (the host), not just the ticket, so two agents can't act on one server at once. Default unit of an infra ticket is **per-server** (one claim = one host = clean lock); severity becomes priority/ordering *within* a ticket, not a reason to split into per-CVE tickets that fight over the host lock.
 
 **Notes as external memory:** YAML frontmatter carries status/type/links/tags; structured templates per type (e.g. Research: Objective / What I did / Findings / Open questions / Next step); `[[wikilinks]]` + backlinks as associative memory; search (SQLite FTS5) exposed as a *tool*, not a context dump.
 
-**Git-backed audit trail:** notes are files, so every agent edit is diffable and reversible for free. Non-negotiable for autonomous operation.
+**Git-backed audit trail:** notes are files, so every agent edit is diffable and reversible for free. Non-negotiable for autonomous operation — and it **must have a configured git remote** (§10): a local-only `.git` means one disk failure destroys the source of truth and its reversibility history together.
 
 **Guardrails (continuous mode):** hard review/approval gates; WIP limits (per-agent and global); budgets as *compute/time/concurrency* caps plus action cooldowns (not dollars); loop guards (cap follow-up spawn depth; flag runaway chains); a **global kill switch** that physically bites at the Gateway chokepoint.
 
@@ -110,7 +112,7 @@ Operator files an epic: "~20 homelab servers run Wazuh agents; most are behind o
 
 - **Safe** (pdf): light security stage.
 - **Standard** (board, notes, mission-control, drive, chat, proxy): normal rigor.
-- **Critical-infra** (gateway, vault, cmdb, auth): heavy security + verification stages — mandatory segregation-of-duties proof, "agent never holds plaintext" checks, kill-switch chokepoint verification, per-host mutex correctness, audit completeness. These apps cannot exit the security stage on a light checklist.
+- **Critical-infra** (gateway, vault, cmdb, auth, agent-runtime): heavy security + verification stages — mandatory segregation-of-duties proof, "agent never holds plaintext" checks, kill-switch chokepoint verification, per-host mutex correctness, audit completeness. These apps cannot exit the security stage on a light checklist.
 
 ## 9. Tech leanings (validate current specifics in research)
 
@@ -121,3 +123,52 @@ Operator files an epic: "~20 homelab servers run Wazuh agents; most are behind o
 - **Proxy:** Caddy or Traefik.
 - **Per-app storage default:** SQLite (self-contained, trivial backup) unless shared data forces Postgres.
 - **Gateway execution:** validate the safest brokering pattern (e.g. agent gets no shell; Gateway runs vetted, parameterized playbooks) during the Gateway's research stage.
+
+## 10. Data durability & disaster recovery *(added 2026-07-01, gaps 2.1/2.2)*
+
+The "markdown is truth / databases are rebuildable indexes" invariant is precise, not general: **it holds only where a markdown corpus exists to rebuild from.** Classify every store honestly and protect the canonical ones:
+
+| Store | Class | Consequence |
+|---|---|---|
+| Notes markdown corpus (+ its git history) | **CANONICAL** | the invariant's subject; its FTS/link index is the rebuildable part |
+| Board DB (tickets, approvals, leases, `ceremony_events`) | **CANONICAL** | approval state is load-bearing for SoD; not rebuildable from markdown |
+| Chat DB (notification/escalation record) | **CANONICAL** | the delivered-notification record exists nowhere else |
+| Drive blobs | **CANONICAL** | artifacts have no other home |
+| Vault secret material | **CANONICAL — special regime** | seal/unseal, recovery-key custody, CA-key escrow are part of Vault's charter and the Critical-infra rigor row (PROCESS.md) |
+| Hash-chained / signed audit tables (auth, gateway) | **CANONICAL — append-only** | tamper-evidence is the point; backup must preserve chain verifiability |
+| FTS indexes, caches, projections (e.g. `ceremony_phase`) | rebuildable | may be blown away and regenerated |
+
+Requirements:
+- **Every canonical store has a stated backup mechanism and cadence** (decided per app in its planning stage; existence is non-optional).
+- **The Notes git repository MUST have a configured remote.** A local-only `.git` is a build failure, not a style choice.
+- **Restore consistency is a first-class problem:** restoring the Board to yesterday while audit chains and real host state are current silently corrupts the SoD record. Each Critical-infra app's plan states its restore-consistency rule, and **a restore is actually drilled as a Stage-7 exit criterion** (PROCESS.md).
+
+## 11. East-west network security *(added 2026-07-01, gap 4.2 — shared invariant; Vault/Gateway planning inherit it)*
+
+Intra-suite ("east-west") traffic is tiered, not flat:
+
+- **Per-tier Docker networks** — `edge` (proxy + subdomain-serving apps) and **`creds` (vault + gateway ONLY)**. No Standard-class container ever joins `creds`. Topology details: `context/specs/DEPLOYMENT.md`.
+- **The Vault→Gateway plaintext-credential hop gets mutual authentication** (mTLS or equivalent): response confidentiality and server authenticity on the single most sensitive flow in the system, which must never traverse a segment shared with Standard-class containers.
+- Auth's layer-7 caller verification is necessary but not sufficient here — network placement and channel security are independent requirements on this hop.
+
+## 12. Untrusted content & policy-plane change control *(added 2026-07-01, gaps 4.1/4.3)*
+
+**LLM-input trust boundary.** Text that originates on managed hosts or from outside the suite is **adversarial input to the models**, full stop: Wazuh alert fields (a compromised host controls its own alert text), webhook payloads, and agent-written notes re-consumed via the retro→recon loop. Requirements:
+- **Provenance-tag** host-originated and externally-originated content wherever it is stored and retrieved (Notes frontmatter, Board ticket fields).
+- **The auto-approve lane is unavailable to any plan whose inputs include host-originated content.** A steered agent must never reach policy-approved Gateway execution with zero human review; provenance decides lane eligibility, not the agent.
+- Prompt injection is a **mandatory threat-model axis for every Critical-infra app** (PROCESS.md Stage 5).
+
+**Policy-plane change control.** Scopes protect who may call APIs — not the policy *data* those APIs serve. One poisoned CMDB row (tier→auto, window widened, task type reclassified "reversible") silently deletes the human gate while every scope check passes. Therefore: any **gate-weakening edit** to CMDB policy or the shared registries (task-type registry, runbook catalog policy attributes — owners in `context/CONTRACTS/README.md`) requires **tamper-evident, step-up-confirmed change control** on the operator path, mirroring the Gateway's audit-chain rigor.
+
+## 13. Authoritative cross-cutting specs & contracts *(added 2026-07-01)*
+
+These bind every app session; they exist so 11 components built in separate sessions actually interoperate. Read the relevant ones before designing any schema or API:
+
+| Doc | Authority over |
+|---|---|
+| `context/specs/IDENTIFIERS.md` | every cross-app ID: who mints it, format, validation posture |
+| `context/specs/TICKET_STATE_MACHINE.md` | ticket lifecycle + ceremony phase (Board-owned; supersedes all prose restatements) |
+| `context/specs/DEPLOYMENT.md` | networks, container names/ports, store ownership, env/volume conventions; cited by Stage-4 exit criteria |
+| `context/CONTRACTS/` | frozen per-seam consumer contracts + the three shared-registry owner assignments |
+
+**The seam rule:** assumptions in one app's research/planning prose do **not** bind another app. Only a frozen contract in `context/CONTRACTS/` (or a spec above) binds both sides. Gap tracking and deferred work: `context/GAP_REMEDIATION.md`; the underlying review: `context/GAP_ANALYSIS_2026-07-01.md`.

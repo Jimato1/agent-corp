@@ -24,13 +24,13 @@ Each stage has an explicit **artifact** and **exit criteria**. Do not advance un
 ## Stage 4 — Build
 **Purpose:** Implement, **API-first**: core service/API → MCP surface → UI. The MCP surface and UI are siblings over one API; neither is downstream of the other.
 **Artifact:** working containerized app with both surfaces.
-**Exit criteria:** the app runs in its own container behind the proxy, authenticates via the auth gateway, and both surfaces exercise the same state.
+**Exit criteria:** the app runs in its own container behind the proxy, authenticates via the auth gateway, and both surfaces exercise the same state — **verified against `context/specs/DEPLOYMENT.md`** (networks joined, compose/DNS name, internal port, auth endpoint), not against the app's own restatement of the topology.
 
 ## Stage 5 — Security hardening
 **Purpose:** Close the attack surface. **Rigor scales hard by risk class.**
 - *Safe:* input validation, authz on every endpoint, no secrets in logs.
 - *Standard:* the above + authz on the MCP surface (agents are scoped users), rate/WIP limits, audit logging of state changes.
-- *Critical-infra:* the above + **prove the segregation-of-duties property holds** (this component cannot cause a destructive action alone), **agent never receives plaintext credentials**, the **kill switch physically halts action at this chokepoint**, per-host mutex correctness, and complete per-command audit. Red-team the app itself.
+- *Critical-infra:* the above + **prove the segregation-of-duties property holds** (this component cannot cause a destructive action alone), **agent never receives plaintext credentials**, the **kill switch physically halts action at this chokepoint**, per-host mutex correctness, and complete per-command audit. Red-team the app itself. Additionally *(added 2026-07-01, gaps 4.1/2.2/4.3)*: **prompt injection is a mandatory threat-model axis** (host-originated text is adversarial input — ARCHITECTURE.md §12); **secret-material DR** where the app holds key material (seal/unseal, recovery-key custody, CA-key escrow — the Vault especially); and **policy-plane change control** where the app serves policy data (tamper-evident, step-up-confirmed gate-weakening edits — CMDB especially).
 **Artifact:** `security/THREAT_MODEL.md` + hardening changelog.
 **Exit criteria:** for Critical-infra apps, a written proof/walkthrough that no single-component or agent-only path reaches a destructive action.
 
@@ -42,7 +42,7 @@ Each stage has an explicit **artifact** and **exit criteria**. Do not advance un
 ## Stage 7 — Verification
 **Purpose:** Confirm the app meets its spec **and** the shared invariants (root CLAUDE.md). Prefer **external verification** where a verifier exists (e.g. dry-run the Gateway against a canary host and confirm via Wazuh).
 **Artifact:** `verification/CHECKLIST.md` — spec conformance + invariant conformance + external-verification evidence.
-**Exit criteria:** all invariants pass; for Critical-infra, external verification evidence is attached and the kill switch is demonstrated to halt action.
+**Exit criteria:** all invariants pass; for Critical-infra, external verification evidence is attached and the kill switch is demonstrated to halt action. For any app owning a **canonical store** (ARCHITECTURE.md §10): **a backup restore is actually drilled** and the app's stated restore-consistency rule is demonstrated, not asserted.
 
 ---
 
@@ -54,6 +54,6 @@ Each stage has an explicit **artifact** and **exit criteria**. Do not advance un
 | Planning | plan | + adversarial review | + adversarial review of blast radius |
 | UI/UX | standard | standard | + operator-audit/kill-switch surfaces |
 | Build | standard | + scoped MCP authz | + brokered-action-only agent surface |
-| Security | light | + MCP authz, audit | + segregation proof, no-plaintext, kill-switch, mutex |
+| Security | light | + MCP authz, audit | + segregation proof, no-plaintext, kill-switch, mutex, **prompt-injection axis, secret-material DR, policy-plane change control** |
 | Optimization | standard | + multi-agent concurrency | + concurrency under contention |
-| Verification | spec | spec + invariants | + external-verification evidence + kill-switch demo |
+| Verification | spec | spec + invariants | + external-verification evidence + kill-switch demo + **restore drill for canonical stores** |
