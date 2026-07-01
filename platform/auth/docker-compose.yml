@@ -23,10 +23,17 @@ services:
       AUTH_CANONICAL_ORIGIN: ${AUTH_CANONICAL_ORIGIN:-https://auth.suite.local:443}
       AUTH_PORT: ${AUTH_PORT:-8089}
       AUTH_SIGNER_ALG: ${AUTH_SIGNER_ALG:-EdDSA}   # prod asymmetric; needs 'cryptography'
+      AUTH_AT_SECRET: ${AUTH_AT_SECRET:-}          # only read when AUTH_SIGNER_ALG=HS256
+      AUTH_ID_SECRET: ${AUTH_ID_SECRET:-}          # only read when AUTH_SIGNER_ALG=HS256
       AUTH_ACCESS_TTL_S: ${AUTH_ACCESS_TTL_S:-300}
       AUTH_IDENTITY_TTL_S: ${AUTH_IDENTITY_TTL_S:-30}
+      AUTH_SQLITE_PATH: ${AUTH_SQLITE_PATH:-:memory:}   # SOLE-WRITER substitute; :memory: = fresh seed each boot
+      AUTH_UI_DIR: ${AUTH_UI_DIR:-/app/ui/build}
+      AUTH_DEMO: ${AUTH_DEMO:-0}                    # =1 exposes /debug/demo-tokens for the JC-1 harness
       KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agent-corp}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-auth-core}          # auth authenticates to KC as this client
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-change-me-in-prod}  # for introspect/revoke to KC
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       DATABASE_URL: ${DATABASE_URL:-postgresql://auth:change-me@postgres:5432/auth}
       AUTH_ADMIN_TOKEN: ${AUTH_ADMIN_TOKEN:-change-me-operator-admin}
@@ -34,9 +41,9 @@ services:
       - "8089:8089"       # proxy -> auth forward-auth subrequest (plain HTTP now)
     depends_on:
       keycloak:
-        condition: service_started
+        condition: service_healthy   # AUTH-D3: wait for KC readiness (30-60s), not just start
       redis:
-        condition: service_started
+        condition: service_healthy   # AUTH-D3: wait for redis PONG
       postgres:
         condition: service_healthy
     restart: unless-stopped
@@ -45,17 +52,49 @@ services:
   # auth-core proxies to / adopts this for the OIDC code/token flow. CANNOT-VERIFY
   # -HERE: the /authorize + /token endpoints and passkey (WebAuthn) enrollment.
   keycloak:
-    image: quay.io/keycloak/keycloak:25.0
-    command: ["start", "--optimized", "--hostname=auth.${SUITE_DOMAIN:-suite.local}"]
+    # AUTH-D1: pinned to the current 26.4 patch (26.4.0 shipped 2025-09; 26.4.7 is
+    # the latest 26.4.x as of 2026-07). >=26.4 is required for DPoP GA (decision #7).
+    image: quay.io/keycloak/keycloak:26.4.7
+    # GATE-BOOT MODE: `start-dev` — needs NO prior `kc.sh build`, auto-enables HTTP,
+    # and sets hostname-strict=false, so no --hostname/KC_HOSTNAME is needed to reach
+    # the realm on :8080 for the G-gates. We deliberately do NOT use `start --optimized`
+    # here: in 26.x that REQUIRES a preceding `kc.sh build` (or a derived pre-built
+    # image) and skips the auto-build, which crash-loops without it. PRODUCTION (Stage-5)
+    # switches to a built image + `start` with `--hostname https://auth.<DOMAIN>` (26.x
+    # hostname v2 takes a FULL URL, not a bare host) + TLS behind the proxy.
+    command: ["start-dev"]
     environment:
+      # 26.x bootstrap admin env names (KEYCLOAK_ADMIN/_PASSWORD were replaced in 26.0
+      # by KC_BOOTSTRAP_ADMIN_*; the old names only warn + seed the first-boot account).
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me-in-prod}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-change-me}
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me-in-prod}
-      # Canonical passkey origin is https://auth.<SUITE_DOMAIN>:443 in BOTH modes.
-      KC_HOSTNAME_STRICT: "true"
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-change-me}   # MUST match the initdb role password
+      # Behind the suite reverse proxy: parse X-Forwarded-* (else KC 403s on proxied
+      # requests). The proxy overwrites these headers so clients cannot forge them.
+      KC_PROXY_HEADERS: xforwarded
+      # AUTH-D3: enable the health endpoints (served on the 9000 management port in 26.x).
+      # (start-dev already enables HTTP, so KC_HTTP_ENABLED is not needed here.)
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"   # /realms/... token/introspect/revoke for keycloak_gates.sh (host)
+    # AUTH-D3: readiness gate. The official image ships NO curl/wget (distroless/UBI-micro)
+    # but DOES ship bash, so probe /health/ready on the 9000 management port via /dev/tcp.
+    healthcheck:
+      # bash (guaranteed in the image; /bin/sh may not support /dev/tcp). Single-quoted
+      # YAML scalar keeps \r\n as literal backslash sequences that printf turns into real
+      # CRLF — no editor-normalization hazard. grep the 200 status line from the response.
+      test:
+        - CMD
+        - bash
+        - -c
+        - 'exec 3<>/dev/tcp/localhost/9000; printf "GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3; grep -q "200 OK" <&3'
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 180s   # cold first boot = start-dev auto-build + Liquibase schema create
     depends_on:
       postgres:
         condition: service_healthy
@@ -67,6 +106,13 @@ services:
   redis:
     image: redis:7
     command: ["redis-server", "--appendonly", "yes"]   # AOF everysec (§4.6)
+    # AUTH-D3: readiness gate (redis-cli ships in the image; returns PONG).
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     restart: unless-stopped
 
   # ── Postgres: the durable Store (decision #8 active-active HA) ─────────────
@@ -77,14 +123,21 @@ services:
     environment:
       POSTGRES_USER: auth
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
-      POSTGRES_MULTIPLE_DATABASES: auth,keycloak
+      POSTGRES_DB: auth
+      # AUTH-D0: consumed by the initdb script to create the keycloak DB role.
+      # (POSTGRES_MULTIPLE_DATABASES is NOT a real postgres env var — removed; the
+      # keycloak database is now created by ./postgres/initdb on first boot.)
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-change-me}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U auth"]
+      # -d auth so "ready" means the auth DB (not just the postmaster) accepts conns.
+      test: ["CMD-SHELL", "pg_isready -U auth -d auth"]
       interval: 10s
       timeout: 5s
       retries: 5
     volumes:
       - auth-pgdata:/var/lib/postgresql/data
+      # AUTH-D0: first-boot-only scripts (create the keycloak role + database).
+      - ./postgres/initdb:/docker-entrypoint-initdb.d:ro
     restart: unless-stopped
 
 volumes:
@@ -94,7 +147,18 @@ volumes:
 # CANNOT-RUN-HERE — operator/CI commands that close the Stage-4 substitutes:
 #
 #   # bring the identity plane up (needs Docker; not available in the sandbox):
-#   cd platform/auth && cp .env.example .env && docker compose up -d --build
+#   cp platform/auth/.env.example platform/auth/.env
+#   docker compose -f platform/auth/docker-compose.yml up -d --build   # cold-boot clean
+#
+#   # run the G-gate harness (G3 audience non-overlap = the #1 gate):
+#   bash platform/auth/build/keycloak_gates.sh
+#
+#   # RECOVERY — if Keycloak crash-loops with an unknown-database error, the postgres
+#   # first-boot init (which creates the `keycloak` DB) failed and is NOT retried while
+#   # the data volume is non-empty. Force a clean re-init:
+#   #   docker compose -f platform/auth/docker-compose.yml down
+#   #   docker volume rm auth_auth-pgdata   # (name is <project>_auth-pgdata; check `docker volume ls`)
+#   #   docker compose -f platform/auth/docker-compose.yml up -d --build
 #
 #   # prove /api/verify END-TO-END through the real proxy against the real auth:
 #   cd platform/proxy && docker compose --env-file .env.internal up -d --build \

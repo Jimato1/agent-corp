@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halt Control — auth operator console</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §5.1 — this page renders the Halt Control panel for the SECONDARY
+   choices (escalate to G2, single-agent scope). The DEFAULT G1 stop is the
+   header actuator itself (§2.5.7/§3.4). Shown here at rest (G0). */
+window.AUTH_SHELL = {
+  level:'G0',
+  deps:{redis:true,pdp:true,writer:true,idp:true},
+  freshness:{epoch:4471,ms:312,rs:'24/24'},
+  fleet:{flagged:0,detail:''},
+  operator:{sub:'op:eide',fresh:true},
+  activeNav:'halt'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <h1 class="screen">Halt Control</h1>
+      <p class="sublede">Choose a stop depth. <b>Engaging is immediate; lifting is not.</b>
+        The default <span class="mono">G1</span> freeze is one motion on the header
+        <span class="mono">◉ ENGAGE FREEZE</span> button — this panel is for the secondary choices.</p>
+
+      <!-- Layer honesty (§3.4) -->
+      <div class="scaffold-note" role="note">
+        Engages the identity-layer stop <b>(L1)</b>. Physical execution stop <b>(L2)</b> bites
+        independently at the Gateway; the cross-layer <a href="#">global switch is co-owned with Mission Control ▸</a>.
+        auth owns L1 + per-principal revocation.
+      </div>
+
+      <!-- Keyboard legend: Shift+Esc + documented fallback chord (§2.7 / OQ#2) -->
+      <div class="freshness" style="margin-bottom:16px" role="note">
+        ⌨ Halt-focus shortcut: <b class="mono">Shift+Esc</b> focuses (never fires) the header ENGAGE-FREEZE from anywhere.
+        Documented non-browser-captured fallback chord: <b class="mono">Ctrl+Alt+H</b> (H = Halt) — wired identically in case Shift+Esc is OS/browser-captured.
+      </div>
+
+      <div class="grid" style="grid-template-columns:1fr;max-width:640px">
+
+        <!-- G1 -->
+        <section class="panel" aria-labelledby="g1h">
+          <div class="spread">
+            <h2 id="g1h" class="panel-title"><span class="pill pill--halt">▮▮ G1</span> FREEZE DESTRUCTIVE
+              <span class="muted" style="font-size:var(--fs-label)">(default · recommended)</span></h2>
+          </div>
+          <p><b>Stop the hands, keep thinking.</b></p>
+          <p class="mono" style="font-size:var(--fs-data)">DENIES suite-wide: gateway:execute · vault:redeem · board:approve→execute chains<br>
+             STILL ALLOWED: benign reads · planning</p>
+          <div class="row" style="justify-content:center;margin-top:12px">
+            <!-- 600ms dwell, pre-focused via autofocus (§2.5.8) -->
+            <button class="actuator actuator--danger" id="g1hold" data-dwell="600" data-level="G1" autofocus>
+              <span class="actuator__fill"></span>
+              <span class="actuator__label">◯ HOLD TO ENGAGE (0.6s)</span>
+              <span class="actuator__count" hidden></span>
+            </button>
+          </div>
+        </section>
+
+        <!-- G2 -->
+        <section class="panel" aria-labelledby="g2h">
+          <h2 id="g2h" class="panel-title"><span class="pill pill--halt">▮▮▮▮ G2</span> FULL STOP (quiesce-all)</h2>
+          <p>Suspected suite compromise. <b>Denies ALL agent tokens.</b> Only humans + break-glass remain.</p>
+          <p class="freshness">Larger blast radius earns a larger, distinct motion — a longer hold that must be
+             focused first (never pre-focused). This is the <b>non-hue</b> escalation cue: heavier, longer,
+             intensified gold — never red.</p>
+          <div class="row" style="justify-content:center;margin-top:12px">
+            <!-- 1000ms dwell, must Tab to focus first — NOT autofocus (§2.5.8) -->
+            <button class="actuator actuator--danger" id="g2hold" data-dwell="1000" data-level="G2">
+              <span class="actuator__fill"></span>
+              <span class="actuator__label">▮▮ HOLD TO FULL-STOP (1.0s)</span>
+              <span class="actuator__count" hidden></span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Scope selector (§5.1) -->
+        <section class="panel">
+          <h3 class="panel-title">Scope</h3>
+          <div class="row" role="radiogroup" aria-label="Stop scope">
+            <label class="row"><input type="radio" name="scope" checked> Global (whole suite)</label>
+            <label class="row"><input type="radio" name="scope" id="scopeSingle"> Single agent…</label>
+            <input class="input mono" id="scopeTarget" placeholder="sub / client_id (typeahead)" style="max-width:280px" disabled>
+          </div>
+          <p class="freshness" style="margin-top:8px">Single-agent switches the same actuator to a surgical engage
+             (relabels <span class="mono">HOLD TO FREEZE agent:…</span>) and routes to Per-Agent Revocation (§5.3) —
+             one muscle memory for all stops.</p>
+        </section>
+
+        <!-- The capability that must VISIBLY NOT EXIST (Decision #5, §5.1) -->
+        <section class="absence" role="note" aria-label="Capability that does not exist">
+          <div class="absence__line"><span class="absence__lock" aria-hidden="true">🔒</span>
+            <span>This is the STOP direction. <b>There is no option here to relax approval/execution
+              separation — that capability does not exist.</b> (Not a disabled button: a greyed control would
+              imply latent capability. This is an affirmative, explained absence.)</span></div>
+        </section>
+
+        <!-- Redis-independent note (§3.4 / §5.1-D) -->
+        <section class="panel panel--raised">
+          <h3 class="panel-title">If Redis is down</h3>
+          <p>The G1/G2 holds above <b>still work</b> — the same low-friction motion, now performing the
+             <b>signed kill-epoch raise</b> (JWKS / AS-metadata / forward-auth header, Redis-independent).
+             <b>No typed intent, no offline hardware factor.</b></p>
+          <p class="freshness"><a href="breakglass.html">Break-glass STOP ▸</a>
+             (offline factor — only if <b>auth login/verify itself</b> is down; <b>not</b> needed just because Redis is down).</p>
+        </section>
+
+      </div>
+
+      <p class="freshness" style="margin-top:24px" role="note">
+        On engage: <b>write-before-ack</b> (PLAN §4.6) — the actuator shows <span class="mono">◴ committing…</span>
+        until both the durable ledger append <em>and</em> the authoritative Redis SET commit (or, Redis-down, the
+        signed kill-epoch raise), then lands on the Halt Status Board. The control <b>never</b> flashes a green "Stopped ✓".
+      </p>
+    </main>
+  </div>
+</div>
+<script src="shell.js"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Identities — auth operator console</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §8.1 — Identities. SCAFFOLD (structure real, rows mocked).
+   Key-attestation is a first-class column; soft-key-on-holder is a loud NO-GO
+   shown ONLY as drift (auth refuses to activate a holder role on a soft key). */
+window.AUTH_SHELL = {
+  level:'G0', deps:{redis:true,pdp:true,writer:true,idp:true},
+  freshness:{epoch:4471,ms:312,rs:'24/24'},
+  fleet:{flagged:1,detail:'soft-key NO-GO ×1'},
+  operator:{sub:'op:eide',fresh:true}, activeNav:'identities'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <div class="scaffold-note" role="note"><b>SCAFFOLD</b> — realizes UI_SPEC §8.1. Table + attestation column + NO-GO
+        drift row are real markup; data is mocked; create/rotate/revoke writes are CANNOT-VERIFY-HERE (no backend).</div>
+      <div class="spread"><h1 class="screen">Identities</h1><a class="btn" href="#">+ New identity ▾</a></div>
+      <p class="sublede">Humans and agents are <b>never pooled</b>. Executor/holder/destructive principals MUST be
+        hardware-bound / non-exportable (Decision #6).</p>
+
+      <div class="row" style="margin-bottom:12px">
+        <span class="pill">◉ All</span><span class="pill">Humans (1)</span>
+        <span class="pill pill--attn">Agents (18 · ⚠1 NO-GO)</span>
+        <span class="pill">Services (4)</span><span class="pill">Break-glass (1)</span>
+        <span class="freshness">Filter — Attestation ▾: all / non-exportable / soft-key NO-GO</span>
+      </div>
+
+      <table class="tbl" aria-label="Identities">
+        <thead><tr><th>sub</th><th>kind</th><th>class</th><th>status</th><th>key attestation</th><th class="rt">headroom</th></tr></thead>
+        <tbody>
+          <tr><td class="id">op:eide</td><td>👤 human</td><td>—</td><td><span class="pill pill--ok"><span class="dot"></span>active</span></td><td>passkey ✓ · TOTP recov</td><td class="rt">—</td></tr>
+          <tr><td class="id">patcher-07</td><td>🤖 agent</td><td>executor</td><td><span class="pill pill--ok"><span class="dot"></span>active</span></td><td>🔒 TPM non-exportable</td><td class="rt">▓▓▓░ 62%</td></tr>
+          <!-- soft-key executor can NEVER be a clean active; appears only as DRIFT, auto-frozen, pinned -->
+          <tr style="background:var(--danger-tint)"><td class="id">patcher-09</td><td>🤖 agent</td><td>executor</td>
+            <td><span class="pill pill--halt">▮▮ frozen</span></td>
+            <td><span style="color:var(--danger-500)">⚠ SOFT-KEY NO-GO (DRIFT)</span></td><td class="rt">▓▓▓▓ 88%</td></tr>
+          <tr><td class="id">planner-02</td><td>🤖 agent</td><td>planner</td><td><span class="pill pill--ok"><span class="dot"></span>active</span></td><td>🔑 OS-keystore (ok*)</td><td class="rt">▓░░░ 20%</td></tr>
+          <tr><td class="id">svc:gateway</td><td>⚙ svc</td><td>—</td><td><span class="pill pill--ok"><span class="dot"></span>active</span></td><td>🔒 HSM non-exportable</td><td class="rt">—</td></tr>
+          <tr><td class="id">bg:root</td><td>⛨ break</td><td>—</td><td><span class="pill pill--disabled"><span class="dot"></span>offline</span></td><td>offline factor (n/a)</td><td class="rt">—</td></tr>
+        </tbody>
+      </table>
+      <p class="freshness" style="margin-top:12px"><b>ok*</b> marks weaker key tiers legitimate <em>only</em> for pure read/planner
+        agents holding no holder scope. A soft-key on an executor/holder is a <b>build NO-GO</b> — refused at assignment,
+        so it can only appear as <b>drift</b> (auto-frozen, pinned to top, un-missable). See §8.1.3 key-attestation panel.</p>
+    </main>
+  </div>
+</div>
+<script src="shell.js"></script>
+</body>
+</html>

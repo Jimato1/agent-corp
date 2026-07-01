@@ -1,0 +1,7 @@
+# auth is authored on Windows but its shell scripts run inside Linux containers /
+# are bind-mounted verbatim (postgres initdb) or run via bash on the operator host.
+# Force LF in the working tree on every checkout regardless of core.autocrlf, so a
+# Windows clone can never materialize CRLF that breaks the shebang / heredoc / probe.
+*.sh text eol=lf
+postgres/initdb/*.sh text eol=lf
+build/*.sh text eol=lf

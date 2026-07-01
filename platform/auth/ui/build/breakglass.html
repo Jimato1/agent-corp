@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Break-glass — auth operator console</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §6 — Break-glass. Rendered at BG-2 (consequence + typed-intent arm)
+   with the VISIBLE-ABSENCE "CANNOT DO — BY CONSTRUCTION" panel. Shown here in a
+   degraded posture (auth login/verify down) because degraded is break-glass's
+   FIRST-CLASS path (§6.11). */
+window.AUTH_SHELL = {
+  level:'G0',
+  deps:{redis:false,pdp:false,writer:true,idp:false},
+  freshness:{epoch:4471,ms:0,rs:'?'},
+  degraded:'auth verify/login',
+  fleet:{flagged:0,detail:''},
+  operator:{sub:'op:eide',fresh:true},
+  activeNav:'breakglass'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <h1 class="screen">Break-glass <span class="pill pill--danger">⛔ EMERGENCY</span></h1>
+      <p class="sublede">Out-of-band operator override for when auth itself is degraded or compromised.
+        Authorized <b>only</b> through your <b>offline factor</b> (hardware key / offline credential).
+        <b>NOT your normal login. NOT from Vault.</b></p>
+
+      <div class="scaffold-note" role="note" style="border-color:var(--ok-500)">
+        ✔ Degraded is the intended path right now — break-glass verification runs on the offline factor and does
+        <b>not</b> depend on the unavailable service (§6.11). This is a first-class path, not a fallback.
+      </div>
+
+      <div class="grid prose">
+
+        <!-- WHAT THIS SESSION LETS YOU DO -->
+        <section class="panel" aria-labelledby="do">
+          <h2 id="do" class="panel-title">What this session lets you do</h2>
+          <p>✔ <b>STOP</b> — engage kill (G1/G2), revoke a principal/key, disable, halt.</p>
+          <p>✔ <b>RESTORE</b> — re-enable, lift a kill, restore a normal approver seat (logged + auto-reviewed).</p>
+        </section>
+
+        <!-- WHAT THIS SESSION CANNOT DO — BY CONSTRUCTION (the VISIBLE ABSENCE) -->
+        <!-- Printed constitutional statements. LOCK glyph 🔒 (never ⛔). NO interactive
+             affordance: no hover target, no focus target, no click. (§2.5.1 glyph rule, §6.5) -->
+        <section class="panel" aria-labelledby="cannot" style="border-color:var(--sub-500)">
+          <h2 id="cannot" class="panel-title">What this session cannot do — <span class="mono">by construction</span></h2>
+          <p class="freshness">Printed constitutional statement · lock glyph · <b>not controls</b>
+            (no hover/focus/click target — see glyph rule §2.5.1).</p>
+          <div class="absence" role="note" aria-label="Capabilities that do not exist by construction">
+            <div class="absence__line"><span class="absence__lock" aria-hidden="true">🔒</span>
+              <span>Cause execution (<span class="mono">gateway:execute</span>) — break-glass holds no execute scope.</span></div>
+            <div class="absence__line"><span class="absence__lock" aria-hidden="true">🔒</span>
+              <span>Redeem a credential (<span class="mono">vault:read-credential</span>) — holds no such scope.</span></div>
+            <div class="absence__line"><span class="absence__lock" aria-hidden="true">🔒</span>
+              <span>Relax the approve/execute separation. Compiled-in; cannot be changed here — or anywhere — at
+                runtime. There is no control for it in this console <b>because the capability does not exist.</b> (Decision #5)</span></div>
+          </div>
+        </section>
+
+        <!-- HONEST CONSEQUENCE -->
+        <section class="panel" aria-labelledby="hc">
+          <h2 id="hc" class="panel-title">Honest consequence</h2>
+          <p>Engaging a STOP does <b>not</b> guarantee instant silence. Benign already-issued tokens can remain valid
+            up to ~2 min (agent TTL). The console will show <b>CONFIRMED halted</b> vs still <b>PENDING</b> —
+            never a binary "stopped ✓".</p>
+        </section>
+
+        <!-- The three unmissable records fired at arm time -->
+        <section class="panel panel--raised">
+          <p class="freshness">Arming will, immediately and unavoidably: <b>broadcast to operator Chat</b> ·
+            <b>file a needs_review ticket</b> · <b>write an append-only audit line</b>.
+            Session is single-use, time-boxed <span class="mono">15:00</span>, auto-revoked.</p>
+        </section>
+
+        <!-- TYPED-INTENT ARM (BG-2) -->
+        <section class="panel modal--danger" aria-labelledby="arm">
+          <h2 id="arm" class="modal__head">Break-glass · step 2 of 2 — Arm</h2>
+          <div class="consequence">
+            ⚠ Operator: <span class="mono">op:eide</span> · via <span class="mono">bg:operator-root</span> ·
+            session TTL <span class="mono">15:00</span> (time-boxed). This moves control OUT-of-band.
+          </div>
+          <label class="field" for="reason">Reason for this override (required, audited)</label>
+          <input class="input" id="reason" placeholder="e.g. auth login is down, need to STOP the fleet" autocomplete="off">
+          <label class="field" for="phrase" style="margin-top:12px">Type <b class="mono">ENGAGE BREAK-GLASS</b> to arm
+            <span class="freshness">(exact, case-sensitive · paste-to-satisfy is blocked)</span></label>
+          <input class="input" id="phrase" placeholder="ENGAGE BREAK-GLASS" autocomplete="off" spellcheck="false">
+          <div class="row" style="margin-top:16px;justify-content:flex-end">
+            <a class="btn btn--ghost" href="overview.html" data-cancel>Cancel</a>
+            <button class="btn" id="armBtn" disabled aria-describedby="armReason">Arm break-glass session</button>
+          </div>
+          <p id="armReason" class="freshness" style="margin-top:8px" aria-live="polite">Arm stays disabled until reason is present AND the phrase matches exactly.</p>
+        </section>
+
+        <!-- Immutable ConflictSet reference (read-only, no edit affordances) -->
+        <section class="panel" aria-labelledby="cs">
+          <h2 id="cs" class="panel-title">SoD Conflict Set · <span class="mono">"sod-holders"</span></h2>
+          <div class="lockcap"><span aria-hidden="true">🔒</span> IMMUTABLE (compiled-in) — cannot be edited, weakened, or disabled from this console.</div>
+          <table class="matrix" aria-label="Immutable holder conflict set">
+            <thead><tr><th></th><th>board:approve</th><th>cmdb:write-policy</th><th>vault:read-cred</th><th>gateway:execute</th></tr></thead>
+            <tbody>
+              <tr><th>board:approve</th><td class="diag">—</td><td class="allow">○ allowed</td><td class="excl">● excl.</td><td class="excl">● excl.</td></tr>
+              <tr><th>cmdb:write-policy</th><td class="allow">○ allowed</td><td class="diag">—</td><td class="excl">● excl.</td><td class="excl">● excl.</td></tr>
+              <tr><th>vault:read-cred</th><td class="excl">● excl.</td><td class="excl">● excl.</td><td class="diag">—</td><td class="excl">● excl.</td></tr>
+              <tr><th>gateway:execute</th><td class="excl">● excl.</td><td class="excl">● excl.</td><td class="excl">● excl.</td><td class="diag">—</td></tr>
+            </tbody>
+          </table>
+          <p class="freshness" style="margin-top:8px">● mutually exclusive (approve-side ⊕ action-side) · ○ allowed (both governance).
+            This matrix and its Cedar <span class="mono">forbid</span> are HARDCODED. <b>[no edit controls rendered]</b></p>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</div>
+<script src="shell.js"></script>
+<script>
+/* Typed-intent arm gate (real logic): exact case-sensitive phrase + required
+   reason; paste blocked on the phrase field (no paste-to-satisfy bypass, §6.5). */
+(function(){
+  var PHRASE="ENGAGE BREAK-GLASS";
+  var reason=document.getElementById("reason");
+  var phrase=document.getElementById("phrase");
+  var btn=document.getElementById("armBtn");
+  var why=document.getElementById("armReason");
+  phrase.addEventListener("paste",function(e){ e.preventDefault(); why.textContent="Paste is blocked — type the phrase exactly."; });
+  function check(){
+    var ok = reason.value.trim().length>0 && phrase.value===PHRASE;
+    btn.disabled=!ok;
+    if(ok){ btn.classList.add("btn--danger"); why.textContent="Ready — arming fires the broadcast, the needs_review ticket, and the audit line immediately."; }
+    else { btn.classList.remove("btn--danger");
+      why.textContent = reason.value.trim().length===0 ? "Reason is required." :
+        (phrase.value.length ? "Phrase does not match yet (exact, case-sensitive)." : "Type ENGAGE BREAK-GLASS to arm."); }
+  }
+  reason.addEventListener("input",check); phrase.addEventListener("input",check);
+  btn.addEventListener("click",function(){
+    if(btn.disabled) return;
+    why.innerHTML='✔ Break-glass ARMED (static mock). Persistent hazard banner would now ride every screen; STOP is one move away. '
+      +'<span class="freshness">Real arming is CANNOT-VERIFY-HERE (needs the offline WebAuthn factor + auth backend).</span>';
+    btn.disabled=true; btn.textContent="Armed";
+  });
+})();
+</script>
+</body>
+</html>
