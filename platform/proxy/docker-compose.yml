@@ -1,10 +1,13 @@
 # ═════════════════════════════════════════════════════════════════════════════
 # proxy — Stage-4 Build compose. Brings up the edge + a MINIMAL auth /api/verify
 # stub + one echo upstream, enough to prove forward-auth end-to-end WITHOUT the
-# real auth/apps (which don't exist yet). Select mode with an env file:
+# real auth/apps (which don't exist yet). First copy the committed template to the
+# (gitignored) env file for your mode, then select the mode with --env-file:
 #
-#   INTERNAL (primary):  docker compose --env-file .env.internal up --build
-#   PUBLIC   (secondary): docker compose --env-file .env.public   up --build
+#   INTERNAL (primary):  cp .env.internal.example .env.internal
+#                        docker compose --env-file .env.internal up --build
+#   PUBLIC   (secondary): cp .env.public.example .env.public   # then set ACME_EMAIL + token
+#                        docker compose --env-file .env.public   up --build
 #
 # The ONLY difference between the two runs is TLS_ISSUER_FILE (+ the public DNS token).
 # Run the checks:  ./test/verify.sh   and   ./test/regression_headers.sh

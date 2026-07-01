@@ -42,7 +42,7 @@ if $DC exec -T proxy caddy validate --config /etc/caddy/Caddyfile >/dev/null 2>&
   ok "0 caddy validate (config parses for $MODE)"; else bad "0 caddy validate"; fi
 
 # 1. Health.
-if $DC exec -T proxy wget -qO- http://localhost:8081/healthz | grep -q ok; then
+if $DC exec -T proxy wget -qO- http://localhost:9100/healthz | grep -q ok; then
   ok "1 healthz"; else bad "1 healthz"; fi
 
 # 2. Agent, no credential -> 401 (never redirect). A§8.5.

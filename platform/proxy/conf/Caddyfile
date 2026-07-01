@@ -181,37 +181,56 @@
 
 	# ---- app routes: subdomain label == auth audience segment (A§8.3; PLAN §4) ----
 	@board host board.{$SUITE_DOMAIN}
-	handle @board { import app board:8080 }
+	handle @board {
+		import app board:8080
+	}
 
 	@notes host notes.{$SUITE_DOMAIN}
-	handle @notes { import app notes:8080 }
+	handle @notes {
+		import app notes:8080
+	}
 
 	@mc host mc.{$SUITE_DOMAIN}
-	handle @mc { import app mission-control:8080 }   # audience `mc`, container `mission-control`
+	# audience `mc`, container `mission-control`
+	handle @mc {
+		import app mission-control:8080
+	}
 
 	@drive host drive.{$SUITE_DOMAIN}
 	handle @drive {
-		request_body { max_size 512MB }              # raised for artifact uploads (R§6.5)
+		request_body {
+			max_size 512MB                       # raised for artifact uploads (R§6.5)
+		}
 		import app drive:8080
 	}
 
 	@chat host chat.{$SUITE_DOMAIN}
-	handle @chat { import app chat:8080 }
+	handle @chat {
+		import app chat:8080
+	}
 
 	@pdf host pdf.{$SUITE_DOMAIN}
 	handle @pdf {
-		request_body { max_size 128MB }
+		request_body {
+			max_size 128MB
+		}
 		import app pdf:8080
 	}
 
 	@gateway host gateway.{$SUITE_DOMAIN}
-	handle @gateway { import app gateway:8080 }
+	handle @gateway {
+		import app gateway:8080
+	}
 
 	@vault host vault.{$SUITE_DOMAIN}
-	handle @vault { import app vault:8080 }
+	handle @vault {
+		import app vault:8080
+	}
 
 	@cmdb host cmdb.{$SUITE_DOMAIN}
-	handle @cmdb { import app cmdb:8080 }
+	handle @cmdb {
+		import app cmdb:8080
+	}
 
 	# auth is EXEMPT from the forward-auth GATE only (it self-authenticates; a gate
 	# would loop login) — but NEVER from scrub or rate limiting (§ PLAN 5.4, S2-01).
@@ -248,8 +267,12 @@
 http://:9100 {
 	@internal remote_ip private_ranges
 	handle @internal {
-		handle /healthz  { respond "ok" 200 }
-		handle /metrics  { metrics }                       # native Caddy Prometheus metrics
+		handle /healthz {
+			respond "ok" 200
+		}
+		handle /metrics {
+			metrics                                    # native Caddy Prometheus metrics
+		}
 		handle /edge-info {
 			header Content-Type application/json
 			# Escape the leading `{` (\{) so Caddy's placeholder replacer emits it literally instead
@@ -257,7 +280,11 @@ http://:9100 {
 			# expand at parse time; {$MODE_LABEL:unknown} defaults if unset.
 			respond `\{"mode":"{$MODE_LABEL:unknown}","suite_domain":"{$SUITE_DOMAIN}"}` 200
 		}
-		handle { respond "Not found" 404 }
+		handle {
+			respond "Not found" 404
+		}
 	}
-	handle { respond "Forbidden" 403 }
+	handle {
+		respond "Forbidden" 403
+	}
 }

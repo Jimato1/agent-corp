@@ -24,6 +24,8 @@ out/
 .env
 .env.*
 !.env.example
+# committed run templates (e.g. .env.internal.example); real .env.* stay ignored
+!.env.*.example
 *.pem
 *.key
 

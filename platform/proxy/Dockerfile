@@ -38,7 +38,7 @@ COPY conf/issuer.public.caddy    /etc/caddy/issuer.public.caddy
 VOLUME /data
 VOLUME /config
 
-# 443 (TLS) + 80 (ACME/redirect). 8081 = loopback health (not published).
+# 443 (TLS) + 80 (ACME/redirect). :9100 = internal health/metrics/edge-info (not published).
 EXPOSE 443 80
 
 # Config parse is enforced at container start (an invalid Caddyfile fails to boot).

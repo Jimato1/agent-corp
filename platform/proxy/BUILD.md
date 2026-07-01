@@ -14,7 +14,7 @@ a verification harness with a minimal auth stub.
 | `conf/issuer.internal.caddy` | INTERNAL issuer (`tls internal`) — the ONLY mode-specific config. |
 | `conf/issuer.public.caddy` | PUBLIC issuer (`tls { dns cloudflare … }`). |
 | `docker-compose.yml` | `proxy` + `auth` (stub) + `board` (echo upstream) on the `edge` network; mode via `--env-file`. |
-| `.env.internal` / `.env.public` | the two modes. Differ only in `TLS_ISSUER_FILE` (+ unused ACME/DNS vars). |
+| `.env.internal.example` / `.env.public.example` | committed run templates (copy to `.env.internal` / `.env.public`, which stay gitignored). The two modes differ only in `TLS_ISSUER_FILE` (+ the public ACME/DNS vars). |
 | `stub/auth_verify_stub.py` | minimal `/api/verify` implementing the §8.5 table + §8.7 headers — a test double, NOT auth. |
 | `stub/echo_upstream.py` | echoes received headers → proves the upstream trust boundary. |
 | `test/verify.sh` | edge + forward-auth checks (decision table, scrub, fail-closed, internal-CA chain). |
@@ -27,9 +27,24 @@ wildcard site. Both issuer partials are baked into the image. **Everything else 
 header scrub, forward-auth, security headers, rate limiting — is the same bytes in both modes**,
 so a bug can only ever live in the 1-line issuer partial, never in a mode-forked routing/auth path.
 
+> **`TLS_ISSUER_FILE` is an IN-CONTAINER path, not a host path.** The Dockerfile `COPY`s the
+> issuer partials to `/etc/caddy/`, and the Caddyfile's `import {$TLS_ISSUER_FILE}` resolves
+> relative to `/etc/caddy/` at runtime. So the value MUST be:
+> - internal: `TLS_ISSUER_FILE=/etc/caddy/issuer.internal.caddy`
+> - public:   `TLS_ISSUER_FILE=/etc/caddy/issuer.public.caddy`
+>
+> A host-relative value (e.g. `conf/issuer.internal.caddy`) fails at boot with
+> "File to import not found". These correct values ship in the committed `.env.*.example` templates.
+
+Copy the template for your mode to the real (gitignored) env file, then bring the suite up:
+
 ```
-docker compose --env-file .env.internal up -d --build   # INTERNAL (primary)
-docker compose --env-file .env.public   up -d --build    # PUBLIC   (secondary)
+cp .env.internal.example .env.internal                   # INTERNAL (primary)
+docker compose --env-file .env.internal up -d --build
+
+cp .env.public.example   .env.public                     # PUBLIC   (secondary)
+# then edit .env.public: set ACME_EMAIL + a real CLOUDFLARE_API_TOKEN
+docker compose --env-file .env.public   up -d --build
 ```
 
 **INTERNAL is primary and fully self-contained:** `tls internal` uses Caddy's built-in CA — no
