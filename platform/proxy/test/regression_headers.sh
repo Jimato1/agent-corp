@@ -32,11 +32,25 @@ INJECT=(
   'X-Forwarded-Prefix: /admin'
   'X_Forwarded_Prefix: /adminunder'
   'traceparent: 00-deadbeefdeadbeefdeadbeefdeadbeef-1111111111111111-01'
+  # MIXED dash/underscore variants (Stage-5): a separator-folding upstream (WSGI/CGI/nginx) would
+  # conflate these with the real header; (scrub) must strip them too. Contract-sync gate.
+  'X-Auth_Identity: FORGEDMIXA'
+  'X_Auth-Identity: FORGEDMIXB'
+  'X-Forwarded_Prefix: /adminmix'
 )
 # The distinctive substrings that must be ABSENT from the upstream echo if scrub worked.
-NEEDLES=(FORGEDIDENT FORGEDUNDER operator approver operatorcase /admin /adminunder deadbeefdeadbeef)
+NEEDLES=(FORGEDIDENT FORGEDUNDER operator approver operatorcase /admin /adminunder deadbeefdeadbeef FORGEDMIXA FORGEDMIXB /adminmix)
 
 echo "== A§8.9 header-injection regression: mode=$MODE suite=$SUITE =="
+
+# WARM-UP (discarded): absorb caddy-ratelimit issue #94 (spurious 429 on the FIRST request to an empty
+# per-IP counter on Caddy 2.11.x). verify.sh's rate-limit burst + 65s cooldown can leave the counter
+# empty right before this script runs, which is exactly #94's trigger — prime both zones first so the
+# asserted requests below never hit a cold counter. Harmless if #94 is absent.
+curl -sS -k --max-time 8 --resolve "board.$SUITE:443:$IP" -o /dev/null \
+    -H 'Authorization: Bearer valid-agent' "https://board.$SUITE/" 2>/dev/null || true
+curl -sS -k --max-time 8 --resolve "auth.$SUITE:443:$IP" -o /dev/null \
+    -H 'Authorization: Bearer valid-agent' "https://auth.$SUITE/api/verify" 2>/dev/null || true
 
 args=(-H 'Authorization: Bearer valid-agent')
 for h in "${INJECT[@]}"; do args+=(-H "$h"); done
