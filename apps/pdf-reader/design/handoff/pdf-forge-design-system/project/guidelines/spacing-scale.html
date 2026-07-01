@@ -1,0 +1,25 @@
+<!-- @dsCard group="Spacing" viewport="700x230" name="Spacing scale" subtitle="4px base unit — denser than the 8px SaaS norm" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { padding: 20px 22px; display: flex; flex-direction: column; gap: 9px; }
+  .row { display: flex; align-items: center; gap: 14px; }
+  .bar { height: 14px; background: var(--press-500); border-radius: 2px; }
+  .tok { font-family: var(--font-mono); font-size: 11px; color: var(--ink-700); width: 64px; }
+  .px { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); width: 40px; }
+  .use { font-family: var(--font-ui); font-size: 12px; color: var(--ink-600); }
+</style>
+</head>
+<body>
+  <div class="row"><span class="tok">--sp-1</span><span class="px">4</span><div class="bar" style="width:4px"></div><span class="use">icon-to-label gap, chip padding</span></div>
+  <div class="row"><span class="tok">--sp-2</span><span class="px">8</span><div class="bar" style="width:8px"></div><span class="use">control inner padding, tight stacks</span></div>
+  <div class="row"><span class="tok">--sp-3</span><span class="px">12</span><div class="bar" style="width:12px"></div><span class="use">default gap between related controls</span></div>
+  <div class="row"><span class="tok">--sp-4</span><span class="px">16</span><div class="bar" style="width:16px"></div><span class="use">panel padding, group separation</span></div>
+  <div class="row"><span class="tok">--sp-5</span><span class="px">24</span><div class="bar" style="width:24px"></div><span class="use">section separation</span></div>
+  <div class="row"><span class="tok">--sp-6</span><span class="px">32</span><div class="bar" style="width:32px"></div><span class="use">major region separation</span></div>
+  <div class="row"><span class="tok">--sp-8</span><span class="px">48</span><div class="bar" style="width:48px"></div><span class="use">desktop page margins (board gutter)</span></div>
+</body>
+</html>

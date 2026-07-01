@@ -1,0 +1,30 @@
+<!-- @dsCard group="Colors" viewport="700x190" name="Ink ramp" subtitle="Foreground on substrate — crisp to faint, never gray mush" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { padding: 20px; }
+  .rows { display: flex; flex-direction: column; gap: 12px; }
+  .ink-row { display: flex; align-items: baseline; gap: 16px; }
+  .label { font-family: var(--font-ui); font-size: 16px; font-weight: 500; width: 320px; }
+  .tok { font-family: var(--font-mono); font-size: 11px; color: var(--ink-600); width: 130px; }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); }
+  .paper-row {
+    margin-top: 4px; display: flex; align-items: center; gap: 16px;
+    background: var(--paper-0); border-radius: var(--r-ctl); padding: 8px 12px;
+  }
+  .paper-row .label { color: var(--ink-on-paper); }
+</style>
+</head>
+<body>
+  <div class="rows">
+    <div class="ink-row"><span class="label" style="color:var(--ink-900)">Primary text & headings</span><span class="tok">--ink-900</span><span class="hex">#F2F5F8</span></div>
+    <div class="ink-row"><span class="label" style="color:var(--ink-700)">Secondary text, active labels</span><span class="tok">--ink-700</span><span class="hex">#C5CDD6</span></div>
+    <div class="ink-row"><span class="label" style="color:var(--ink-600)">Muted labels, metadata (AA)</span><span class="tok">--ink-600</span><span class="hex">#9AA6B2</span></div>
+    <div class="ink-row"><span class="label" style="color:var(--ink-500)">Disabled, faint hints</span><span class="tok">--ink-500</span><span class="hex">#6B7785</span></div>
+    <div class="paper-row"><span class="label">Ink on paper (page chip text)</span><span class="tok" style="color:#5b6470">--ink-on-paper</span><span class="hex" style="color:#8a929c">#11151B</span></div>
+  </div>
+</body>
+</html>

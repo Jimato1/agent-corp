@@ -1,0 +1,263 @@
+# ═════════════════════════════════════════════════════════════════════════════
+# proxy — edge Caddyfile (Stage 4 Build).  ONE file, BOTH TLS modes.
+#
+# MODE SELECTION happens in exactly ONE place: `import {$TLS_ISSUER_FILE}` inside the
+# wildcard site (§ issuer). Everything else — routing, header scrub, forward-auth,
+# security headers, rate limiting — is byte-identical across modes. A bug in the
+# less-used mode is therefore structurally impossible outside the issuer partial.
+#
+# Implements auth PLAN §8 (A§8.x) VERBATIM. See platform/proxy/planning/PLAN.md.
+# Env (compose): TLS_ISSUER_FILE, SUITE_DOMAIN, AUTH_VERIFY_PORT, ACME_EMAIL,
+#                CLOUDFLARE_API_TOKEN (public mode only).
+# ═════════════════════════════════════════════════════════════════════════════
+
+{
+	# Mode-agnostic global options. Issuer-specific config lives ONLY in the
+	# imported issuer partial, never here — so global is identical in both modes.
+	# MUST be quoted (P4-01): Caddy env substitution is textual/pre-lex, so an
+	# UNQUOTED `email {$ACME_EMAIL}` that expands empty (internal mode) becomes a
+	# bare `email` with zero args → adapt error → primary mode fails to boot.
+	# Quoting yields a valid empty token; internal mode has no ACME account anyway.
+	email "{$ACME_EMAIL}"
+
+	# [OBS] Prometheus metrics collection. TOP-LEVEL global option — NOT a `servers` subdirective
+	# in v2.11 (that nested form is deprecated/rejected → adapt error). Metrics are SERVED only on
+	# the internal :9100 listener below, never on the public :443 site. [OBS-1, web-verified]
+	metrics
+
+	servers {
+		# X-Forwarded-* trust (PLAN S2-03): the proxy is the FIRST hop; operator
+		# browser + agent containers connect DIRECTLY and sit in the private ranges.
+		# So we DO NOT set trusted_proxies — default is trust-none → Caddy uses the
+		# direct peer address for {remote_host}. Never trust private_ranges here.
+		timeouts {
+			read_header 10s
+			idle        2m
+		}
+	}
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Reusable snippets (shared by every route — the "byte-identical across modes" core)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# (a) Security response headers — R§6.1/6.5. First in every route so it wraps
+#     EVERY response, including forward-auth short-circuits (302/401/403) and 429.
+(sec_headers) {
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"   # no `preload` yet (R§6.1)
+		X-Content-Type-Options    "nosniff"
+		X-Frame-Options           "DENY"
+		Referrer-Policy           "strict-origin-when-cross-origin"
+		Permissions-Policy        "geolocation=(), camera=(), microphone=()"
+		Content-Security-Policy   "default-src 'self'; frame-ancestors 'none'; form-action 'self'"
+		-Server                                                            # strip stack fingerprint (R§6.5)
+	}
+}
+
+# (b) UNCONDITIONAL inbound identity/trust/prefix scrub — A§8.6 Rule 1
+#     (Caddy CVE-2026-30851 lesson). Runs on EVERY route incl. @auth (PLAN S2-01),
+#     BEFORE the verify subrequest AND before upstream forwarding.
+#     Header names are case-insensitive in Caddy (canonicalized), so case variants
+#     are covered; underscore aliases are a DISTINCT name (CVE-2026-39858/52845) and
+#     are enumerated explicitly below (Go does not fold `_`→`-`).  PLAN §12 gate #5/#6.
+(scrub) {
+	# dash forms (auth §8.7 set + X-Forwarded-User/Groups/Prefix + mTLS cert headers + trace)
+	request_header -X-Auth-Identity
+	request_header -X-Forwarded-User
+	request_header -X-Forwarded-Groups
+	request_header -X-Forwarded-Prefix
+	request_header -Remote-User
+	request_header -Remote-Groups
+	request_header -Remote-Name
+	request_header -Remote-Email
+	request_header -X-Forwarded-Tls-Client-Cert
+	request_header -X-Forwarded-Tls-Client-Cert-Thumbprint
+	request_header -Traceparent
+	request_header -Tracestate
+	# underscore-alias twins (CVE-2026-39858 / 52845)
+	request_header -X_Auth_Identity
+	request_header -X_Forwarded_User
+	request_header -X_Forwarded_Groups
+	request_header -X_Forwarded_Prefix
+	request_header -Remote_User
+	request_header -Remote_Groups
+	request_header -Remote_Name
+	request_header -Remote_Email
+	# NOTE (PLAN S2-04): this is the EXPLICIT-NAMES half of A§8.6 R1. Caddy's
+	# request_header has no prefix-wildcard delete, so the A§8.9 regression test
+	# (test/regression_headers.sh) is the contract-sync gate: it MUST fail if auth's
+	# §8.7 identity-header set ever grows beyond this enumeration.
+}
+
+# (c) Edge rate limiting — mholt/caddy-ratelimit (PLAN §9). Keyed on the DIRECT peer
+#     ({remote_host}), NEVER {client_ip} (spoofable via X-Forwarded-For; PLAN S2-03).
+#     Placement (before authgate) is fixed; numeric size tuned in Stage 5.
+(ratelimit) {
+	rate_limit {
+		zone edge_per_ip {
+			key    {remote_host}
+			events 100
+			window 1m
+		}
+	}
+}
+
+# (d) Forward-auth front door — A§8.3/8.4/8.5, implemented as the OFFICIAL `forward_auth`
+#     desugaring with the success matcher tightened from `2xx` to EXACTLY `200`
+#     (A§8.5: "pin exactly 200; a stray 204/206 is not allow"; PLAN §5.2c, resolves §12 gate #4).
+#     - GET side-effect-free verify (A§8.3); original Authorization + Cookie forwarded
+#       unchanged (reverse_proxy default) + DPoP passes through.
+#     - transport timeout bounds the verify SPOF: a HUNG auth denies, not blocks (A§8.3; S2-02).
+#     - On 200 ONLY: copy auth's signed X-Auth-Identity onto the ORIGINAL request (A§8.6 R2),
+#       then the enclosing route continues to the real upstream.
+#     - Any non-200 (302/401/403/2xx≠200/5xx/dial-error/timeout): auth's response is copied
+#       back to the client and the request does NOT continue → FAIL CLOSED (A§8.5, decision #3).
+(authgate) {
+	reverse_proxy auth:{$AUTH_VERIFY_PORT} {
+		method GET
+		rewrite /api/verify
+		header_up X-Forwarded-Method {method}
+		header_up X-Forwarded-Uri {uri}
+		header_up X-Forwarded-Host {host}       # selects the app audience at auth (A§8.3)
+		transport http {
+			dial_timeout            2s
+			response_header_timeout 250ms
+		}
+		@ok status 200
+		handle_response @ok {
+			request_header X-Auth-Identity {rp.header.X-Auth-Identity}
+			log_append authz allow   # [OBS] tags forward-auth ALLOW only; deny path UNCHANGED
+			                         # (security-neutral). Denies identified by status. [VERIFY OBS-2]
+		}
+	}
+}
+
+# (e) Per-app site body. Order-locked by `route` (PLAN S2-05/S2-06):
+#     sec_headers (outermost, wraps short-circuits) → ratelimit (shed before verify)
+#     → scrub (before verify AND upstream) → authgate (verify) → reverse_proxy upstream.
+#     Arg 0 = upstream host:port.
+(app) {
+	route {
+		import sec_headers
+		import ratelimit
+		# [OBS] ingress-stable custom log fields (evaluated before any short-circuit, so they
+		# appear on BOTH allow and deny log lines). No secrets. [VERIFY-AT-BUILD OBS-3]
+		vars scrub_stripped false
+		@forged_identity header X-Auth-Identity *         # '*' = match ANY value; field-only form is a parse error (OBS-3)
+		vars @forged_identity scrub_stripped true
+		log_append app            {http.request.host}
+		log_append edge_req_id    {http.request.uuid}
+		log_append scrub_stripped {http.vars.scrub_stripped}
+		import scrub
+		import authgate
+		reverse_proxy {args[0]}
+	}
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The single wildcard site — one cert (or on-demand internal), per-host routing.
+# ─────────────────────────────────────────────────────────────────────────────
+*.{$SUITE_DOMAIN} {
+	# ═══ THE ONE MODE-SPECIFIC LINE ═══ internal CA  |  public LE DNS-01 wildcard.
+	import {$TLS_ISSUER_FILE}
+
+	# [OBS] Structured JSON access log → stdout (Docker logs / log shipper collects it).
+	# Sensitive fields deleted (defense-in-depth; Caddy already redacts Authorization/Cookie).
+	# X-Auth-Identity MUST be deleted: after copy_headers it rides the request and is a token.
+	# No token contents, no raw identity-header values are ever logged. [VERIFY-AT-BUILD OBS-4]
+	log {
+		output stdout
+		format filter {
+			wrap json
+			fields {
+				request>headers>Authorization delete
+				request>headers>Cookie delete
+				request>headers>X-Auth-Identity delete
+				resp_headers>Set-Cookie delete
+			}
+		}
+	}
+
+	# ---- app routes: subdomain label == auth audience segment (A§8.3; PLAN §4) ----
+	@board host board.{$SUITE_DOMAIN}
+	handle @board { import app board:8080 }
+
+	@notes host notes.{$SUITE_DOMAIN}
+	handle @notes { import app notes:8080 }
+
+	@mc host mc.{$SUITE_DOMAIN}
+	handle @mc { import app mission-control:8080 }   # audience `mc`, container `mission-control`
+
+	@drive host drive.{$SUITE_DOMAIN}
+	handle @drive {
+		request_body { max_size 512MB }              # raised for artifact uploads (R§6.5)
+		import app drive:8080
+	}
+
+	@chat host chat.{$SUITE_DOMAIN}
+	handle @chat { import app chat:8080 }
+
+	@pdf host pdf.{$SUITE_DOMAIN}
+	handle @pdf {
+		request_body { max_size 128MB }
+		import app pdf:8080
+	}
+
+	@gateway host gateway.{$SUITE_DOMAIN}
+	handle @gateway { import app gateway:8080 }
+
+	@vault host vault.{$SUITE_DOMAIN}
+	handle @vault { import app vault:8080 }
+
+	@cmdb host cmdb.{$SUITE_DOMAIN}
+	handle @cmdb { import app cmdb:8080 }
+
+	# auth is EXEMPT from the forward-auth GATE only (it self-authenticates; a gate
+	# would loop login) — but NEVER from scrub or rate limiting (§ PLAN 5.4, S2-01).
+	@auth host auth.{$SUITE_DOMAIN}
+	handle @auth {
+		route {
+			import sec_headers
+			import ratelimit
+			import scrub
+			reverse_proxy auth:{$AUTH_VERIFY_PORT}
+		}
+	}
+
+	# default-deny: any unmapped subdomain (PLAN §5.3 / F7)
+	handle {
+		respond "Not found" 404
+	}
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# INTERNAL-ONLY observability + health listener (plain HTTP on :9100).
+#
+# TRUST-BOUNDARY ENFORCEMENT (why this cannot leak or bypass auth):
+#   1. :9100 is NEVER published to the host in docker-compose (no `ports:` entry) →
+#      reachable ONLY by containers on the internal `edge` network (the future Mission
+#      Control scraper), never from the public internet or the host.
+#   2. It is a SEPARATE listener, NOT a path on the public `*.SUITE` site → it can never
+#      be reached via :443, and it does not sit behind (or bypass) the forward-auth gate.
+#   3. Belt-and-suspenders: refuse any non-private source IP (accurate because
+#      trusted_proxies is unset → remote_ip is the direct peer). [VERIFY-AT-BUILD OBS-5]
+#   4. The proxy gains NO login/authenticated surface of its own: the human sees this data
+#      only via Mission Control, whose OWN subdomain sits behind the auth gate.
+# ─────────────────────────────────────────────────────────────────────────────
+http://:9100 {
+	@internal remote_ip private_ranges
+	handle @internal {
+		handle /healthz  { respond "ok" 200 }
+		handle /metrics  { metrics }                       # native Caddy Prometheus metrics
+		handle /edge-info {
+			header Content-Type application/json
+			# Escape the leading `{` (\{) so Caddy's placeholder replacer emits it literally instead
+			# of eating `{...}` as an unknown placeholder → empty body (OBS-5). The {$ENV} vars still
+			# expand at parse time; {$MODE_LABEL:unknown} defaults if unset.
+			respond `\{"mode":"{$MODE_LABEL:unknown}","suite_domain":"{$SUITE_DOMAIN}"}` 200
+		}
+		handle { respond "Not found" 404 }
+	}
+	handle { respond "Forbidden" 403 }
+}

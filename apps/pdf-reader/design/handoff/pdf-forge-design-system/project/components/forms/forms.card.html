@@ -1,0 +1,100 @@
+<!-- @dsCard group="Components" viewport="700x600" name="Forms" subtitle="Buttons, inputs, toggles — the keyboardable instrument controls" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { padding: 20px 22px; }
+  .grp { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+  .eye { font-family: var(--font-ui); font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-600); }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .cols { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+  .panel { background: var(--sub-800); border: 1px solid var(--sub-600); border-radius: var(--r-panel); padding: 14px 16px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { Button, IconButton, Input, Select, Checkbox, Radio, RadioGroup, Switch, Slider } = window.PDFForgeDesignSystem_ec4ef3;
+const Ico = ({d, ...p}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>{d}</svg>;
+const Play = <Ico d={<polygon points="6 3 20 12 6 21 6 3" fill="currentColor" stroke="none"/>} />;
+const Rotate = <Ico d={<><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></>} />;
+const Trash = <Ico d={<><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></>} />;
+const Plus = <Ico d={<path d="M5 12h14M12 5v14"/>} />;
+const Minus = <Ico d={<path d="M5 12h14"/>} />;
+const Search = <Ico d={<><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></>} />;
+
+function Demo() {
+  return (
+    <div>
+      <div className="grp">
+        <span className="eye">Buttons</span>
+        <div className="row">
+          <Button variant="primary" leftIcon={Play}>Run merge</Button>
+          <Button>Cancel</Button>
+          <Button variant="ghost">Select all</Button>
+          <Button variant="danger" leftIcon={Trash}>Delete</Button>
+          <Button disabled>Disabled</Button>
+        </div>
+        <div className="row">
+          <Button size="sm" variant="primary">Compact</Button>
+          <Button size="sm">28px</Button>
+          <Button variant="primary" processing>Pressing…</Button>
+          <Button size="lg" variant="primary" leftIcon={Play}>Large primary</Button>
+        </div>
+      </div>
+
+      <div className="grp">
+        <span className="eye">Icon buttons</span>
+        <div className="row">
+          <IconButton label="Rotate">{Rotate}</IconButton>
+          <IconButton variant="outlined" label="Zoom in">{Plus}</IconButton>
+          <IconButton variant="outlined" label="Zoom out">{Minus}</IconButton>
+          <IconButton pressed label="Toggle">{Search}</IconButton>
+          <IconButton variant="danger" label="Delete">{Trash}</IconButton>
+          <IconButton disabled label="Disabled">{Rotate}</IconButton>
+        </div>
+      </div>
+
+      <div className="cols">
+        <div className="grp" style={{minWidth:'300px', flex:1}}>
+          <span className="eye">Inputs</span>
+          <Input label="Output filename" mono defaultValue="merge_2024.pdf" suffix=".pdf" />
+          <Input label="Page range" mono placeholder="1-10,21-end" hint="Comma-separated; 'end' allowed" />
+          <Input label="Password" type="password" defaultValue="hunter2" error="Wrong password" code="422" />
+          <Select label="Resolution" mono options={['72 DPI','150 DPI','300 DPI','600 DPI']} defaultValue="300 DPI" />
+        </div>
+
+        <div className="grp" style={{minWidth:'220px'}}>
+          <span className="eye">Toggles</span>
+          <div className="panel" style={{display:'flex', flexDirection:'column', gap:'12px'}}>
+            <Checkbox label="Keep original files" defaultChecked />
+            <Checkbox label="Select all pages" indeterminate />
+            <Switch label="Cutting-mat grid" defaultChecked />
+            <RadioGroup name="fit" defaultValue="width" options={[
+              {value:'width', label:'Fit width'},
+              {value:'page',  label:'Fit page'},
+            ]} />
+          </div>
+        </div>
+
+        <div className="grp" style={{minWidth:'220px', flex:1}}>
+          <span className="eye">Slider — board zoom</span>
+          <div className="panel">
+            <Slider label="Sheet size" min={96} max={180} step={6} defaultValue={132} suffix="px"
+              marks={['Compact','Comfortable','Large']} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

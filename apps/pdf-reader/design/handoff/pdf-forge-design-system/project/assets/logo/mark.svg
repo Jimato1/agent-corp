@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="pdf-forge">
+  
+  <rect x="11" y="9" width="17" height="23" rx="2" fill="#FBFBF9" opacity="0.42"></rect>
+  
+  <g transform="rotate(4 21 20)">
+    <rect x="14" y="7" width="17" height="23" rx="2" fill="#FBFBF9"></rect>
+    <rect x="14" y="28" width="17" height="2" rx="1" fill="#E7E7E2"></rect>
+  </g>
+  
+  <rect x="6.5" y="10" width="2.5" height="21" rx="1.25" fill="#1FA2C4"></rect>
+  <rect x="5.2" y="9" width="5" height="2" rx="1" fill="#1FA2C4"></rect>
+  <rect x="5.2" y="30" width="5" height="2" rx="1" fill="#1FA2C4"></rect>
+</svg>

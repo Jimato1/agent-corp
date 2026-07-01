@@ -1,0 +1,30 @@
+/* ============================================================
+   pdf-forge — Spacing & layout
+   Instrument density: base unit = 4px (denser than the 8px SaaS
+   norm). Controls are compact; whitespace is earned, not sprayed.
+   ============================================================ */
+
+:root {
+  /* ---- 3.1 Spacing scale (4px base) ---- */
+  --sp-1: 4px;    /* icon-to-label gap, chip padding */
+  --sp-2: 8px;    /* control inner padding, tight stacks */
+  --sp-3: 12px;   /* default gap between related controls */
+  --sp-4: 16px;   /* panel padding, group separation */
+  --sp-5: 24px;   /* section separation */
+  --sp-6: 32px;   /* major region separation */
+  --sp-8: 48px;   /* desktop page margins (board outer gutter) */
+
+  /* ---- 3.2 Control sizing (density target) ---- */
+  --ctl-h:         32px;  /* default control height */
+  --ctl-h-compact: 28px;  /* compact */
+  --ctl-h-touch:   40px;  /* touch / primary (mobile bumps defaults here) */
+  --hit-min:       44px;  /* min touch target on mobile (expand via padding) */
+  --icon-btn:      28px;  /* icon button box */
+  --icon-glyph:    16px;  /* glyph inside icon button */
+
+  /* ---- 3.3 Layout / grid ---- */
+  --rail-open:      220px;  /* left rail open */
+  --rail-collapsed: 56px;   /* left rail collapsed */
+  --inspector-w:    320px;  /* right inspector (300–340) */
+  --content-max:    560px;  /* prose / dialog max width */
+}

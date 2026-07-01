@@ -1,0 +1,84 @@
+<!-- @dsCard group="Components" viewport="700x520" name="Surfaces & nav" subtitle="Panels, tabs, tags, status pills, segmented toggles" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { padding: 20px 22px; }
+  .grp { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+  .eye { font-family: var(--font-ui); font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-600); }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .cols { display: flex; gap: 18px; flex-wrap: wrap; align-items: stretch; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { Panel, Tabs, Tag, StatusPill, SegmentedControl, IconButton } = window.PDFForgeDesignSystem_ec4ef3;
+const X = <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>;
+
+function Demo() {
+  return (
+    <div>
+      <div className="grp">
+        <span className="eye">Status pills</span>
+        <div className="row">
+          <StatusPill status="neutral">Idle</StatusPill>
+          <StatusPill status="ok">Done</StatusPill>
+          <StatusPill status="proc">Pressing…</StatusPill>
+          <StatusPill status="warn">Advisory</StatusPill>
+          <StatusPill status="err">bad_pdf_structure</StatusPill>
+          <StatusPill status="selected" count={3}>selected</StatusPill>
+        </div>
+      </div>
+
+      <div className="grp">
+        <span className="eye">Tags</span>
+        <div className="row">
+          <Tag>4.2 MB</Tag>
+          <Tag dot="accent" variant="accent">1-10,21-end</Tag>
+          <Tag dot="ok">300 DPI</Tag>
+          <Tag ui onRemove={() => {}}>contract_final.pdf</Tag>
+          <Tag variant="solid">512 pages</Tag>
+        </div>
+      </div>
+
+      <div className="grp">
+        <span className="eye">Tabs &amp; segmented</span>
+        <div className="row" style={{justifyContent:'space-between'}}>
+          <Tabs defaultValue="pages" tabs={[
+            {id:'pages', label:'Pages', count:512},
+            {id:'outline', label:'Outline'},
+            {id:'meta', label:'Metadata'},
+          ]} />
+          <SegmentedControl ariaLabel="Sheet size" defaultValue="comfortable" options={[
+            {value:'compact', label:'Compact'},
+            {value:'comfortable', label:'Comfortable'},
+            {value:'large', label:'Large'},
+          ]} />
+        </div>
+      </div>
+
+      <div className="cols">
+        <Panel eyebrow="Inspector" title="Merge options" style={{flex:1, minWidth:'260px'}}
+          actions={<IconButton label="Close">{X}</IconButton>}>
+          <p style={{margin:0, fontSize:'13px', color:'var(--ink-700)', lineHeight:'20px'}}>
+            A flat chrome panel — value-step + hairline, never a shadow.
+          </p>
+        </Panel>
+        <Panel well title={<span className="pf-panel__mono" style={{fontFamily:'var(--font-mono)'}}>board substrate</span>} style={{flex:1, minWidth:'200px'}}>
+          <div style={{height:'56px', display:'grid', placeItems:'center', color:'var(--ink-600)', fontSize:'12px'}}>recessed well</div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

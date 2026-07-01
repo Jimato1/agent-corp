@@ -1,0 +1,58 @@
+# pdf-forge — hardened single-service run (STRUCTURE §4).
+# The reverse proxy reaches this over an internal Docker network only; there is
+# NO published host port, so forward-auth headers cannot be forged from the LAN (D5).
+#
+# For a quick local dev smoke test WITHOUT a proxy, uncomment the `ports` block
+# and the `default` network override at the bottom.
+
+services:
+  pdfforge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pdfforge:latest
+    restart: unless-stopped
+    networks: [proxy_internal]
+    environment:
+      - PDFFORGE_MAX_UPLOAD_MB=200          # proxy body cap MUST be >= this
+      - PDFFORGE_WORKER_COUNT=1
+      - PDFFORGE_QUEUE_MAXSIZE=8
+      - PDFFORGE_JOB_TTL_SECONDS=3600
+      - PDFFORGE_JOB_TIMEOUT_SECONDS=300
+      - PDFFORGE_OCR_TIMEOUT_SECONDS=120
+      - PDFFORGE_DISK_RESERVE_FACTOR=4
+      - PDFFORGE_OCR_LANGUAGES=["eng","deu"]
+      - TMPDIR=/app/jobs/tmp
+      - OMP_THREAD_LIMIT=1
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    volumes:
+      - jobs:/app/jobs                      # DISK-BACKED named volume — NOT tmpfs (D2/D6)
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 512
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health').status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits: { cpus: "2.0", memory: 2g }
+        reservations: { memory: 512m }
+    # --- local dev only (no proxy): expose a port + use the default bridge net ---
+    # ports:
+    #   - "127.0.0.1:8000:8000"
+
+volumes:
+  jobs:                                     # size host backing disk >= 5x MAX_UPLOAD (~1 GB+)
+
+networks:
+  proxy_internal:
+    external: true                          # shared with the reverse proxy only
+    # For local dev without an external proxy network, comment `external: true`
+    # above so compose creates this network locally.

@@ -1,0 +1,14 @@
+/* ============================================================
+   pdf-forge — Design System entry point
+   Consumers link THIS file only. It is a manifest of @imports;
+   no rules live here directly. Order: fonts → tokens → base.
+   ============================================================ */
+
+@import 'tokens/fonts.css';
+@import 'tokens/colors.css';
+@import 'tokens/typography.css';
+@import 'tokens/spacing.css';
+@import 'tokens/radii.css';
+@import 'tokens/elevation.css';
+@import 'tokens/motion.css';
+@import 'tokens/base.css';

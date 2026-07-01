@@ -1,0 +1,19 @@
+/* ============================================================
+   pdf-forge — Design System entry point
+   A manifest of @imports. Order: fonts (token slot) → tokens →
+   base → component styles → app/workbench layout.
+   Font @font-face rules are bundled via @fontsource imports in
+   main.tsx (self-hosted, no CDN).
+   ============================================================ */
+
+@import './tokens/fonts.css';
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/radii.css';
+@import './tokens/elevation.css';
+@import './tokens/motion.css';
+@import './tokens/base.css';
+
+@import './ds.css';
+@import './app.css';

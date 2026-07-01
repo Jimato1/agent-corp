@@ -1,0 +1,25 @@
+<!-- @dsCard group="Colors" viewport="700x170" name="Press blue — the one accent" subtitle="Selection + primary action. Cyan-forward, instrument-readout." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { padding: 20px; display: flex; gap: 12px; align-items: flex-start; }
+  .sw { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .chip { height: 60px; border-radius: var(--r-ctl); }
+  .tok { font-family: var(--font-mono); font-size: 11px; color: var(--ink-700); }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); }
+  .use { font-family: var(--font-ui); font-size: 11px; color: var(--ink-600); line-height: 14px; }
+  .glow { position: relative; }
+  .glow .chip { box-shadow: 0 0 0 6px rgba(31,162,196,0.35); }
+</style>
+</head>
+<body>
+  <div class="sw"><div class="chip" style="background:var(--press-500)"></div><span class="tok">--press-500</span><span class="hex">#1FA2C4</span><span class="use">Primary / selection / focus</span></div>
+  <div class="sw"><div class="chip" style="background:var(--press-400)"></div><span class="tok">--press-400</span><span class="hex">#3FBDDD</span><span class="use">Hover brighten</span></div>
+  <div class="sw"><div class="chip" style="background:var(--press-600)"></div><span class="tok">--press-600</span><span class="hex">#157E9B</span><span class="use">Pressed / depressed</span></div>
+  <div class="sw"><div class="chip" style="background:var(--press-tint);border:1px solid var(--sub-600)"></div><span class="tok">--press-tint</span><span class="hex">#12303A</span><span class="use">Selected-sheet wash</span></div>
+  <div class="sw glow"><div class="chip" style="background:var(--press-500)"></div><span class="tok">--press-glow</span><span class="hex">35% halo</span><span class="use">Focus-ring halo</span></div>
+</body>
+</html>

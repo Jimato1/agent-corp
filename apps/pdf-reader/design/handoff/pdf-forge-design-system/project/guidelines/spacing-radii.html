@@ -1,0 +1,23 @@
+<!-- @dsCard group="Spacing" viewport="700x190" name="Radii" subtitle="Paper is NOT rounded. Nothing exceeds 6px except true pills." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { padding: 22px; display: flex; gap: 28px; align-items: center; }
+  .spec { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .box { width: 84px; height: 64px; background: var(--sub-700); border: 1px solid var(--sub-500); }
+  .sheet { width: 64px; height: 84px; background: var(--paper-0); border-bottom: 2px solid var(--paper-edge); box-shadow: var(--shadow-sheet-rest); }
+  .pill { width: 84px; height: 28px; background: var(--press-tint); border: 1px solid var(--press-500); display: grid; place-items: center; font-family: var(--font-mono); font-size: 11px; color: var(--ink-900); }
+  .tok { font-family: var(--font-mono); font-size: 11px; color: var(--ink-700); }
+  .px { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); }
+</style>
+</head>
+<body>
+  <div class="spec"><div class="sheet" style="border-radius:var(--r-sheet)"></div><span class="tok">--r-sheet</span><span class="px">2px · sheets</span></div>
+  <div class="spec"><div class="box" style="border-radius:var(--r-ctl)"></div><span class="tok">--r-ctl</span><span class="px">4px · controls</span></div>
+  <div class="spec"><div class="box" style="border-radius:var(--r-panel)"></div><span class="tok">--r-panel</span><span class="px">6px · panels</span></div>
+  <div class="spec"><div class="pill" style="border-radius:var(--r-pill)">status</div><span class="tok">--r-pill</span><span class="px">999px · pills</span></div>
+</body>
+</html>

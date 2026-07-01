@@ -1,0 +1,51 @@
+/* ============================================================
+   pdf-forge — Base reset
+   Minimal, token-driven. Establishes the workbench substrate as
+   the default surface and Inter as the reading voice. Components
+   and specimen cards inherit from here.
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: var(--fw-regular);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Numeric UI never wobbles: tabular + lining by default for the app. */
+body {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+h1, h2, h3, h4, p, figure {
+  margin: 0;
+}
+
+/* Keyboard-first: a visible focus ring is a feature, never removed.
+   The press-blue ring is the through-line (components refine per surface). */
+:focus-visible {
+  outline: var(--focus-ring-w) solid var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+::selection {
+  background: var(--press-tint);
+  color: var(--ink-900);
+}

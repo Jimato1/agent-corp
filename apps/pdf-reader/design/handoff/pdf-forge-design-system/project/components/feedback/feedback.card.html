@@ -1,0 +1,74 @@
+<!-- @dsCard group="Components" viewport="700x560" name="Feedback" subtitle="The press-at-work readout, banners, toasts, spinners, tooltips" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { padding: 20px 22px; }
+  .grp { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+  .eye { font-family: var(--font-ui); font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-600); }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .stack { display: flex; flex-direction: column; gap: 10px; max-width: 460px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const NS = window.PDFForgeDesignSystem_ec4ef3;
+const { Spinner, InlineBanner, Toast, Tooltip, PressIndicator, Button, IconButton } = NS;
+const Rotate = <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>;
+
+function Demo() {
+  return (
+    <div>
+      <div className="grp">
+        <span className="eye">Press at work — the signature companion</span>
+        <div className="stack">
+          <PressIndicator state="processing" label="Merging 3 files" detail="contract_final.pdf · 512 pages"
+            action={<Button size="sm" variant="ghost">Cancel</Button>} />
+          <PressIndicator state="success" label="Export ready" detail="merged_2024.pdf · 4.2 MB"
+            action={<Button size="sm" variant="primary">Download</Button>} />
+          <PressIndicator state="error" label="Couldn't finish" code="bad_pdf_structure"
+            action={<Button size="sm">Retry</Button>} />
+        </div>
+      </div>
+
+      <div className="grp">
+        <span className="eye">Banners &amp; toast</span>
+        <div className="stack">
+          <InlineBanner status="err" title="Wrong password" code="422">
+            The supplied password did not unlock this document.
+          </InlineBanner>
+          <InlineBanner status="warn" title="Advisory permissions kept">
+            This PDF requests no-print; pdf-forge honors it on export.
+          </InlineBanner>
+          <Toast status="ok" title="Export ready" onDismiss={() => {}}
+            action={<Button size="sm" variant="ghost">Open</Button>}>merged_2024.pdf · 4.2 MB</Toast>
+        </div>
+      </div>
+
+      <div className="grp">
+        <span className="eye">Spinner &amp; tooltip</span>
+        <div className="row">
+          <Spinner />
+          <Spinner size={20} tone="accent" />
+          <Spinner size={20} tone="proc" />
+          <span style={{width:'1px', height:'24px', background:'var(--sub-600)'}}></span>
+          <Tooltip label="Rotate right" kbd="R">
+            <IconButton variant="outlined" label="Rotate right">{Rotate}</IconButton>
+          </Tooltip>
+          <span style={{fontSize:'12px', color:'var(--ink-600)'}}>← hover or focus</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

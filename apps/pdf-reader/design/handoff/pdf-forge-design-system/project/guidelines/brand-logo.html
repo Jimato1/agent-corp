@@ -1,0 +1,40 @@
+<!-- @dsCard group="Brand" viewport="700x200" name="Logo & wordmark" subtitle="The mark = a lifted sheet + the press-blue insertion bar" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { padding: 22px; display: flex; align-items: center; gap: 40px; flex-wrap: wrap; }
+  .lockup { display: flex; align-items: center; gap: 12px; }
+  .mark { width: 40px; height: 40px; display: block; }
+  .wordmark { font-family: var(--font-ui); font-weight: 600; font-size: 26px; letter-spacing: -0.015em; color: var(--ink-900); }
+  .wordmark .dash { color: var(--press-500); }
+  .spec { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .cap { font-family: var(--font-mono); font-size: 11px; color: var(--ink-600); }
+  .monogram { width: 48px; height: 48px; background: var(--sub-700); border: 1px solid var(--sub-500); border-radius: var(--r-panel); display: grid; place-items: center; box-shadow: var(--inset-well-top); }
+  .monogram img { width: 30px; height: 30px; }
+</style>
+</head>
+<body>
+  <div class="spec">
+    <div class="lockup">
+      <img class="mark" src="../assets/logo/mark.svg" alt="">
+      <span class="wordmark">pdf<span class="dash">-</span>forge</span>
+    </div>
+    <span class="cap">primary lockup</span>
+  </div>
+  <div class="spec">
+    <span class="wordmark" style="font-size:22px">pdf<span class="dash">-</span>forge</span>
+    <span class="cap">wordmark</span>
+  </div>
+  <div class="spec">
+    <div class="monogram"><img src="../assets/logo/mark.svg" alt=""></div>
+    <span class="cap">app tile</span>
+  </div>
+  <div class="spec">
+    <span class="wordmark" style="font-size:22px;color:var(--ink-700)">pdf-forge</span>
+    <span class="cap">monochrome ink</span>
+  </div>
+</body>
+</html>

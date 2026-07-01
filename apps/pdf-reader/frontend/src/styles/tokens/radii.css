@@ -1,0 +1,13 @@
+/* ============================================================
+   pdf-forge — Radii
+   Small radii; paper is NOT rounded. A workshop is flat machined
+   panels + square-edged paper. Rounded-everything is banned:
+   nothing exceeds 6px except true pills.
+   ============================================================ */
+
+:root {
+  --r-sheet: 2px;    /* page sheets — barely rounded; paper has crisp corners */
+  --r-ctl:   4px;    /* inputs, buttons, chips */
+  --r-panel: 6px;    /* panels, dialogs, the board frame */
+  --r-pill:  999px;  /* status dots / pills only */
+}

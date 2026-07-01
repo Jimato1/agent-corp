@@ -1,0 +1,19 @@
+# Keep the build context lean (STRUCTURE §5).
+**/node_modules
+**/.venv
+**/dist
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+frontend/.vite
+backend/jobs
+backend/static
+design/handoff
+research
+*.md
+!backend/requirements.txt
+.git
+.github
+.env

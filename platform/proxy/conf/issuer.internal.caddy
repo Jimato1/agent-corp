@@ -1,0 +1,12 @@
+# ── TLS issuer partial: INTERNAL mode (primary) ──────────────────────────────
+# Caddy's built-in local CA signs every suite hostname. ZERO dependency on any
+# public service: no public DNS, no ACME, no Let's Encrypt. Fully self-contained.
+#
+# Root/intermediate are generated on first boot and stored in the /data volume at:
+#   /data/caddy/pki/authorities/local/root.crt   (distribute this — see BUILD.md)
+#   /data/caddy/pki/authorities/local/intermediate.crt
+#
+# Names are served with internal certs issued on demand as SNIs arrive. If the
+# pinned Caddy will not sign the wildcard subject directly, on-demand per-name
+# issuance covers it (internal CA has no rate limits). See BUILD.md §"internal mode".
+tls internal

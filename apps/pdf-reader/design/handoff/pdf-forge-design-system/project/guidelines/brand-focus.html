@@ -1,0 +1,25 @@
+<!-- @dsCard group="Brand" viewport="700x210" name="Focus & selection" subtitle="Keyboard-first — the press-blue ring is the through-line" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { padding: 28px 22px; display: flex; align-items: center; gap: 40px; flex-wrap: wrap; }
+  .spec { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .tok { font-family: var(--font-mono); font-size: 11px; color: var(--ink-600); }
+  .btn { height: 32px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: var(--r-ctl); font-family: var(--font-ui); font-size: 13px; font-weight: 500; border: 1px solid var(--sub-500); background: var(--sub-700); color: var(--ink-900); }
+  .btn.focus { outline: 2px solid var(--press-500); outline-offset: 2px; box-shadow: 0 0 0 6px rgba(31,162,196,0.35); }
+  .sheet { width: 64px; height: 86px; background: var(--paper-0); border-radius: var(--r-sheet); border-bottom: 2px solid var(--paper-edge); box-shadow: var(--shadow-sheet-rest); position: relative; }
+  /* on-paper focus: 1px dark spacer between sheet and ring */
+  .sheet.focus { box-shadow: 0 0 0 1px var(--sub-900), 0 0 0 3px var(--press-500), 0 0 0 9px rgba(31,162,196,0.35), var(--shadow-sheet-rest); }
+  .sheet.selected { outline: 2px solid var(--press-500); outline-offset: -2px; }
+  .sheet.selected::after { content: ""; position: absolute; top: 5px; right: 5px; width: 14px; height: 14px; border-radius: 3px; background: var(--press-500); }
+</style>
+</head>
+<body>
+  <div class="spec"><button class="btn focus">Control</button><span class="tok">ring + 35% halo</span></div>
+  <div class="spec"><div class="sheet focus"></div><span class="tok">on paper: +1px spacer</span></div>
+  <div class="spec"><div class="sheet selected"></div><span class="tok">selected: 2px border + tab</span></div>
+</body>
+</html>

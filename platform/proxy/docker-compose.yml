@@ -1,0 +1,83 @@
+# ═════════════════════════════════════════════════════════════════════════════
+# proxy — Stage-4 Build compose. Brings up the edge + a MINIMAL auth /api/verify
+# stub + one echo upstream, enough to prove forward-auth end-to-end WITHOUT the
+# real auth/apps (which don't exist yet). Select mode with an env file:
+#
+#   INTERNAL (primary):  docker compose --env-file .env.internal up --build
+#   PUBLIC   (secondary): docker compose --env-file .env.public   up --build
+#
+# The ONLY difference between the two runs is TLS_ISSUER_FILE (+ the public DNS token).
+# Run the checks:  ./test/verify.sh   and   ./test/regression_headers.sh
+# ═════════════════════════════════════════════════════════════════════════════
+
+networks:
+  edge:
+    driver: bridge
+
+volumes:
+  caddy_data:      # certs + internal-CA root/intermediate + ACME account (rebuildable cache)
+  caddy_config:
+
+services:
+  proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agent-corp/proxy:dev
+    restart: unless-stopped
+    networks: [edge]
+    ports:
+      - "443:443"
+      - "80:80"
+      # NOTE: :9100 (observability) is deliberately NOT published — it stays internal to the
+      # `edge` network so only the Mission Control scraper can reach it, never the public/host.
+    expose:
+      - "9100"        # documentation: internal metrics/health/edge-info, edge-network only
+    environment:
+      # ── the mode toggle + shared routing/verify config (from --env-file) ──
+      TLS_ISSUER_FILE:      ${TLS_ISSUER_FILE}
+      SUITE_DOMAIN:         ${SUITE_DOMAIN}
+      AUTH_VERIFY_PORT:     ${AUTH_VERIFY_PORT}
+      MODE_LABEL:           ${MODE_LABEL:-UNKNOWN}   # INTERNAL | PUBLIC (for /edge-info)
+      ACME_EMAIL:           ${ACME_EMAIL:-}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9100/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    depends_on: [auth]
+
+  # ── STUB: stands in for the real `auth` container (service name MUST be `auth`
+  #    so the Caddyfile's `auth:${AUTH_VERIFY_PORT}` resolves). Replace at Stage 7. ──
+  auth:
+    image: python:3.12-slim
+    restart: unless-stopped
+    networks: [edge]
+    working_dir: /stub
+    volumes:
+      - ./stub:/stub:ro
+    environment:
+      PORT: ${AUTH_VERIFY_PORT}
+      STUB_DELAY_MS:     ${STUB_DELAY_MS:-0}       # set >250 to exercise the hung-verify gate
+      STUB_FORCE_STATUS: ${STUB_FORCE_STATUS:-}    # set 500 to exercise 5xx fail-closed
+    command: ["python", "/stub/auth_verify_stub.py"]
+
+  # ── STUB upstream for one app (board). Proves the trust boundary at the app edge.
+  #    The other 9 apps attach identically as they are built (add a service + they are
+  #    already routed by the Caddyfile @host block). ──
+  board:
+    image: python:3.12-slim
+    restart: unless-stopped
+    networks: [edge]
+    working_dir: /stub
+    volumes:
+      - ./stub:/stub:ro
+    environment:
+      PORT: "8080"
+      UPSTREAM_NAME: board
+    command: ["python", "/stub/echo_upstream.py"]

@@ -1,0 +1,29 @@
+<!-- @dsCard group="Type" viewport="700x180" name="Weights & eyebrows" subtitle="400/500/600, one 700. Eyebrows = 12px uppercase +0.04em" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { padding: 20px 22px; display: flex; gap: 36px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 10px; }
+  .wrow { display: flex; align-items: baseline; gap: 14px; }
+  .w { font-family: var(--font-ui); font-size: 22px; color: var(--ink-900); width: 230px; }
+  .wt { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); }
+  .eyebrow { font-family: var(--font-ui); font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-600); }
+  .sample { font-family: var(--font-ui); font-size: 13px; color: var(--ink-700); max-width: 220px; line-height: 18px; }
+</style>
+</head>
+<body>
+  <div class="col">
+    <div class="wrow"><span class="w" style="font-weight:400">Regular body</span><span class="wt">400</span></div>
+    <div class="wrow"><span class="w" style="font-weight:500">Medium labels</span><span class="wt">500</span></div>
+    <div class="wrow"><span class="w" style="font-weight:600">Semibold heading</span><span class="wt">600</span></div>
+    <div class="wrow"><span class="w" style="font-weight:700">Bold — H1 only</span><span class="wt">700</span></div>
+  </div>
+  <div class="col">
+    <span class="eyebrow">Section eyebrow</span>
+    <p class="sample">Instrument-panel labeling: 12px uppercase, +0.04em tracking, <code style="font-family:var(--font-mono);font-size:11px;color:var(--ink-600)">--ink-600</code>. Everything else is sentence case. Mono never goes uppercase.</p>
+  </div>
+</body>
+</html>

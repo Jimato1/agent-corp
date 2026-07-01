@@ -1,0 +1,39 @@
+/* ============================================================
+   pdf-forge — Borders & elevation
+   A workshop is built of flat machined panels and square-edged
+   paper, not pillowy cards. Separation comes from value steps +
+   1px hairlines. Shadow is RESERVED for paper — only sheets are
+   physical objects on the workbench. Chrome casts nothing.
+   (Radii live in radii.css.)
+   ============================================================ */
+
+:root {
+  /* ---- 4.2 Borders ---- */
+  --bw: 1px;
+  --border-hairline-rule: var(--bw) solid var(--border-hairline);  /* panel dividers */
+  --border-control-rule:  var(--bw) solid var(--border-control);   /* control outline */
+
+  /* ---- 4.3 Elevation ---- */
+  /* Chrome panels cast NOTHING — value + hairline only. */
+  --shadow-none: none;
+
+  /* Sheets (the only objects that cast a shadow) */
+  --shadow-sheet-rest:  0 1px 2px rgba(5, 7, 10, 0.45);
+  --shadow-sheet-hover: 0 2px 6px rgba(5, 7, 10, 0.50);
+  --shadow-sheet-lift:  0 10px 24px rgba(5, 7, 10, 0.60);  /* dragging */
+
+  /* Dialogs/modals — the only chrome permitted to cast */
+  --shadow-dialog: 0 16px 48px rgba(5, 7, 10, 0.55);
+  --scrim:         rgba(8, 10, 14, 0.60);
+
+  /* Inset well (the board substrate) reads as recessed */
+  --inset-well-top:   inset 0 1px 0 rgba(5, 7, 10, 0.50);
+  --inset-well-frame: inset 0 0 0 1px var(--sub-700);
+
+  /* ---- Focus ring (§6) — the press-blue through-line ---- */
+  --focus-ring-w: 2px;
+  --focus-ring-offset: 2px;
+  --focus-halo: 0 0 0 6px rgba(31, 162, 196, 0.35);  /* --press-glow @ 35% */
+  /* On paper, a 1px dark spacer keeps ring contrast (see components). */
+  --focus-spacer: #0E1116;
+}

@@ -1,0 +1,28 @@
+# pdf-forge backend — runtime dependencies.
+# Engine binaries (Ghostscript, Tesseract, poppler-utils, jbig2enc) are installed
+# via apt in the Docker image, NOT here. Python engine libs that shell out to them
+# (ocrmypdf, img2pdf) are imported lazily so the app boots without the binaries
+# during local dev on non-Linux hosts.
+
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.9.0
+pydantic-settings>=2.6.0
+python-multipart>=0.0.12
+
+# PDF engine (libqpdf bindings — no qpdf CLI). Structure, decrypt, repair,
+# encrypt, permissions, linearize, sanitize, finalize.
+pikepdf>=9.4.0
+# AES-256 encrypt fallback only (never used for decrypt).
+pypdf>=5.1.0
+
+# Image handling for image->PDF and validation.
+Pillow>=11.0.0
+img2pdf>=0.6.0
+
+# OCR (shells out to Tesseract; container only). Lazily imported.
+ocrmypdf>=16.9.0
+
+# Optional libmagic binding for validation stage 2; core has a byte-signature
+# fallback when the native lib is unavailable (e.g. Windows dev).
+python-magic>=0.4.27; sys_platform != "win32"

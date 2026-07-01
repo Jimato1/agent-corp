@@ -1,0 +1,32 @@
+# auth — production Python dependencies (Stage-4 / Critical-infra).
+#
+# The security-critical CORE LOGIC is pure-stdlib on purpose: /api/verify, the PDP,
+# the SoD grant-time enforcement, the kill switch, budgets, the token claim/aud/exp/
+# jti/kid/cnf/revocation pipeline and the whole test suite RUN GREEN with NO package
+# below installed (the stdlib HS256 test-signer). These deps activate the PRODUCTION
+# substitutes for the CANNOT-VERIFY-HERE items only.
+
+# --- ASYMMETRIC token + X-Auth-Identity signing (CANNOT-VERIFY-HERE) ----------
+# Needed to activate auth.crypto.signer_eddsa (EdDSA/ES256). Without it the EdDSA
+# signer raises LOUDLY at construction — it NEVER fakes a signature. Set
+# AUTH_SIGNER_ALG=EdDSA once this is installed.
+#   closes: asymmetric EdDSA/ES256 signing + JWKS public-key publication.
+cryptography>=42,<44
+
+# --- Redis hot store: cross-replica revocation/kill fan-out (CANNOT-VERIFY-HERE)
+# Needed for the replicated HotStore (denylist / budget counters / kill epoch /
+# pub-sub `auth:revocations`). The in-process MemoryHotStore is the single-replica
+# substitute now; swap RedisHotStore in AuthApp.__init__ once this is present.
+#   closes: Redis pub/sub cross-replica fan-out + write-before-ack HA.
+redis>=5,<6
+
+# --- Postgres durable store: active-active HA (CANNOT-VERIFY-HERE) -------------
+# Needed for the Postgres Store (decision #8 HA). SQLite is the SOLE-WRITER
+# substitute now, behind the same auth.core.interfaces.Store Protocol; swap
+# PostgresStore in AuthApp.__init__ — a config swap, not a rewrite.
+#   closes: Postgres + active-active durable HA.
+psycopg[binary]>=3.1,<4
+
+# NOTE: Keycloak (the adopted Authorization Server for /authorize + /token) is a
+# SEPARATE container (see docker-compose.yml), not a pip dependency. auth-core
+# OWNS jwks/introspect/revoke/verify/PDP/admin; Keycloak owns the code/token flow.

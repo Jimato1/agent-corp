@@ -1,0 +1,32 @@
+<!-- @dsCard group="Colors" viewport="700x200" name="Semantics" subtitle="Rationed, muted, state-only. Amber = the press at work." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { padding: 20px; }
+  .row { display: flex; gap: 12px; }
+  .sw { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .chip { height: 52px; border-radius: var(--r-ctl); display: flex; align-items: center; padding-left: 10px; }
+  .dot { width: 8px; height: 8px; border-radius: var(--r-pill); background: rgba(255,255,255,0.85); }
+  .tok { font-family: var(--font-mono); font-size: 11px; color: var(--ink-700); }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); }
+  .use { font-family: var(--font-ui); font-size: 11px; color: var(--ink-600); }
+  .tints { display: flex; gap: 12px; margin-top: 14px; }
+  .tint { flex: 1; border-radius: var(--r-ctl); padding: 8px 10px; font-family: var(--font-mono); font-size: 11px; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--ok-500)"><span class="dot"></span></div><span class="tok">--ok-500</span><span class="hex">#4BAE7E</span><span class="use">Success</span></div>
+    <div class="sw"><div class="chip" style="background:var(--warn-500)"><span class="dot"></span></div><span class="tok">--warn-500</span><span class="hex">#D6A53C</span><span class="use">Warning</span></div>
+    <div class="sw"><div class="chip" style="background:var(--err-500)"><span class="dot"></span></div><span class="tok">--err-500</span><span class="hex">#D9594C</span><span class="use">Error</span></div>
+    <div class="sw"><div class="chip" style="background:var(--proc-500)"><span class="dot"></span></div><span class="tok">--proc-500</span><span class="hex">#E08A3C</span><span class="use">Processing</span></div>
+  </div>
+  <div class="tints">
+    <div class="tint" style="background:var(--err-tint);border:1px solid var(--err-500);color:var(--ink-900)">--err-tint &nbsp;#3A1E1C &nbsp;· error banner fill</div>
+    <div class="tint" style="background:var(--ok-tint);border:1px solid var(--ok-500);color:var(--ink-900)">--ok-tint &nbsp;#15302A &nbsp;· success banner fill</div>
+  </div>
+</body>
+</html>

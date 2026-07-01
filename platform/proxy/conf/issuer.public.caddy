@@ -1,0 +1,13 @@
+# ── TLS issuer partial: PUBLIC mode (secondary) ──────────────────────────────
+# Public Let's Encrypt wildcard via the DNS-01 challenge (caddy-dns/cloudflare,
+# built into the image). Issues ONE `*.{$SUITE_DOMAIN}` wildcard; no app container
+# ever needs public inbound reachability (control proven via _acme-challenge TXT).
+# No private-root distribution needed in this mode.
+#
+# Swap provider (E1): replace `cloudflare` here AND the `--with github.com/caddy-dns/*`
+# line in the Dockerfile — nothing else changes.
+# Staging-first: prepend `acme_ca https://acme-staging-v02.api.letsencrypt.org/directory`
+# under this block while iterating, to avoid a production rate-limit lockout (R§4).
+tls {
+	dns cloudflare {$CLOUDFLARE_API_TOKEN}
+}

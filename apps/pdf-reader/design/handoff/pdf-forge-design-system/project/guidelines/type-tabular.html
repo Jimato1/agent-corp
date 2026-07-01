@@ -1,0 +1,38 @@
+<!-- @dsCard group="Type" viewport="700x210" name="Tabular truth" subtitle="Numbers align column-true; mono is the instrument's data voice" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { padding: 20px 22px; display: flex; gap: 28px; }
+  .col { display: flex; flex-direction: column; gap: 6px; }
+  .cap { font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-600); font-weight: 500; margin-bottom: 4px; }
+  table { border-collapse: collapse; }
+  td { font-family: var(--font-mono); font-size: 13px; line-height: 20px; color: var(--ink-700); padding: 1px 0; font-variant-numeric: tabular-nums lining-nums; }
+  td.r { text-align: right; padding-left: 22px; color: var(--ink-900); }
+  td.n { color: var(--ink-900); }
+  .count { font-family: var(--font-ui); font-variant-numeric: tabular-nums lining-nums; color: var(--ink-900); }
+  .big { font-size: 20px; font-weight: 600; }
+  .lbl { font-family: var(--font-ui); font-size: 12px; color: var(--ink-600); }
+</style>
+</head>
+<body>
+  <div class="col">
+    <span class="cap">Mono data rows</span>
+    <table>
+      <tr><td class="n">merge_2024.pdf</td><td class="r">4.2 MB</td></tr>
+      <tr><td class="n">scan_001.pdf</td><td class="r">128 KB</td></tr>
+      <tr><td class="n">contract_final.pdf</td><td class="r">17.9 MB</td></tr>
+      <tr><td class="n">ranges</td><td class="r">1-10,21-end</td></tr>
+    </table>
+  </div>
+  <div class="col">
+    <span class="cap">UI counts — tnum + lnum on</span>
+    <div class="big count">9 → 10 → 100</div>
+    <span class="lbl">Digits don't wobble when a count ticks.</span>
+    <div style="height:8px"></div>
+    <div class="count" style="font-size:13px">300 DPI · 48% · page 7 of 512</div>
+  </div>
+</body>
+</html>

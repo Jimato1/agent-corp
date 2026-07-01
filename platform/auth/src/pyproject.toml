@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentcorp-auth"
+version = "0.1.0"
+description = "auth — the Critical-infra identity gateway for the agent-corp suite"
+requires-python = ">=3.12"
+# Runtime dependencies. NOTE (Stage-4 sandbox honesty): these are LISTED, not
+# installed here — the sandbox has only Python 3.12 stdlib and no guaranteed
+# network pip. The FOUNDATION core logic is stdlib-only and runs GREEN with
+# `python -m unittest`. The deps below are needed to close the CANNOT-VERIFY-HERE
+# items on a real build host.
+dependencies = [
+    # PRODUCTION asymmetric signer (EdDSA/ES256). Without it, signer_eddsa raises
+    # a LOUD RuntimeError and never fakes a signature. Install to close that item:
+    #   python -m pip install "cryptography>=42"
+    "cryptography>=42",
+]
+
+[project.optional-dependencies]
+# The hot store / revocation fan-out / budget counters in production.
+redis = ["redis>=5"]
+# Cedar PDP guardrail (mirrors the immutable ConflictSet as a `forbid` policy).
+pdp = ["cedarpy>=4"]
+# DPoP proof verification primitives (RFC 9449) ride on `cryptography` above.
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["auth*"]

@@ -1,0 +1,79 @@
+/* ============================================================
+   pdf-forge — Color
+   A restrained instrument palette. The governing inversion:
+   the app is a cool graphite SUBSTRATE (a workbench surface);
+   only an actual PDF page is bright PAPER. White means "document."
+   UI text/icons are an INK ramp. Color is rationed: ONE accent
+   ("press blue") + four state-only semantics.
+   ============================================================ */
+
+:root {
+  /* ---- 1.1 Substrate — the workbench surface (cool graphite) ---- */
+  --sub-900: #0E1116;   /* app chrome backdrop / deepest well (board behind sheets) */
+  --sub-850: #141922;   /* app background (default page bg) */
+  --sub-800: #1A2029;   /* raised panels, sidebars, toolbars */
+  --sub-700: #222A35;   /* inset wells, board substrate behind thumbnails */
+  --sub-600: #2D3743;   /* hairline borders / dividers on dark */
+  --sub-500: #3A4654;   /* stronger borders, control outlines */
+  --sub-400: #566373;   /* disabled fill, muted chrome */
+
+  /* ---- 1.2 Paper — the document itself (the ONLY true whites) ---- */
+  --paper-0:      #FBFBF9;   /* PDF page surface / sheet face (warm paper white) */
+  --paper-edge:   #E7E7E2;   /* sheet bottom-edge shade (fakes sheet thickness) */
+  --paper-shadow: #05070A;   /* drop-shadow color for lifted sheets (used at low alpha) */
+
+  /* ---- 1.3 Ink — foreground on substrate ---- */
+  --ink-900: #F2F5F8;   /* primary text, headings (~13:1 on --sub-850) */
+  --ink-700: #C5CDD6;   /* secondary text, active labels */
+  --ink-600: #9AA6B2;   /* muted labels, metadata (min AA body on --sub-850) */
+  --ink-500: #6B7785;   /* disabled text, faint hints (non-essential only) */
+  --ink-on-paper: #11151B; /* near-black ink for UI rendered on a sheet */
+
+  /* ---- 1.4 Accent — "Press blue" (the ONE action/selection color) ---- */
+  --press-500: #1FA2C4;  /* primary accent: selection ring, primary button, focus accent */
+  --press-400: #3FBDDD;  /* hover / active brighten */
+  --press-600: #157E9B;  /* pressed / depressed */
+  --press-tint: #12303A; /* selected-sheet wash on substrate (low-sat) */
+  --press-glow: #1FA2C4; /* used at alpha for the focus-ring halo */
+
+  /* ---- 1.5 Semantics — rationed, appear only on state ---- */
+  --ok-500:   #4BAE7E;  /* success: job succeeded, validation pass */
+  --warn-500: #D6A53C;  /* warning: advisory disclaimer, "kept input" */
+  --err-500:  #D9594C;  /* error: 4xx/5xx, wrong password, bad_pdf_structure */
+  --proc-500: #E08A3C;  /* processing: running job pulse — the one deliberate warm hue */
+  --err-tint: #3A1E1C;  /* error inline-banner fill */
+  --ok-tint:  #15302A;  /* success inline-banner fill */
+
+  /* ============================================================
+     Semantic aliases — reference these in components, not raw ramps.
+     ============================================================ */
+
+  /* surfaces */
+  --app-bg:        var(--sub-850);
+  --backdrop:      var(--sub-900);
+  --chrome-bg:     var(--sub-800);
+  --well-bg:       var(--sub-700);
+  --disabled-fill: var(--sub-400);
+
+  /* borders */
+  --border-hairline: var(--sub-600);  /* panel dividers on dark */
+  --border-control:  var(--sub-500);  /* input/button outline */
+  --border-strong:   var(--sub-400);  /* hover outline */
+
+  /* text */
+  --text-primary:   var(--ink-900);
+  --text-secondary: var(--ink-700);
+  --text-muted:     var(--ink-600);
+  --text-disabled:  var(--ink-500);
+  --text-on-paper:  var(--ink-on-paper);
+
+  /* accent / focus */
+  --accent:        var(--press-500);
+  --accent-hover:  var(--press-400);
+  --accent-press:  var(--press-600);
+  --accent-tint:   var(--press-tint);
+  --focus-ring:    var(--press-500);
+
+  /* paper */
+  --paper: var(--paper-0);
+}

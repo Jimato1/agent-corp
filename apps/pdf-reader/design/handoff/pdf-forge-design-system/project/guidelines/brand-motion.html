@@ -1,0 +1,47 @@
+<!-- @dsCard group="Brand" viewport="700x200" name="Motion & the press" subtitle="Crisp, mechanical. Amber 'press at work' is the second signature." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { padding: 20px 22px; display: flex; gap: 34px; align-items: center; }
+  .col { display: flex; flex-direction: column; gap: 7px; }
+  .cap { font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-600); font-weight: 500; margin-bottom: 3px; }
+  .durrow { display: flex; align-items: baseline; gap: 12px; }
+  .d { font-family: var(--font-mono); font-size: 12px; color: var(--ink-900); width: 116px; }
+  .e { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); }
+  /* press at work */
+  .readout {
+    width: 230px; height: 64px; border-radius: var(--r-ctl);
+    background: var(--sub-800); border: 1px solid var(--sub-600);
+    position: relative; overflow: hidden; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+  }
+  .pdot { width: 9px; height: 9px; border-radius: var(--r-pill); background: var(--proc-500); animation: pf-proc-pulse var(--proc-loop) var(--ease-press) infinite; }
+  .ptext { font-family: var(--font-ui); font-size: 13px; font-weight: 500; color: var(--proc-500); }
+  .psub { font-family: var(--font-mono); font-size: 11px; color: var(--ink-600); }
+  .sweep { position: absolute; top: 0; bottom: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(224,138,60,0.22), transparent); animation: pf-proc-sweep var(--proc-loop) var(--ease-press) infinite; }
+</style>
+</head>
+<body>
+  <div class="col">
+    <span class="cap">Durations & easing</span>
+    <div class="durrow"><span class="d">--mo-fast 120ms</span><span class="e">hover, focus, control</span></div>
+    <div class="durrow"><span class="d">--mo-base 180ms</span><span class="e">sheet lift, gap reflow</span></div>
+    <div class="durrow"><span class="d">--mo-slow 240ms</span><span class="e">dialog, bottom-sheet</span></div>
+    <div class="durrow"><span class="d">--ease-out</span><span class="e">.2,.7,.3,1</span></div>
+    <div class="durrow"><span class="d">--ease-press</span><span class="e">.3,0,.1,1 · the pulse</span></div>
+  </div>
+  <div class="col">
+    <span class="cap">Press at work</span>
+    <div class="readout">
+      <div class="sweep"></div>
+      <span class="pdot"></span>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span class="ptext">Pressing…</span>
+        <span class="psub">merge · 3 files</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

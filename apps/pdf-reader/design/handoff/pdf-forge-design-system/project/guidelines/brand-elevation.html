@@ -1,0 +1,28 @@
+<!-- @dsCard group="Brand" viewport="700x230" name="Elevation" subtitle="Only paper casts shadow. Chrome separates by value + hairline." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { padding: 26px 22px; display: flex; align-items: center; gap: 30px; flex-wrap: wrap; }
+  .spec { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .sheet { width: 70px; height: 92px; background: var(--paper-0); border-radius: var(--r-sheet); border-bottom: 2px solid var(--paper-edge); }
+  .rest { box-shadow: var(--shadow-sheet-rest); }
+  .hover { box-shadow: var(--shadow-sheet-hover); transform: translateY(-1px); }
+  .lift { box-shadow: var(--shadow-sheet-lift); transform: rotate(1.5deg) scale(1.04); }
+  .panel { width: 110px; height: 78px; background: var(--sub-800); border: 1px solid var(--sub-600); border-radius: var(--r-panel); }
+  .dialog { width: 110px; height: 78px; background: var(--sub-800); border: 1px solid var(--sub-600); border-radius: var(--r-panel); box-shadow: var(--shadow-dialog); }
+  .tok { font-family: var(--font-mono); font-size: 10px; color: var(--ink-600); text-align: center; }
+  .grp { font-family: var(--font-ui); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-700); }
+</style>
+</head>
+<body>
+  <div class="spec"><div class="sheet rest"></div><span class="tok">sheet rest</span></div>
+  <div class="spec"><div class="sheet hover"></div><span class="tok">sheet hover</span></div>
+  <div class="spec"><div class="sheet lift"></div><span class="tok">sheet lifted</span></div>
+  <div style="width:1px;height:96px;background:var(--sub-600)"></div>
+  <div class="spec"><div class="panel"></div><span class="tok">chrome — no shadow</span></div>
+  <div class="spec"><div class="dialog"></div><span class="tok">dialog — only chrome<br>that casts</span></div>
+</body>
+</html>

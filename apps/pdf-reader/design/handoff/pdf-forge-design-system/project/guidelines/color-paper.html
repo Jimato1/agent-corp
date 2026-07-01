@@ -1,0 +1,36 @@
+<!-- @dsCard group="Colors" viewport="700x190" name="Paper — the only whites" subtitle="White means 'this is a document.' Nothing else earns it." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { padding: 20px; display: flex; gap: 22px; align-items: center; }
+  .sheet {
+    width: 96px; height: 132px;
+    background: var(--paper-0);
+    border-radius: var(--r-sheet);
+    border-bottom: 2px solid var(--paper-edge);
+    box-shadow: var(--shadow-sheet-rest);
+    display: flex; align-items: flex-end; justify-content: flex-start;
+    padding: 8px;
+  }
+  .sheet .ink { font-family: var(--font-mono); font-size: 11px; color: var(--ink-on-paper); }
+  .swatches { display: flex; gap: 10px; }
+  .sw { display: flex; flex-direction: column; gap: 8px; width: 150px; }
+  .chip { height: 56px; border-radius: var(--r-ctl); border: 1px solid var(--sub-600); }
+  .tok { font-family: var(--font-mono); font-size: 11px; color: var(--ink-700); }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); }
+  .note { font-family: var(--font-ui); font-size: 12px; color: var(--ink-600); max-width: 150px; line-height: 16px; }
+</style>
+</head>
+<body>
+  <div class="sheet"><span class="ink">page ink</span></div>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:var(--paper-0)"></div><span class="tok">--paper-0</span><span class="hex">#FBFBF9</span></div>
+    <div class="sw"><div class="chip" style="background:var(--paper-edge)"></div><span class="tok">--paper-edge</span><span class="hex">#E7E7E2</span></div>
+    <div class="sw"><div class="chip" style="background:var(--paper-shadow)"></div><span class="tok">--paper-shadow</span><span class="hex">#05070A</span></div>
+  </div>
+  <p class="note">A warm-neutral white reads as physical stock. Used at low alpha, <code style="font-family:var(--font-mono);font-size:11px">--paper-shadow</code> is the drop-shadow only sheets cast.</p>
+</body>
+</html>

@@ -1,0 +1,12 @@
+/* ============================================================
+   pdf-forge — Webfonts (self-hosted)
+   Two faces, role-mapped (see typography.css):
+   • Inter          — UI / labels / headings / body
+   • JetBrains Mono — data voice (filenames, ranges, sizes, hashes)
+
+   Privacy-first: fonts are bundled by Vite from the @fontsource
+   packages (imported in main.tsx), NOT fetched from a CDN — this
+   app is LAN-only and must work with no external network egress.
+   The @font-face declarations are provided by those packages; this
+   file exists as the token-manifest slot only.
+   ============================================================ */

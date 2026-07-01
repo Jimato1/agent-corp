@@ -1,0 +1,58 @@
+/* ============================================================
+   pdf-forge — Motion
+   Purposeful, short, mechanical. An instrument responds crisply:
+   motion confirms a mechanical action (a sheet lifts, a press
+   engages) — it never decorates. Honor prefers-reduced-motion.
+   ============================================================ */
+
+:root {
+  /* ---- 7.1 Durations ---- */
+  --mo-fast: 120ms; /* @kind other */
+  --mo-base: 180ms; /* @kind other */
+  --mo-slow: 240ms; /* @kind other */
+
+  /* ---- Easing ---- */
+  --ease-out:   cubic-bezier(0.2, 0.7, 0.3, 1);   /* @kind other */
+  --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);     /* @kind other */
+  --ease-press: cubic-bezier(0.3, 0, 0.1, 1);     /* @kind other */
+
+  /* The "press at work" loop */
+  --proc-loop: 1600ms; /* @kind other */
+}
+
+/* ---- Mechanical keyframes (shared) ---- */
+@keyframes pf-proc-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+@keyframes pf-proc-sweep {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(420%); }
+}
+@keyframes pf-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pf-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-3px); }
+  40%      { transform: translateX(3px); }
+  60%      { transform: translateX(-2px); }
+  80%      { transform: translateX(2px); }
+}
+
+/* ============================================================
+   7.2 prefers-reduced-motion — explicit fallback.
+   Transitions collapse; the drag lift loses tilt/scale; the
+   processing pulse goes static; error shake is disabled.
+   Focus rings still render (state, not motion).
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

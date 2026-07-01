@@ -1,0 +1,60 @@
+/* ============================================================
+   pdf-forge — Typography
+   Two-face pairing, role-mapped. Inter = the operator's reading
+   voice (labels all day, superb at 12–14px). JetBrains Mono =
+   the instrument's data voice (every machine quantity). Numbers
+   must align column-true: tabular figures everywhere a quantity
+   appears. Modular scale ≈ 1.20 (minor third), tightened for
+   instrument density.
+   ============================================================ */
+
+:root {
+  /* ---- 2.1 Families ---- */
+  --font-ui:   'Inter', 'Inter var', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+
+  /* role aliases */
+  --font-body:    var(--font-ui);
+  --font-heading: var(--font-ui);
+  --font-data:    var(--font-mono);
+
+  /* ---- 2.2 Modular scale (px / line-height) ---- */
+  --fs-micro: 11px;   --lh-micro: 16px;  /* page-number chips, dense metadata, captions */
+  --fs-label: 12px;   --lh-label: 16px;  /* UI labels, control text, tab labels */
+  --fs-body:  13px;   --lh-body:  20px;  /* default body, descriptions, dialog copy */
+  --fs-data:  13px;   --lh-data:  18px;  /* mono data rows (filenames, ranges) */
+  --fs-base:  14px;   --lh-base:  20px;  /* inputs, primary controls */
+  --fs-h3:    16px;   --lh-h3:    22px;  /* panel titles, op names */
+  --fs-h2:    20px;   --lh-h2:    26px;  /* flow / screen titles */
+  --fs-h1:    26px;   --lh-h1:    32px;  /* app-level / empty-state headline (sparingly) */
+
+  /* ---- 2.3 Weights ---- */
+  /* body & mono = 400 · labels/controls = 500 · headings = 600 · empty-state H1 = 700 */
+  --fw-regular:  400; /* @kind other */
+  --fw-medium:   500; /* @kind other */
+  --fw-semibold: 600; /* @kind other */
+  --fw-bold:     700; /* @kind other */
+
+  /* ---- Tracking ---- */
+  --tracking-eyebrow: 0.04em;  /* 12px UPPERCASE section eyebrows */
+  --tracking-normal:  0;
+
+  /* ---- Numeric truth: tabular + lining figures (apply where digits tick) ---- */
+  --feat-tnum: 'tnum' 1, 'lnum' 1; /* @kind other */
+}
+
+/* ============================================================
+   Optional helper classes (foundation specimens use these; the
+   compiled components apply the equivalents inline).
+   ============================================================ */
+.tnum   { font-feature-settings: 'tnum' 1, 'lnum' 1; font-variant-numeric: tabular-nums lining-nums; }
+.mono   { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.eyebrow {
+  font-family: var(--font-ui);
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-600);
+}

@@ -1,0 +1,128 @@
+/* ============================================================
+   pdf-forge — Workbench layout & chrome
+   The three-zone instrument: rail · worksurface (board) · inspector.
+   Structural spacing lives here; the SIGNATURE (sheets) is in ds.css.
+   ============================================================ */
+
+html, body, #root { height: 100%; }
+body { overflow: hidden; }
+
+.wb-root { position: fixed; inset: 0; display: flex; background: var(--sub-900); color: var(--ink-900); }
+.wb-main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--sub-850); position: relative; }
+
+/* ---- Rail ---- */
+.wb-rail {
+  flex: none; display: flex; flex-direction: column;
+  width: var(--rail-open); background: var(--sub-800); border-right: 1px solid var(--sub-600);
+  transition: width var(--mo-base) var(--ease-out); overflow: hidden;
+}
+.wb-rail.is-collapsed { width: var(--rail-collapsed); }
+.wb-rail__brand { height: 52px; display: flex; align-items: center; gap: 9px; padding: 0 14px; border-bottom: 1px solid var(--sub-600); flex: none; }
+.wb-rail.is-collapsed .wb-rail__brand { padding: 0; justify-content: center; }
+.wb-rail__brandmark { display: block; flex: none; }
+.wb-rail__wordmark { font-family: var(--font-ui); font-weight: var(--fw-semibold); font-size: 16px; letter-spacing: -0.01em; color: var(--ink-900); }
+.wb-rail__wordmark span { color: var(--press-500); }
+.wb-rail__ops { flex: 1; display: flex; flex-direction: column; gap: 3px; padding: 10px; min-height: 0; }
+.wb-rail.is-collapsed .wb-rail__ops { padding: 10px 8px; }
+.wb-rail__eyebrow { font-family: var(--font-ui); font-size: 12px; font-weight: var(--fw-medium); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-600); padding: 4px 10px 6px; }
+
+.wb-railitem {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 36px; padding: 0 10px;
+  border-radius: var(--r-ctl); border: 1px solid transparent; cursor: pointer; background: transparent;
+  color: var(--ink-700); font-family: var(--font-ui); font-size: 13px; font-weight: var(--fw-medium);
+  transition: background var(--mo-fast) var(--ease-inout), color var(--mo-fast);
+}
+.wb-rail.is-collapsed .wb-railitem { padding: 0; justify-content: center; }
+.wb-railitem:hover { background: var(--sub-700); color: var(--ink-900); }
+.wb-railitem[aria-current="page"] { background: var(--press-tint); color: var(--press-400); }
+.wb-railitem[aria-current="page"]:hover { background: var(--press-tint); color: var(--press-400); }
+.wb-railitem__icon { display: inline-flex; flex: none; }
+.wb-railitem:focus-visible { outline: 2px solid var(--press-500); outline-offset: 2px; }
+
+.wb-rail__footer { padding: 10px; border-top: 1px solid var(--sub-600); display: flex; flex-direction: column; gap: 8px; flex: none; }
+.wb-rail.is-collapsed .wb-rail__footer { padding: 10px 8px; }
+.wb-rail__privacy {
+  display: flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: var(--r-ctl);
+  background: var(--sub-850); color: var(--ink-600); font-family: var(--font-mono); font-size: 11px;
+}
+.wb-rail__privacy .wb-lock { display: inline-flex; color: var(--ok-500); }
+.wb-rail__collapse {
+  height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: var(--r-ctl);
+  border: none; background: transparent; color: var(--ink-600); cursor: pointer; font-family: var(--font-ui); font-size: 12px;
+  transition: background var(--mo-fast), color var(--mo-fast);
+}
+.wb-rail.is-collapsed .wb-rail__collapse { padding: 0; justify-content: center; }
+.wb-rail__collapse:hover { background: var(--sub-700); color: var(--ink-900); }
+.wb-rail__collapse .wb-flip { display: inline-flex; transform: scaleX(-1); }
+.wb-rail.is-collapsed .wb-rail__collapse .wb-flip { transform: none; }
+
+/* ---- Board header ---- */
+.wb-header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 16px; background: var(--sub-800); border-bottom: 1px solid var(--sub-600); flex: none; }
+.wb-header__doc { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.wb-header__fileicon { display: inline-flex; color: var(--ink-600); }
+.wb-header__name { font-family: var(--font-mono); font-size: 13px; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.wb-header__size { font-family: var(--font-mono); font-size: 12px; color: var(--ink-600); }
+.wb-header__bulk { display: flex; align-items: center; gap: 8px; }
+.wb-header__right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.wb-header__edits { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 12px; color: var(--ink-600); }
+.wb-header__undo { display: inline-flex; align-items: center; gap: 4px; color: var(--press-400); cursor: pointer; font-family: var(--font-ui); background: none; border: none; padding: 0; }
+.wb-header__undo[disabled] { color: var(--ink-500); cursor: not-allowed; }
+
+/* ---- Worksurface (the board well) ---- */
+.wb-well {
+  flex: 1; min-height: 0; overflow: auto; margin: 16px; padding: 22px 20px;
+  border-radius: var(--r-panel); background: var(--sub-700);
+  box-shadow: inset 0 1px 0 rgba(5, 7, 10, .5), inset 0 0 0 1px var(--sub-700);
+  outline: none;
+}
+.wb-well.has-grid { background: radial-gradient(var(--sub-600) 1px, transparent 1px) -8px -8px / 24px 24px, var(--sub-700); }
+.wb-flow { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px; }
+.wb-flow.is-compact { gap: 8px; }
+.wb-cell { display: inline-flex; }
+
+/* ---- Dropzone (empty / drop-active) ---- */
+.wb-drop { flex: 1; min-height: 0; margin: 16px; border-radius: var(--r-panel); background: radial-gradient(var(--sub-600) 1px, transparent 1px) -8px -8px / 24px 24px, var(--sub-700); box-shadow: inset 0 1px 0 rgba(5, 7, 10, .5), inset 0 0 0 1px var(--sub-700); padding: 20px; display: flex; }
+.wb-drop__target {
+  flex: 1; border-radius: var(--r-panel); display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; text-align: center; padding: 24px; border: 2px dashed var(--sub-500); background: transparent;
+  transition: border-color var(--mo-fast), background var(--mo-fast); cursor: pointer;
+}
+.wb-drop__target.is-active { border: 2px solid var(--press-500); background: var(--press-tint); }
+.wb-drop__icon { display: inline-flex; color: var(--ink-600); }
+.wb-drop__target.is-active .wb-drop__icon { color: var(--press-400); }
+.wb-drop__h1 { margin: 0; font-family: var(--font-ui); font-size: 26px; line-height: 32px; font-weight: var(--fw-bold); color: var(--ink-900); }
+.wb-drop__sub { font-family: var(--font-mono); font-size: 12px; color: var(--ink-600); }
+.wb-drop__err { display: grid; place-items: center; flex: 1; padding: 24px; }
+
+/* ---- Inspector ---- */
+.wb-inspector { width: var(--inspector-w); flex: none; display: flex; flex-direction: column; background: var(--sub-800); border-left: 1px solid var(--sub-600); min-height: 0; }
+.wb-inspector__head { padding: 14px 16px 12px; border-bottom: 1px solid var(--sub-600); flex: none; }
+.wb-inspector__eyebrow { font-family: var(--font-ui); font-size: 12px; font-weight: var(--fw-medium); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-600); }
+.wb-inspector__title { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.wb-inspector__title h3 { margin: 0; font-family: var(--font-ui); font-size: 16px; font-weight: var(--fw-semibold); color: var(--ink-900); }
+.wb-inspector__titleicon { display: inline-flex; color: var(--press-400); }
+.wb-inspector__body { flex: 1; overflow: auto; padding: 16px; min-height: 0; }
+.wb-inspector__foot { padding: 16px; border-top: 1px solid var(--sub-600); display: flex; flex-direction: column; gap: 12px; flex: none; }
+.wb-field { margin-bottom: 14px; }
+.wb-field__label { display: block; font-family: var(--font-ui); font-size: 12px; font-weight: var(--fw-medium); color: var(--ink-700); margin-bottom: 8px; }
+.wb-run-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.wb-run-row__target { font-family: var(--font-ui); font-size: 12px; color: var(--ink-600); }
+.wb-filerow { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: var(--r-ctl); background: var(--sub-850); border: 1px solid var(--sub-600); }
+.wb-filerow__num { color: var(--ink-600); font-family: var(--font-mono); font-size: 11px; }
+.wb-filerow__icon { display: inline-flex; color: var(--ink-600); }
+.wb-filerow__name { flex: 1; font-family: var(--font-mono); font-size: 12px; color: var(--ink-900); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- Single-page view (zoomed preview) ---- */
+.wb-single { flex: 1; min-height: 0; margin: 16px; border-radius: var(--r-panel); background: var(--sub-700); box-shadow: inset 0 1px 0 rgba(5, 7, 10, .5), inset 0 0 0 1px var(--sub-700); display: flex; overflow: hidden; }
+.wb-single__strip { width: 84px; flex: none; border-right: 1px solid var(--sub-600); padding: 10px; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+.wb-single__stage { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; overflow: auto; }
+.wb-single__paper { background: var(--paper-0); border-radius: 2px; border-bottom: 2px solid var(--paper-edge); box-shadow: 0 2px 10px rgba(5, 7, 10, .5); overflow: hidden; }
+.wb-single__zoom { position: absolute; bottom: 14px; display: flex; align-items: center; gap: 6px; padding: 4px; border-radius: var(--r-ctl); background: var(--sub-800); border: 1px solid var(--sub-600); }
+.wb-single__pct { font-family: var(--font-mono); font-size: 12px; color: var(--ink-900); width: 48px; text-align: center; }
+
+/* ---- Mobile ---- */
+@media (max-width: 760px) {
+  .wb-rail { position: fixed; z-index: 40; height: 100%; box-shadow: var(--shadow-dialog); }
+  .wb-inspector { display: none; }
+  .wb-inspector.is-open { display: flex; position: fixed; right: 0; top: 0; bottom: 0; z-index: 40; box-shadow: var(--shadow-dialog); }
+}
