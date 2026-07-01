@@ -7,9 +7,10 @@
 # Usage:  ./test/verify.sh [internal|public]     (default: internal)
 #
 # Maps to PLAN §12 gates: #1 (dial-fail deny), #2 (hung deny), #3 (Authz/Cookie
-# forwarded), #4 (exactly-200), #7 (headers on short-circuit), plus §8.5 decision
-# table, §8.6 scrub (app + @auth), and internal-CA chain. (Gate #8 rate-limit keying
-# is config-resolved — no trusted_proxies, key {remote_host}; Stage 5 adds a burst test.)
+# forwarded), #4 (exactly-200), #7 (headers on short-circuit), #8 (rate-limit — keyed on
+# {remote_host} with no trusted_proxies AND a Stage-5 runtime burst assertion, step 16),
+# plus §8.5 decision table, §8.6 scrub (app + @auth), internal-CA chain, and the Stage-5
+# credential/identity log-redaction assertions (15c CARRY-IN 1, 15d CARRY-IN 2).
 # Anything needing the REAL auth is out of scope here (see BUILD.md joint checkpoint).
 # ═════════════════════════════════════════════════════════════════════════════
 set -u
@@ -44,6 +45,15 @@ if $DC exec -T proxy caddy validate --config /etc/caddy/Caddyfile >/dev/null 2>&
 # 1. Health.
 if $DC exec -T proxy wget -qO- http://localhost:9100/healthz | grep -q ok; then
   ok "1 healthz"; else bad "1 healthz"; fi
+
+# 1b. WARM-UP (discarded): caddy-ratelimit issue #94 can return a spurious 429 on the FIRST request
+#     to an EMPTY per-IP counter on Caddy 2.11.x. Prime BOTH zones (edge_per_ip via board, auth_per_ip
+#     via auth) with throwaway requests so no ASSERTED request below is the cold-counter request.
+#     Harmless if #94 is absent. (CANNOT-VERIFY-HERE — needs a real Docker host.)
+curl -sS -k --max-time 8 --resolve "board.$SUITE:443:$IP" -o /dev/null \
+    -H 'Authorization: Bearer valid-agent' "https://board.$SUITE/" 2>/dev/null || true
+curl -sS -k --max-time 8 --resolve "auth.$SUITE:443:$IP" -o /dev/null \
+    -H 'Authorization: Bearer valid-agent' "https://auth.$SUITE/api/verify" 2>/dev/null || true
 
 # 2. Agent, no credential -> 401 (never redirect). A§8.5.
 IFS=$'\t' read -r c hf bf < <(edge "board.$SUITE" -H 'Accept: application/json')
@@ -119,6 +129,14 @@ read -r c t < <(curl -sS -k --max-time 8 --resolve "board.$SUITE:443:$IP" \
 awk -v t="$t" 'BEGIN{exit !(t+0 < 3.0)}' && ok "11b denied fast (<3s; timeout fired) ${t}s" || bad "11b should deny fast, took ${t}s"
 echo "-- restoring auth (no delay) --"; STUB_DELAY_MS=0 $DC up -d auth >/dev/null 2>&1; sleep 3
 
+# 11c. FAIL-CLOSED on 5xx (A§8.5 decision #3, Stage-5 red-team gap): auth REACHABLE but returns 500
+#      (not a dial error, not a hang) → the @ok=200 matcher denies and the app upstream is NOT reached.
+echo "-- recreating auth with STUB_FORCE_STATUS=500 (5xx fail-closed) --"
+STUB_FORCE_STATUS=500 $DC up -d auth >/dev/null 2>&1; sleep 3
+IFS=$'\t' read -r c hf bf < <(edge "board.$SUITE" -H 'Authorization: Bearer valid-agent')
+{ [ "$c" != "200" ] && ! grep -q 'UPSTREAM=board' "$bf"; } && ok "11c auth 5xx -> deny (got $c)" || bad "11c auth 5xx must deny (got $c)"
+echo "-- restoring auth (no forced status) --"; STUB_FORCE_STATUS= $DC up -d auth >/dev/null 2>&1; sleep 3
+
 # 12. INTERNAL mode only: prove the internal-CA chain validates (no -k).
 if [ "$MODE" = "internal" ]; then
   $DC exec -T proxy cat /data/caddy/pki/authorities/local/root.crt > "$TMP/root.crt" 2>/dev/null
@@ -146,7 +164,63 @@ curl -sS -k --max-time 8 --resolve "board.$SUITE:443:$IP" -H 'Authorization: Bea
   -o /dev/null "https://board.$SUITE/" 2>/dev/null
 logs=$($DC logs --tail=80 proxy 2>&1)
 printf '%s' "$logs" | grep -q '"level"' && ok "15b access log is structured JSON" || bad "15b access log JSON"
-printf '%s' "$logs" | grep -q 'valid-agent' && bad "15c token value NOT in logs" || ok "15c token value not in logs"
+
+# 15c (CARRY-IN 1 rewrite): assert the REAL property — no CLIENT credential VALUE is logged
+#   un-redacted in a request entry. A blanket grep for the token is WRONG: the auth STUB echoes the
+#   credential back in X-Stub-Saw-* RESPONSE headers (test scaffolding, not a proxy leak), so the old
+#   test flagged a false leak AND could not have distinguished a real one. Strip the stub's echo
+#   fields first, THEN assert the client credential value is absent. (Caddy auto-redacts request
+#   Authorization/Cookie; the log filter additionally deletes them + X-Auth-Identity.)
+noscaffold=$(printf '%s' "$logs" | sed 's/"X-Stub-Saw-[^"]*":\[[^]]*\]//g')
+printf '%s' "$noscaffold" | grep -q 'valid-agent' \
+  && bad "15c client credential VALUE leaked to logs (after excluding stub X-Stub-Saw echo)" \
+  || ok "15c no client credential value logged un-redacted"
+
+# 15d (CARRY-IN 2): auth-minted identity/principal headers must NOT be logged in the clear.
+#   Hit the gate-exempt @auth path with a valid credential: the stub's /api/verify RESPONSE sets
+#   X-Auth-Identity (a stand-in signed identity JWT) + Remote-User: op:eide, which pass straight
+#   through the @auth reverse_proxy into the client response and thus into the access log's
+#   resp_headers. With REAL auth this is a real signed identity token. The resp_headers log filter
+#   must delete X-Auth-Identity + Remote-*.  (CANNOT-VERIFY-HERE: needs a real Docker host.)
+curl -sS -k --max-time 8 --resolve "auth.$SUITE:443:$IP" -o /dev/null \
+    -H 'Authorization: Bearer valid-agent' "https://auth.$SUITE/api/verify" 2>/dev/null
+logs2=$($DC logs --tail=120 proxy 2>&1)
+if printf '%s' "$logs2" | grep -q 'X-Stub-Saw-'; then
+  # Non-vacuous: the @auth response's resp_headers ARE being logged (stub echo header present),
+  # yet the auth-set identity VALUES do not survive → the resp_headers redaction is doing its job.
+  printf '%s' "$logs2" | grep -qE 'op:eide|not-a-real-signature' \
+    && bad "15d auth identity header VALUE leaked into resp_headers log" \
+    || ok "15d auth identity headers redacted from resp_headers log"
+else
+  bad "15d could not exercise @auth resp_headers logging (no stub echo seen in logs)"
+fi
+
+# 16. RATE-LIMIT burst (PLAN §12 gate #8 — runtime proof deferred from Stage 4 to Stage 5).
+#   Config-only in Stage 4; here we prove the edge actually SHEDS load. Burst the tighter auth-path
+#   zone (auth_per_ip = 60/1m) from one IP and assert 429 + Retry-After appear alongside 200s.
+#   (CANNOT-VERIFY-HERE: needs a real Docker host.)
+#   NOTE caddy-ratelimit issue #94 (a spurious first-request 429 on Caddy 2.11.x) is TOLERATED:
+#   we assert BOTH a 200 and a 429 occur, which holds regardless of that quirk.
+#   RUN LAST + COOLDOWN: the burst fills the per-IP counters for this host; we sleep one full window
+#   afterwards so a chained `&& regression_headers.sh` starts with clean counters (it also hits @auth).
+echo "-- rate-limit burst: 80x https://auth.$SUITE/login from one IP --"
+got200=0; got429=0; retryafter=0
+for i in $(seq 1 80); do
+  hf="$TMP/rl.$i"
+  rc=$(curl -sS -k --max-time 5 --resolve "auth.$SUITE:443:$IP" -o /dev/null -D "$hf" \
+       -w '%{http_code}' "https://auth.$SUITE/login" 2>/dev/null)
+  [ "$rc" = "200" ] && got200=$((got200+1))
+  if [ "$rc" = "429" ]; then
+    got429=$((got429+1))
+    grep -qi '^Retry-After:' "$hf" && retryafter=1
+  fi
+done
+{ [ "$got200" -ge 1 ] && [ "$got429" -ge 1 ]; } \
+  && ok "16 auth-path rate limit sheds load (200x$got200 / 429x$got429)" \
+  || bad "16 rate limit not observed at runtime (200x$got200 / 429x$got429)"
+[ "$retryafter" = "1" ] && ok "16b 429 carries Retry-After" || bad "16b 429 missing Retry-After header"
+echo "-- cooling down rate-limit window (65s) so a chained regression run starts clean --"
+sleep 65
 
 echo "== $PASS passed, $FAIL failed =="
 [ "$FAIL" -eq 0 ]

@@ -1,0 +1,291 @@
+/* ============================================================================
+   auth — Operator Console · DESIGN LANGUAGE (tokens + component vocabulary)
+   Realizes UI_SPEC.md §2 (design language & accessibility quality floor).
+
+   ACCESSIBILITY FLOOR (stated once, enforced everywhere — UI_SPEC §2.7):
+     • WCAG 2.1 AA contrast: body/label >= 4.5:1 on its bg; large text, chip
+       text, level pips, focus rings, ENGAGED band edge >= 3:1 on --sub-900.
+       (Contrast targets are the SPEC's stated values; exact pixel rendering is
+        CANNOT-VERIFY-HERE — no browser in this sandbox.)
+     • Colour is NEVER the only signal: every state = colour + icon + text label.
+       Fully legible in grayscale and to colour-blind operators.
+     • Always-visible keyboard focus: 2px --signal-500 ring + 2px offset +
+       4px --signal-glow @35% halo; never outline:none without a replacement.
+     • prefers-reduced-motion: all transitions -> 0ms/opacity-only; ENGAGED band
+       appears instantly & does not pulse; pending ring does not rotate; the
+       press-and-hold actuator becomes a segmented NUMERIC countdown that still
+       enforces the dwell (deliberateness preserved, animation dropped).
+     • Touch targets >= 44x44px on mobile; the halt affordance never collapses
+       behind a menu on any breakpoint.
+     • Responsive to ~375px with no horizontal scroll.
+
+   COLOUR OWNERSHIP RULES (never crossed — UI_SPEC §1.3):
+     • RED (--danger)  = the OPERATOR'S FINGER: their own destructive/irreversible
+                         affordances (lift a stop, break-glass, revoke a key).
+     • HALT-GOLD (--halt) = the SYSTEM'S SAFE POSTURE: kill-switch ENGAGED and
+                         dependency-down SAFE-STOPPED. "Safe-stopped, not broken."
+     • SIGNAL cyan (--signal) = the ONE interactive colour incl. the primary SAFE
+                         action (moving toward LESS real-world action).
+   GLYPH-RESERVATION (UI_SPEC §2.5.1): the STOP glyph (this console spells it
+     with the interlock ▮▮ on gold) marks ACTIONABLE stop/deny/kill only. A
+     "cannot do / does not exist by construction" statement uses the LOCK glyph
+     (lock) with NO interactive affordance — never a STOP glyph, never a disabled
+     button. The two must never share a glyph.
+   ========================================================================== */
+
+:root {
+  /* -- Substrate: cool near-black control-room surface (§2.1) -------------- */
+  --sub-950:#0A0C10; --sub-900:#0E1116; --sub-850:#12161C; --sub-800:#171C24;
+  --sub-750:#1E242E; --sub-700:#262E39; --sub-600:#323C49; --sub-500:#45525F;
+
+  /* -- Ink: foreground on substrate (§2.1) -------------------------------- */
+  --ink-900:#EEF2F6; --ink-700:#C2CBD5; --ink-600:#94A1AE; --ink-500:#66727F;
+
+  /* -- Accent "Signal" cyan — the ONE interactive colour (§2.1) ----------- */
+  --signal-500:#29B6D8; --signal-400:#4FCDEC; --signal-600:#1B8AA6;
+  --signal-tint:#0E2A33; --signal-glow:#29B6D8;
+
+  /* -- Semantics — rationed, appear only on state (§2.1) ------------------- */
+  --ok-500:#46B98A;   --ok-tint:#102C24;
+  --attn-500:#E8B84B; --attn-tint:#33290E;
+  --drain-500:#A98CE8;--drain-tint:#231C39;
+  --danger-500:#E5594E;--danger-600:#C6473D;--danger-tint:#351A18;
+
+  /* -- HALT / ENGAGED — the reserved safe-stop gold, the signature (§2.1) -- */
+  --halt-500:#F2842B; --halt-400:#FF9E4D; --halt-tint:#2E1D0B;
+  --halt-edge:rgba(242,132,43,0.22); --halt-ink:#FFD8A8;
+
+  /* -- Typography (§2.2) --------------------------------------------------- */
+  --ff-ui:Inter,"Inter var",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --ff-mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --fs-micro:11px;  --lh-micro:15px;
+  --fs-label:12px;  --lh-label:16px;
+  --fs-body:13px;   --lh-body:20px;
+  --fs-data:13px;   --lh-data:18px;
+  --fs-base:14px;   --lh-base:20px;
+  --fs-h3:16px;     --lh-h3:22px;
+  --fs-h2:20px;     --lh-h2:26px;
+  --fs-h1:26px;     --lh-h1:32px;
+  --fs-status:22px; --lh-status:26px;
+
+  /* -- Spacing, base unit 4px (§2.3) -------------------------------------- */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-8:48px;
+
+  /* -- Radii (§2.4) ------------------------------------------------------- */
+  --r-ctl:4px; --r-panel:6px; --r-pill:999px;
+
+  /* -- Motion (§2.6) ------------------------------------------------------ */
+  --mo-fast:120ms; --mo-base:180ms; --mo-slow:240ms;
+  --ease-out:cubic-bezier(.2,.7,.3,1);
+  --ease-inout:cubic-bezier(.4,0,.2,1);
+
+  /* -- Elevation (§2.4): chrome casts NO shadow; only modals + ENGAGED band  */
+  --elev-modal:0 16px 48px rgba(4,6,10,.6);
+  --scrim:rgba(6,8,12,.66);
+
+  /* -- Press-and-hold dwell times (tunable — §2.5.8) ---------------------- */
+  --dwell-g1:600ms;   /* G1 FREEZE-DESTRUCTIVE, pre-focused */
+  --dwell-g2:1000ms;  /* G2 QUIESCE-ALL, must be explicitly focused first */
+}
+
+/* ---- Base reset & typography ------------------------------------------- */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--sub-900); color:var(--ink-900);
+  font-family:var(--ff-ui); font-size:var(--fs-body); line-height:var(--lh-body);
+  font-feature-settings:"tnum" 1,"lnum" 1;   /* tabular figures mandatory (§2.2) */
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{margin:0;font-weight:600;color:var(--ink-900)}
+h1{font-size:var(--fs-h1);line-height:var(--lh-h1)}
+h2{font-size:var(--fs-h2);line-height:var(--lh-h2)}
+h3{font-size:var(--fs-h3);line-height:var(--lh-h3)}
+p{margin:0 0 var(--sp-3)}
+a{color:var(--signal-400);text-decoration:none}
+a:hover{color:var(--signal-500);text-decoration:underline}
+
+/* mono truth: identifiers, epochs, jti/kid, TTL clocks, hashes (§2.2) */
+.mono,code,.data{font-family:var(--ff-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:var(--fs-label);line-height:var(--lh-label);text-transform:uppercase;
+  letter-spacing:.04em;color:var(--ink-600)}
+.muted{color:var(--ink-600)} .faint{color:var(--ink-500)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---- Focus ring — state, not motion; always renders (§2.7) ------------- */
+:focus-visible{
+  outline:2px solid var(--signal-500); outline-offset:2px;
+  box-shadow:0 0 0 6px rgba(41,182,216,.35);
+  border-radius:var(--r-ctl);
+}
+/* inside a gold band a 1px --sub-950 spacer keeps the ring >=3:1 (§2.7) */
+.halt-band :focus-visible{outline-offset:1px;box-shadow:0 0 0 1px var(--sub-950),0 0 0 6px rgba(41,182,216,.35)}
+
+/* ---- Panels & layout wells --------------------------------------------- */
+.panel{background:var(--sub-850);border:1px solid var(--sub-600);border-radius:var(--r-panel);padding:var(--sp-4)}
+.panel--raised{background:var(--sub-800)}
+.well{background:var(--sub-750);border-radius:var(--r-ctl)}
+.panel-title{font-size:var(--fs-h3);line-height:var(--lh-h3);margin-bottom:var(--sp-3)}
+.hair{border:0;border-top:1px solid var(--sub-600);margin:var(--sp-4) 0}
+.prose{max-width:560px}
+
+/* ---- Buttons ----------------------------------------------------------- */
+.btn{
+  font-family:var(--ff-ui);font-size:var(--fs-base);font-weight:500;
+  min-height:32px;padding:var(--sp-2) var(--sp-3);border-radius:var(--r-ctl);
+  border:1px solid var(--sub-500);background:var(--sub-700);color:var(--ink-900);
+  cursor:pointer;transition:background var(--mo-fast) var(--ease-out),border-color var(--mo-fast)}
+.btn:hover{background:var(--sub-600)}
+.btn--primary{background:var(--signal-500);border-color:var(--signal-500);color:#04141a}
+.btn--primary:hover{background:var(--signal-400);border-color:var(--signal-400)}
+.btn--primary:active{background:var(--signal-600)}
+.btn--danger{background:var(--danger-500);border-color:var(--danger-500);color:#170707}
+.btn--danger:hover{background:var(--danger-600)}
+.btn--ghost{background:transparent}
+.btn:disabled{background:var(--sub-800);border-color:var(--sub-600);color:var(--ink-500);cursor:not-allowed}
+.btn--touch{min-height:40px}
+@media (max-width:640px){.btn{min-height:44px;padding:var(--sp-2) var(--sp-4)}}
+
+/* ---- Inputs ------------------------------------------------------------ */
+.input{font-family:var(--ff-mono);font-size:var(--fs-base);min-height:32px;
+  padding:var(--sp-2) var(--sp-3);border-radius:var(--r-ctl);
+  border:1px solid var(--sub-500);background:var(--sub-950);color:var(--ink-900);width:100%}
+.input--danger{border-color:var(--danger-500)}
+label.field{display:block;font-size:var(--fs-label);color:var(--ink-700);margin-bottom:var(--sp-1)}
+
+/* ============================================================================
+   COMPONENT VOCABULARY (§2.5) — referenced by name across every screen
+   ========================================================================== */
+
+/* 2.5.1 Status pill — [glyph] LABEL, tabular, one per state family. Never
+   colour-only. Outline+dot on dark; filled only inside a same-family banner. */
+.pill{display:inline-flex;align-items:center;gap:var(--sp-1);
+  font-size:var(--fs-label);line-height:var(--lh-label);font-weight:500;
+  padding:2px var(--sp-2);border-radius:var(--r-pill);
+  border:1px solid var(--sub-500);color:var(--ink-700);white-space:nowrap}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-500)}
+.pill--ok{border-color:var(--ok-500);color:var(--ok-500)} .pill--ok .dot{background:var(--ok-500)}
+.pill--attn{border-color:var(--attn-500);color:var(--attn-500)} .pill--attn .dot{background:var(--attn-500)}
+.pill--danger{border-color:var(--danger-500);color:var(--danger-500)} .pill--danger .dot{background:var(--danger-500)}
+.pill--drain{border-color:var(--drain-500);color:var(--drain-500)} .pill--drain .dot{background:var(--drain-500)}
+.pill--halt{border-color:var(--halt-500);color:var(--halt-ink);background:var(--halt-tint)}
+.pill--disabled{border-color:var(--ink-500);color:var(--ink-500)}
+
+/* 2.5.2 ENGAGED / SAFE-STOPPED band — the signature element. Full-width band
+   directly under the header; gold, calm interlock/shield iconography (never x).
+   Sits as inset-lit signage, not a card. role=status / aria-live=assertive. */
+.halt-band{
+  position:relative;width:100%;
+  background:linear-gradient(var(--halt-tint),var(--halt-tint)),var(--sub-800);
+  color:var(--halt-ink);border-bottom:1px solid var(--halt-500);
+  box-shadow:inset 0 -1px 0 rgba(242,132,43,.4);
+  padding:var(--sp-3) var(--sp-4);
+  animation:band-in var(--mo-base) var(--ease-out);
+}
+.halt-band__edge{position:absolute;top:0;right:0;bottom:0;width:6px;
+  background:repeating-linear-gradient(45deg,var(--halt-edge) 0 6px,transparent 6px 12px)}
+.halt-band__word{font-size:var(--fs-status);line-height:var(--lh-status);font-weight:600;color:var(--halt-500)}
+.halt-band__ico{display:inline-block;margin-right:var(--sp-2);animation:breathe 1.6s var(--ease-inout) 1}
+/* G2 intensified variant — NON-HUE escalation cue (still gold, never red): a
+   heavier band (thicker keyline + larger word + full edge striping + doubled
+   interlock glyph) so "full stop" reads across the room by weight/shape/size,
+   not by hue. (Stage-3 resolution: intensified-gold + non-hue cue for G1->G2.) */
+.halt-band--g2{border-bottom-width:4px;box-shadow:inset 0 -4px 0 var(--halt-500),inset 0 0 0 1px rgba(242,132,43,.25)}
+.halt-band--g2 .halt-band__word{font-size:calc(var(--fs-status) + 6px);letter-spacing:.02em}
+.halt-band--g2 .halt-band__edge{width:12px}
+@keyframes band-in{from{transform:translateY(-100%);opacity:.2}to{transform:none;opacity:1}}
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:.55}}
+
+/* 2.5.3 Honest-state chip set — confirmed / pending / draining. ALWAYS all
+   three slots shown even at zero, so pending 0 . draining 0 is a POSITIVE
+   statement and a nonzero pending/draining can never hide (copy discipline). */
+.triad{display:flex;gap:var(--sp-2);flex-wrap:wrap}
+.triad__chip{flex:1 1 200px;min-width:180px;border:1px solid var(--sub-600);border-radius:var(--r-ctl);
+  padding:var(--sp-2) var(--sp-3);background:var(--sub-850)}
+.triad__n{font-family:var(--ff-mono);font-variant-numeric:tabular-nums;font-size:var(--fs-h2);font-weight:600}
+.triad__lab{font-size:var(--fs-label);text-transform:uppercase;letter-spacing:.04em}
+.triad__sub{font-size:var(--fs-micro);color:var(--ink-600)}
+.triad__chip--confirmed{border-left:3px solid var(--ok-500)} .triad__chip--confirmed .triad__n,.triad__chip--confirmed .triad__lab{color:var(--ok-500)}
+.triad__chip--pending{border-left:3px solid var(--attn-500)} .triad__chip--pending .triad__n,.triad__chip--pending .triad__lab{color:var(--attn-500)}
+.triad__chip--draining{border-left:3px solid var(--drain-500)} .triad__chip--draining .triad__n,.triad__chip--draining .triad__lab{color:var(--drain-500)}
+.ring-spin{display:inline-block;animation:spin 2s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 2.5.4 Confirm-with-friction dialog (modal + scrim). The header halt stays
+   ABOVE the scrim (see shell.css .modal-scrim exemption). */
+.modal-scrim{position:fixed;inset:0;background:var(--scrim);z-index:80;display:flex;align-items:center;justify-content:center;padding:var(--sp-4)}
+.modal{background:var(--sub-850);border:1px solid var(--sub-600);border-radius:var(--r-panel);
+  box-shadow:var(--elev-modal);max-width:560px;width:100%;padding:var(--sp-5)}
+.modal__head{font-size:var(--fs-h3);font-weight:600;margin-bottom:var(--sp-3)}
+.modal--danger .modal__head{color:var(--danger-500)}
+.consequence{background:var(--danger-tint);border-left:3px solid var(--danger-500);
+  border-radius:var(--r-ctl);padding:var(--sp-3);margin-bottom:var(--sp-4);font-size:var(--fs-body)}
+
+/* 2.5.5 Degraded banner is the Pattern-D member of the ENGAGED band (§2.5.2b)
+   — reuses .halt-band with shield-check copy. */
+
+/* 2.5.6 Live-freshness indicator (revocation-propagation health). */
+.freshness{font-family:var(--ff-mono);font-size:var(--fs-micro);color:var(--ink-600)}
+.freshness .ok{color:var(--ok-500)} .freshness .stale{color:var(--attn-500)} .freshness .halt{color:var(--halt-500)}
+
+/* 2.5.8 Press-and-hold actuator — engage/revoke mechanic (fast + not
+   accidental). Radial fill over dwell; release-before-complete aborts.
+   Reduced-motion -> segmented numeric countdown (see shell.js). */
+.actuator{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);
+  min-height:56px;min-width:280px;padding:var(--sp-3) var(--sp-5);
+  border-radius:var(--r-panel);border:2px solid var(--signal-500);
+  background:var(--sub-800);color:var(--ink-900);font-size:var(--fs-base);font-weight:600;
+  cursor:pointer;user-select:none;overflow:hidden;-webkit-user-select:none;touch-action:none}
+.actuator--danger{border-color:var(--halt-500)}       /* stop = gold direction */
+.actuator__fill{position:absolute;left:0;top:0;bottom:0;width:0%;
+  background:rgba(41,182,216,.28);transition:none;pointer-events:none;z-index:0}
+.actuator--danger .actuator__fill{background:rgba(242,132,43,.30)}
+.actuator__label{position:relative;z-index:1}
+.actuator__count{position:relative;z-index:1;font-family:var(--ff-mono);font-variant-numeric:tabular-nums;
+  margin-left:var(--sp-2)}                              /* numeric countdown (reduced-motion) */
+.actuator[aria-disabled="true"]{opacity:.5;cursor:not-allowed;border-color:var(--sub-500)}
+.actuator__committing{color:var(--halt-500)}
+
+/* 2.5.9 Data table — dense rows, zebra, sticky sortable header, mono id col. */
+.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-data)}
+.tbl th{position:sticky;top:0;background:var(--sub-800);text-align:left;
+  font-size:var(--fs-label);text-transform:uppercase;letter-spacing:.04em;color:var(--ink-600);
+  padding:var(--sp-2) var(--sp-3);border-bottom:1px solid var(--sub-600)}
+.tbl td{padding:var(--sp-2) var(--sp-3);border-bottom:1px solid var(--sub-700)}
+.tbl tbody tr:nth-child(even){background:var(--sub-750)}
+.tbl .id{font-family:var(--ff-mono)} .tbl .rt{text-align:right;font-variant-numeric:tabular-nums}
+
+/* 2.5.10 Immutable ConflictSet matrix — read-only, lock-glyphed, NO edit
+   affordances rendered at all (Decision #5). */
+.matrix{width:100%;border-collapse:collapse;font-family:var(--ff-mono);font-size:var(--fs-data)}
+.matrix th,.matrix td{border:1px solid var(--sub-600);padding:var(--sp-2);text-align:center}
+.matrix .excl{color:var(--danger-500)} .matrix .allow{color:var(--ok-500)} .matrix .diag{color:var(--ink-500)}
+.lockcap{display:flex;align-items:center;gap:var(--sp-2);color:var(--halt-ink);font-family:var(--ff-ui);
+  font-size:var(--fs-label);margin-bottom:var(--sp-2)}
+
+/* Visible-absence block (constitutional "CANNOT DO — BY CONSTRUCTION"):
+   printed fact, LOCK glyph, NO interactive affordance. Never a disabled button,
+   never the STOP glyph (glyph-reservation rule §2.5.1). */
+.absence{background:var(--sub-750);border:1px dashed var(--sub-500);border-radius:var(--r-ctl);
+  padding:var(--sp-3);color:var(--ink-700)}
+.absence__line{display:flex;gap:var(--sp-2);align-items:flex-start;margin:var(--sp-1) 0}
+.absence__lock{color:var(--halt-ink);flex:0 0 auto}   /* LOCK glyph, not STOP */
+
+/* Pattern R inline error banner (recoverable, local, red — never the gold band) */
+.err{background:var(--danger-tint);border-left:3px solid var(--danger-500);border-radius:var(--r-ctl);
+  padding:var(--sp-3);color:var(--ink-900);font-size:var(--fs-body)}
+.err code{color:var(--danger-500)}
+
+/* Generic layout helpers */
+.grid{display:grid;gap:var(--sp-4)}
+.row{display:flex;gap:var(--sp-3);align-items:center;flex-wrap:wrap}
+.stack>*+*{margin-top:var(--sp-3)}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:var(--sp-3)}
+.scaffold-note{background:var(--signal-tint);border:1px solid var(--signal-600);border-radius:var(--r-ctl);
+  padding:var(--sp-3);font-size:var(--fs-label);color:var(--ink-700);margin-bottom:var(--sp-4)}
+
+/* ---- prefers-reduced-motion: transitions -> 0ms; no pulse/spin/shimmer ---- */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0ms!important;animation-iteration-count:1!important;transition-duration:0ms!important}
+  .halt-band{animation:none} .halt-band__ico{animation:none} .ring-spin{animation:none}
+}

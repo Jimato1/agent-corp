@@ -20,8 +20,16 @@
 ## 2. Access-log JSON shape (per request)
 
 Native Caddy access-log fields (JSON) plus the proxy's custom `log_append` fields. **Sanitization
-guarantees:** `Authorization`, `Cookie`, and `X-Auth-Identity` request headers and `Set-Cookie` are
-**deleted** before logging; no token contents and no identity-header *values* ever appear.
+guarantees (Stage-5 hardened):**
+- **Request side:** `Authorization` + `Cookie` are auto-redacted by Caddy AND deleted by the filter;
+  `X-Auth-Identity` (the auth JWT copied onto the upstream request) is deleted.
+- **Response side:** `Set-Cookie`, `X-Auth-Identity`, and `Remote-User/Remote-Groups/Remote-Name/Remote-Email`
+  are deleted from `resp_headers` — auth's verify response can carry a real signed identity JWT /
+  principal into the response, and Caddy does **not** auto-redact those (CARRY-IN 2).
+- **Not redacted (intentionally):** the authoritative `traceparent` — it is the audit correlation key
+  (bound to `sub` inside `X-Auth-Identity`), a non-secret needed for the `edge_req_id`↔trace join.
+
+No token contents and no identity-header *values* ever appear in a log line.
 
 ```jsonc
 {

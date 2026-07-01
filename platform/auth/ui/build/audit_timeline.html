@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit · Who Did This — auth operator console</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §7 — Audit / observability. SCAFFOLD. auth is the authoritative
+   "who did this" source for the whole suite. */
+window.AUTH_SHELL = {
+  level:'G0', deps:{redis:true,pdp:true,writer:true,idp:true},
+  freshness:{epoch:4471,ms:312,rs:'24/24'},
+  fleet:{flagged:1,detail:'deny-storm ×1'}, operator:{sub:'op:eide',fresh:true}, activeNav:'audit'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <div class="scaffold-note" role="note"><b>SCAFFOLD</b> — realizes UI_SPEC §7.1. Stream/filter/inspector layout is real
+        markup; live tail (Redis pub/sub) and durable history queries are CANNOT-VERIFY-HERE (no backend).</div>
+      <h1 class="screen">Audit · Who Did This</h1>
+      <p class="sublede">Oversight-relevant events (not raw request logs — benign fast-path permits sampled out by default).</p>
+
+      <div class="row" style="margin-bottom:12px">
+        <span class="pill pill--ok"><span class="dot"></span>▮ LIVE TAIL</span>
+        <span class="pill">Query history</span>
+        <span class="pill">Signal ▸ All</span>
+        <span style="margin-left:auto"><a class="btn" href="#">Export ▾</a></span>
+      </div>
+
+      <!-- Deny-cluster anomaly chip with shown threshold (§7.1) -->
+      <div class="err" style="margin-bottom:12px;background:var(--attn-tint);border-left-color:var(--attn-500)">
+        ▲ <span class="mono">agent:patcher-07</span> — 6 denies in 40s
+        <span class="freshness">(fires at ≥5 / 60s · operator-configurable)</span>
+        <a href="#">pivot</a> · <a href="#">revoke</a>
+      </div>
+
+      <table class="tbl" aria-label="Event timeline">
+        <thead><tr><th>time</th><th>event</th><th>action</th><th>sub</th><th>aud</th><th>reason</th><th class="rt">epoch</th></tr></thead>
+        <tbody>
+          <tr style="border-left:3px solid var(--danger-500)"><td class="mono">16:42:07.318</td><td>⛔ DENY</td><td class="mono">gateway:execute</td><td class="id">agent:patcher-07</td><td>gateway</td><td class="mono">self_approval_forbidden</td><td class="rt mono">4471</td></tr>
+          <tr style="border-left:3px solid var(--attn-500)"><td class="mono">16:42:06.001</td><td>▲ TRIP</td><td class="mono">budget concurrency</td><td class="id">agent:crawler-02</td><td>—</td><td class="mono">429 concurrency · cap 1</td><td class="rt mono">4471</td></tr>
+          <tr style="border-left:3px solid var(--drain-500)"><td class="mono">16:41:58.774</td><td>◆ ANOMALY</td><td class="mono">mint off-host</td><td class="id">agent:patcher-07</td><td>auth</td><td class="mono">auto-freeze G1 (safe dir)</td><td class="rt mono">4471</td></tr>
+          <tr><td class="mono">16:41:44.006</td><td>⟲ REVOKE</td><td class="mono">sub</td><td class="id">op:eide→rogue-09</td><td>auth</td><td class="mono">17/18 RS ack</td><td class="rt mono">4470</td></tr>
+        </tbody>
+      </table>
+
+      <p class="freshness" style="margin-top:12px"><b>traceparent</b> is the authoritative, server-generated correlation key
+        (PLAN §8.7); <b>claimed_parent</b> is always shown adjacent, flagged ⚠ UNTRUSTED (client), never used to pivot.
+        Destructive-chain correlation uses three keys — <span class="mono">ticket_id</span> (primary) ·
+        <span class="mono">approval_id</span> · <span class="mono">traceparent</span> — because async re-mints may not share a trace.</p>
+
+      <!-- Export note (task-required): BOTH exports ship -->
+      <section class="panel panel--raised" style="margin-top:16px">
+        <h2 class="panel-title">Export — for the git-backed audit trail</h2>
+        <p><b>Both audit exports ship: Markdown (human-diffable table) + signed JSONL (append-only line hashes).</b>
+          Markdown-is-truth invariant preserved; the trust distinction (traceparent authoritative; claimed_parent labeled,
+          never a key) is carried into both. Reads the durable store → works in the degraded state (live tail excluded).</p>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="shell.js"></script>
+</body>
+</html>

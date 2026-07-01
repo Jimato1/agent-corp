@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Budgets — auth operator console</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §8.3 — Budgets (compute/time/concurrency — NEVER dollars). SCAFFOLD. */
+window.AUTH_SHELL = {
+  level:'G0', deps:{redis:true,pdp:true,writer:true,idp:true},
+  freshness:{epoch:4471,ms:312,rs:'24/24'},
+  fleet:{flagged:0,detail:''}, operator:{sub:'op:eide',fresh:true}, activeNav:'budgets'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <div class="scaffold-note" role="note"><b>SCAFFOLD</b> — realizes UI_SPEC §8.3. Four-dimension layout + trips list are
+        real markup; live counters (Redis GCRA/semaphore) are CANNOT-VERIFY-HERE (no Redis). Static limits are durable.</div>
+      <h1 class="screen">Budgets</h1>
+      <p class="sublede">Compute / time / concurrency — <b>never dollars</b> (PLAN §6). Static <b>limit</b> always beside
+        <b>current consumption</b> and <b>live headroom</b>.</p>
+
+      <section class="panel" style="margin-bottom:16px" aria-labelledby="dim">
+        <h2 id="dim" class="panel-title">agent:patcher-07 · four dimensions (PLAN §6.1)</h2>
+        <table class="tbl">
+          <thead><tr><th>Dimension</th><th>Limit (static)</th><th>Consumption</th><th class="rt">Headroom</th></tr></thead>
+          <tbody>
+            <tr><td>Rate / compute (GCRA T,τ)</td><td class="mono">T=2s, τ=10</td><td class="mono">1.4/s</td><td class="rt">▓▓▓░ 62%</td></tr>
+            <tr><td>Concurrency</td><td class="mono">global_max=1, per_class=1</td><td class="mono">1 active</td><td class="rt">▓▓▓▓ 0% (at cap)</td></tr>
+            <tr><td>Cooldown (per action-class)</td><td class="mono">destructive: 30s</td><td class="mono">idle</td><td class="rt">—</td></tr>
+            <tr><td>Lifetime / liveness</td><td class="mono">wall 30m · MC no-progress</td><td class="mono">12m · progressing</td><td class="rt">▓▓░░ 40%</td></tr>
+          </tbody>
+        </table>
+        <p class="freshness" style="margin-top:8px">Fail-mode: destructive/SoD classes <b>fail-closed</b> on Redis loss;
+          benign = <b>allow-but-locally-bounded</b> — so a degraded budget view is safe, not permissive.</p>
+      </section>
+
+      <section class="panel" style="margin-bottom:16px" aria-labelledby="trips">
+        <h2 id="trips" class="panel-title">Recent trips (429 over-budget)</h2>
+        <table class="tbl">
+          <thead><tr><th>time</th><th>sub</th><th>reason</th><th class="rt">Retry-After</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">16:41:06</td><td class="id">crawler-02</td><td>concurrency (cap 1)</td><td class="rt mono">2s</td></tr>
+            <tr><td class="mono">16:38:51</td><td class="id">crawler-02</td><td>rate</td><td class="rt mono">1s</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel panel--raised">
+        <p class="freshness">Edit limits (T1 — routine, reversible): inline edit with single confirm + <b>Undo</b> toast
+          (versioned BudgetPolicy). No typed-intent — tightening only <em>reduces</em> action (safe direction).
+          One soft guard: raising a destructive-class concurrency above 1 warns it "weakens the double-execution backstop".</p>
+        <p class="freshness">A reserved <b>Global WIP</b> row (org/* principal) mirrors the shared Redis state Mission Control
+          renders/edits — MC owns the global kill switch + WIP; auth holds the policy. No parallel tally.</p>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="shell.js"></script>
+</body>
+</html>
