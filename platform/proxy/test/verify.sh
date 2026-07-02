@@ -34,9 +34,29 @@ edge() {
 
 ok()   { PASS=$((PASS+1)); printf '  \033[32mPASS\033[0m %s\n' "$1"; }
 bad()  { FAIL=$((FAIL+1)); printf '  \033[31mFAIL\033[0m %s\n' "$1"; }
+skip() { printf '  \033[33mSKIP\033[0m %s\n' "$1"; }
 check(){ [ "$2" = "$3" ] && ok "$1 ($2)" || bad "$1 (want $3, got $2)"; }
 
-echo "== proxy verify: mode=$MODE suite=$SUITE =="
+# ── JC-1: harness target. `stub` (default) keeps the verified 35/35 baseline byte-for-byte.
+# `real` drives the REAL auth via the ROOT joint compose (see JOINT_CHECKPOINT.md): the allow-path
+# credential is a genuine minted token, the copy-only assertion (V-5c/V-6d) asserts a signed
+# 3-segment JWT instead of the stub `STUB.` literal, and the stub-ONLY steps — the @auth
+# X-Stub-Saw scrub echoes (V-8/8b/8c), the stub fault-injections (V-7 204 / V-10 stop / V-11 hung
+# / V-11c 5xx), the stub-echo log assertions (V-15c/15d) and the /login rate burst (V-16) — are
+# SKIPPED in real mode (real fail-closed + real cross-replica kill are closed via auth's own A3
+# and the joint doc, not the stub container). regression_headers.sh is the primary JC-1 wall.
+AUTH_TARGET="${AUTH_TARGET:-stub}"
+JWT_RE='^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'
+if [ "$AUTH_TARGET" = "real" ]; then
+  demo=$(curl -sS -k --max-time 8 --resolve "auth.$SUITE:443:$IP" "https://auth.$SUITE/debug/demo-tokens" 2>/dev/null)
+  TOK_VALID=$(printf '%s' "$demo" | sed -n 's/.*"valid_agent":"\([^"]*\)".*/\1/p')
+  TOK_REFUSED=$(printf '%s' "$demo" | sed -n 's/.*"refused_agent":"\([^"]*\)".*/\1/p')
+  { [ -n "$TOK_VALID" ] && [ -n "$TOK_REFUSED" ]; } || { echo "FATAL: no real tokens minted (AUTH_DEMO=1 on real auth?)"; exit 2; }
+else
+  TOK_VALID="valid-agent"; TOK_REFUSED="refused"
+fi
+
+echo "== proxy verify: mode=$MODE suite=$SUITE auth-target=$AUTH_TARGET =="
 
 # 0. Config validates inside the running container (selected mode's env applied).
 if $DC exec -T proxy caddy validate --config /etc/caddy/Caddyfile >/dev/null 2>&1; then
@@ -51,9 +71,9 @@ if $DC exec -T proxy wget -qO- http://localhost:9100/healthz | grep -q ok; then
 #     via auth) with throwaway requests so no ASSERTED request below is the cold-counter request.
 #     Harmless if #94 is absent. (CANNOT-VERIFY-HERE — needs a real Docker host.)
 curl -sS -k --max-time 8 --resolve "board.$SUITE:443:$IP" -o /dev/null \
-    -H 'Authorization: Bearer valid-agent' "https://board.$SUITE/" 2>/dev/null || true
+    -H "Authorization: Bearer $TOK_VALID" "https://board.$SUITE/" 2>/dev/null || true
 curl -sS -k --max-time 8 --resolve "auth.$SUITE:443:$IP" -o /dev/null \
-    -H 'Authorization: Bearer valid-agent' "https://auth.$SUITE/api/verify" 2>/dev/null || true
+    -H "Authorization: Bearer $TOK_VALID" "https://auth.$SUITE/api/verify" 2>/dev/null || true
 
 # 2. Agent, no credential -> 401 (never redirect). A§8.5.
 IFS=$'\t' read -r c hf bf < <(edge "board.$SUITE" -H 'Accept: application/json')
@@ -71,46 +91,68 @@ check "3 browser no-cred -> 302" "$c" "302"
 grep -qi '^Location: */login' "$hf" && ok "3b Location -> /login" || bad "3b Location -> /login"
 
 # 4. Authenticated but refused at the door -> 403. A§8.5.
-IFS=$'\t' read -r c hf bf < <(edge "board.$SUITE" -H 'Authorization: Bearer refused')
+IFS=$'\t' read -r c hf bf < <(edge "board.$SUITE" -H "Authorization: Bearer $TOK_REFUSED")
 check "4 refused -> 403" "$c" "403"
 
+# helper: assert the upstream got auth's identity — literal STUB. (stub) or a 3-segment JWT (real).
+assert_identity() { # $1=body-file $2=label
+  if [ "$AUTH_TARGET" = "real" ]; then
+    local id; id=$(grep -i '^X-Auth-Identity:' "$1" | head -1 | sed 's/^[^:]*: *//; s/[[:space:]]*$//')
+    printf '%s' "$id" | grep -qE "$JWT_RE" && ok "$2 (valid 3-segment JWT)" || bad "$2 (not a JWT: ${id:0:24}…)"
+  else
+    grep -qi 'X-Auth-Identity: *STUB\.' "$1" && ok "$2" || bad "$2"
+  fi
+}
+
 # 5. Allowed agent -> 200 reaches upstream; only auth's X-Auth-Identity is copied.
-IFS=$'\t' read -r c hf bf < <(edge "board.$SUITE" -H 'Authorization: Bearer valid-agent')
+IFS=$'\t' read -r c hf bf < <(edge "board.$SUITE" -H "Authorization: Bearer $TOK_VALID")
 check "5 allow -> 200 (reaches upstream)" "$c" "200"
 grep -q 'UPSTREAM=board' "$bf" && ok "5b reached board upstream" || bad "5b reached board upstream"
-grep -qi 'X-Auth-Identity: *STUB\.' "$bf" && ok "5c upstream got auth's X-Auth-Identity" || bad "5c upstream got X-Auth-Identity"
-# 5d Remote-User trap: auth SET it on its 200, but proxy copies ONLY X-Auth-Identity (A§8.7).
+assert_identity "$bf" "5c upstream got auth's X-Auth-Identity"
+# 5d Remote-User trap: (stub) auth SET it on its 200, proxy copies ONLY X-Auth-Identity (A§8.7).
+#     Real auth does not emit Remote-User at all, so this negative assertion holds in both targets.
 grep -qi 'Remote-User: *op:eide' "$bf" && bad "5d Remote-User trap NOT copied" || ok "5d Remote-User trap not copied"
 
 # 6. SCRUB (A§8.6 R1 / gate): client injects identity headers on an allowed request.
 IFS=$'\t' read -r c hf bf < <(edge "board.$SUITE" \
-    -H 'Authorization: Bearer valid-agent' \
+    -H "Authorization: Bearer $TOK_VALID" \
     -H 'X-Auth-Identity: FORGED' -H 'X_Auth_Identity: FORGED_US' \
     -H 'Remote-User: operator' -H 'X-Forwarded-Prefix: /admin')
 check "6 scrub allow -> 200" "$c" "200"
 grep -q 'FORGED' "$bf" && bad "6b forged identity did NOT reach upstream" || ok "6b forged identity did not reach upstream"
 grep -qi 'X-Forwarded-Prefix: */admin' "$bf" && bad "6c forged X-Forwarded-Prefix stripped" || ok "6c forged X-Forwarded-Prefix stripped"
-grep -qi 'X-Auth-Identity: *STUB\.' "$bf" && ok "6d upstream still has auth's identity" || bad "6d upstream still has auth's identity"
+assert_identity "$bf" "6d upstream still has auth's identity"
 
-# 7. Exactly-200 (A§8.5): stub returns 204 (2xx but not 200) -> proxy DENIES, upstream not reached.
-IFS=$'\t' read -r c hf bf < <(edge "board.$SUITE" -H 'Authorization: Bearer allow-204')
-grep -q 'UPSTREAM=board' "$bf" && bad "7 204 must NOT reach upstream" || ok "7 204 denied (upstream not reached, got $c)"
+if [ "$AUTH_TARGET" = "stub" ]; then
+  # 7. Exactly-200 (A§8.5): stub returns 204 (2xx but not 200) -> proxy DENIES, upstream not reached.
+  #    STUB-ONLY: `allow-204` is a stub fault-injection credential; real auth never returns 204.
+  IFS=$'\t' read -r c hf bf < <(edge "board.$SUITE" -H 'Authorization: Bearer allow-204')
+  grep -q 'UPSTREAM=board' "$bf" && bad "7 204 must NOT reach upstream" || ok "7 204 denied (upstream not reached, got $c)"
 
-# 8. @auth route is gate-EXEMPT but STILL scrubbed (S2-01). Inject identity, hit verify via @auth;
-#    the stub echoes what it SAW — must be NONE (scrub ran before proxying to auth).
-# (send a valid credential so X-Stub-Saw-Authorization is a REAL forwarding proof, not just header-exists)
-hf="$TMP/ah"; curl -sS -k --max-time 8 --resolve "auth.$SUITE:443:$IP" -D "$hf" -o /dev/null \
-    -H 'Authorization: Bearer valid-agent' \
-    -H 'X-Auth-Identity: FORGED' -H 'Remote-User: operator' "https://auth.$SUITE/api/verify" >/dev/null 2>&1
-grep -qi '^X-Stub-Saw-XAuthIdentity: *NONE' "$hf" && ok "8 @auth scrubbed client X-Auth-Identity" || bad "8 @auth scrubbed X-Auth-Identity"
-grep -qi '^X-Stub-Saw-RemoteUser: *NONE' "$hf" && ok "8b @auth scrubbed client Remote-User" || bad "8b @auth scrubbed Remote-User"
-grep -qi '^X-Stub-Saw-Authorization: *Bearer valid-agent' "$hf" && ok "8c Authorization forwarded to verify (A§8.3)" || bad "8c Authorization forwarded"
+  # 8. @auth route is gate-EXEMPT but STILL scrubbed (S2-01). Inject identity, hit verify via @auth;
+  #    the stub echoes what it SAW — must be NONE (scrub ran before proxying to auth).
+  #    STUB-ONLY: real auth emits no X-Stub-Saw echo (verify-path scrub shares the (scrub) snippet
+  #    asserted on the upstream path; JC-1 step 5). (send a valid credential so 8c is a real proof.)
+  hf="$TMP/ah"; curl -sS -k --max-time 8 --resolve "auth.$SUITE:443:$IP" -D "$hf" -o /dev/null \
+      -H "Authorization: Bearer $TOK_VALID" \
+      -H 'X-Auth-Identity: FORGED' -H 'Remote-User: operator' "https://auth.$SUITE/api/verify" >/dev/null 2>&1
+  grep -qi '^X-Stub-Saw-XAuthIdentity: *NONE' "$hf" && ok "8 @auth scrubbed client X-Auth-Identity" || bad "8 @auth scrubbed X-Auth-Identity"
+  grep -qi '^X-Stub-Saw-RemoteUser: *NONE' "$hf" && ok "8b @auth scrubbed client Remote-User" || bad "8b @auth scrubbed Remote-User"
+  grep -qi '^X-Stub-Saw-Authorization: *Bearer valid-agent' "$hf" && ok "8c Authorization forwarded to verify (A§8.3)" || bad "8c Authorization forwarded"
+else
+  skip "7/8/8b/8c stub-only (204 inject + X-Stub-Saw verify-path echo) — real verify-path scrub shares the asserted (scrub); see JOINT_CHECKPOINT.md JC-1 step 5"
+fi
 
 # 9. Unmapped subdomain -> default-deny 404 (F7).
-IFS=$'\t' read -r c hf bf < <(edge "nope.$SUITE" -H 'Authorization: Bearer valid-agent')
+IFS=$'\t' read -r c hf bf < <(edge "nope.$SUITE" -H "Authorization: Bearer $TOK_VALID")
 check "9 unmapped host -> 404" "$c" "404"
 
+if [ "$AUTH_TARGET" = "stub" ]; then
 # 10. FAIL-CLOSED: auth unreachable -> deny (gate #1). Stop auth, expect non-200 + no upstream.
+#     STUB-ONLY: drives the stub container's lifecycle + fault-injection envs (STUB_DELAY_MS /
+#     STUB_FORCE_STATUS). Against real auth the equivalents are: V-10 = stop `auth-a` on the root
+#     joint compose (still fail-closed); V-11/11c hung/5xx are exercised by auth's own A3 close-outs
+#     (Redis-hang deny-fast, 5xx). See JOINT_CHECKPOINT.md.
 echo "-- stopping auth (fail-closed unreachable) --"; $DC stop auth >/dev/null 2>&1
 IFS=$'\t' read -r c hf bf < <(edge "board.$SUITE" -H 'Authorization: Bearer valid-agent')
 { [ "$c" != "200" ] && ! grep -q 'UPSTREAM=board' "$bf"; } && ok "10 auth down -> deny (got $c)" || bad "10 auth down must deny (got $c)"
@@ -136,13 +178,16 @@ STUB_FORCE_STATUS=500 $DC up -d auth >/dev/null 2>&1; sleep 3
 IFS=$'\t' read -r c hf bf < <(edge "board.$SUITE" -H 'Authorization: Bearer valid-agent')
 { [ "$c" != "200" ] && ! grep -q 'UPSTREAM=board' "$bf"; } && ok "11c auth 5xx -> deny (got $c)" || bad "11c auth 5xx must deny (got $c)"
 echo "-- restoring auth (no forced status) --"; STUB_FORCE_STATUS= $DC up -d auth >/dev/null 2>&1; sleep 3
+else
+  skip "10/11/11c stub-only (auth stop + hung + 5xx fault-injection) — real fail-closed: stop auth-a (V-10) + auth A3 close-outs (hung/5xx); see JOINT_CHECKPOINT.md"
+fi
 
 # 12. INTERNAL mode only: prove the internal-CA chain validates (no -k).
 if [ "$MODE" = "internal" ]; then
   $DC exec -T proxy cat /data/caddy/pki/authorities/local/root.crt > "$TMP/root.crt" 2>/dev/null
   if [ -s "$TMP/root.crt" ]; then
     code=$(curl -sS --cacert "$TMP/root.crt" --max-time 8 --resolve "board.$SUITE:443:$IP" \
-          -H 'Authorization: Bearer valid-agent' -o /dev/null -w '%{http_code}' "https://board.$SUITE/" 2>/dev/null)
+          -H "Authorization: Bearer $TOK_VALID" -o /dev/null -w '%{http_code}' "https://board.$SUITE/" 2>/dev/null)
     check "12 internal-CA chain validates (trusted curl)" "$code" "200"
   else bad "12 could not export internal root"; fi
 fi
@@ -153,17 +198,19 @@ $DC exec -T proxy wget -qO- http://localhost:9100/metrics 2>/dev/null | grep -q 
   && ok "13 /metrics served on internal :9100" || bad "13 /metrics on internal :9100"
 
 # 14. Metrics NOT publicly reachable via :443 (the public site must never serve caddy_ metrics).
-curl -sS -k --max-time 8 --resolve "board.$SUITE:443:$IP" -H 'Authorization: Bearer valid-agent' \
+curl -sS -k --max-time 8 --resolve "board.$SUITE:443:$IP" -H "Authorization: Bearer $TOK_VALID" \
     -o "$TMP/m" "https://board.$SUITE/metrics" 2>/dev/null
 grep -q 'caddy_http_requests_total' "$TMP/m" && bad "14 metrics leaked on public :443" || ok "14 metrics NOT public via :443"
 
 # 15. /edge-info reports the mode; access log is JSON and never contains the token value.
 $DC exec -T proxy wget -qO- http://localhost:9100/edge-info 2>/dev/null | grep -qi "\"mode\":\"${MODE^^}\"" \
   && ok "15 /edge-info reports mode=$MODE" || bad "15 /edge-info mode"
-curl -sS -k --max-time 8 --resolve "board.$SUITE:443:$IP" -H 'Authorization: Bearer valid-agent' \
+curl -sS -k --max-time 8 --resolve "board.$SUITE:443:$IP" -H "Authorization: Bearer $TOK_VALID" \
   -o /dev/null "https://board.$SUITE/" 2>/dev/null
 logs=$($DC logs --tail=80 proxy 2>&1)
 printf '%s' "$logs" | grep -q '"level"' && ok "15b access log is structured JSON" || bad "15b access log JSON"
+
+if [ "$AUTH_TARGET" = "stub" ]; then
 
 # 15c (CARRY-IN 1 rewrite): assert the REAL property — no CLIENT credential VALUE is logged
 #   un-redacted in a request entry. A blanket grep for the token is WRONG: the auth STUB echoes the
@@ -221,6 +268,9 @@ done
 [ "$retryafter" = "1" ] && ok "16b 429 carries Retry-After" || bad "16b 429 missing Retry-After header"
 echo "-- cooling down rate-limit window (65s) so a chained regression run starts clean --"
 sleep 65
+else
+  skip "15c/15d/16 stub-only — 15c/15d assert redaction via the stub's X-Stub-Saw echo (real auth emits none; the resp_headers/request redaction rules are backend-agnostic and still apply to real signed tokens); 16 bursts the stub /login. Real-auth log redaction + rate-limit are re-confirmed in JOINT_CHECKPOINT.md."
+fi
 
 echo "== $PASS passed, $FAIL failed =="
 [ "$FAIL" -eq 0 ]
