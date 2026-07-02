@@ -32,6 +32,13 @@ The proxy fail-closes (502) until auth answers, so the auth plane must be health
 the edge. From the repo root:
 
 ```bash
+# (PRE-FLIGHT) prove the merged config runs the SERVER, not pytest, BEFORE booting.
+#   Regression guard for the fixed boot-defect (auth-a was running `python -m pytest`
+#   because the Dockerfile's trailing `test` stage was the default build target).
+#   Expect: command = ["python","-m","auth.server"] and image = agent-corp/auth:stage5.
+docker compose -f compose.yaml config | grep -A25 'auth-a:' | grep -E 'command:|image:|python -m'
+#   → MUST show `auth.server` (NOT `pytest`). If it shows pytest, STOP — do not `up`.
+
 # (a) build + start the whole joint stack (real auth plane + proxy + board echo upstream)
 docker compose -f compose.yaml up -d --build
 
@@ -55,11 +62,16 @@ curl -sk --resolve auth.suite.local:443:127.0.0.1 https://auth.suite.local/debug
 wired to a stub or the alias didn't resolve — **stop and fix before any JC below.**
 
 > **Fallback if `compose.yaml` warns that it will not merge the included `auth-a`** (some Compose
-> builds refuse to merge a same-named included service). Use the two-stack bring-up instead:
+> builds refuse to merge a same-named included service). Use the two-stack bring-up instead — it runs
+> the auth stack through its own tested compose (zero merge, zero drift):
 > ```bash
 > docker network create edge
-> docker compose -f platform/auth/docker-compose.yml up -d --build      # auth stack (set AUTH_DEMO=1 in .env)
-> docker network connect --alias auth edge agent-corp-auth-a-1          # give auth-a the `auth` alias on edge
+> # auth stack via its OWN compose (project `auth`); set AUTH_DEMO=1 in platform/auth/.env first.
+> # The `target: runtime` pin + explicit server command live in this compose, so auth-a runs the
+> # SERVER here too (the pytest boot-defect is fixed at the source, not just in the root compose).
+> docker compose -f platform/auth/docker-compose.yml up -d --build
+> # give the real auth-a the `auth` alias on `edge` (container id, robust to project name):
+> docker network connect --alias auth edge "$(docker compose -f platform/auth/docker-compose.yml ps -q auth-a)"
 > #   then start ONLY the proxy + board on the external `edge` network (a 2-service override that
 > #   declares `networks: {edge: {external: true}}`); see the inline note in compose.yaml.
 > ```
