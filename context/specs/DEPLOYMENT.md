@@ -18,7 +18,7 @@ Rules: subdomain label == auth audience segment == compose service name (proxy P
 |---|---|---|---|
 | proxy | `proxy` | 443/80 published; 9100 internal | only host-published service |
 | auth | `auth` | **8089** | as built — `AUTH_PORT=8089` in auth's compose. **`AUTH_VERIFY_PORT=8089` is the ONE correct value** (see §4) |
-| board, notes, mission-control, drive, chat, pdf, cmdb | own name | **8080** | suite convention (Caddyfile `import app <name>:8080`) |
+| board, notes, mission-control, drive, chat, pdf, library, cmdb | own name | **8080** | suite convention (Caddyfile `import app <name>:8080`) |
 | gateway, vault | own name | 8080 | also join `creds` |
 | agent-runtime | `agent-runtime` | TBD in its research | joins `edge` for MCP/API calls to the suite; never joins `creds` |
 

@@ -60,6 +60,12 @@
 - (3.2) out-of-band watchdog (independent uptime check via the ntfy sink, not routed through the suite)
 - (6.4) API-versioning PROCESS rule (Stage-4 exit publishes versioned OpenAPI + MCP schema; downstream pins; per-seam contract test)
 
+**Operator additions (2026-07-01, post-review — not from the gap analysis):**
+- **`library` app scaffolded** (`apps/library/` — Standard risk, §12 ingestion obligations, provenance/confidence tiers, curation-team model). Inventory row + build-order slot added; durability table row (corpus canonical, index rebuildable); `doc_id` added to IDENTIFIERS.md; two new seams indexed in CONTRACTS (library↔agent-runtime embeddings, library↔gateway/cmdb sandbox).
+- **Teams** defined as composition of existing primitives (ARCHITECTURE §6): standing epic + persona set + tag subscription + steward persona. **Design input → Board and auth Stage-2 schemas: the `team` label** (on epics and personas). No new coordination machinery — the Board remains the only coordinator.
+- **Sandbox execution tier (tier-0)** defined (ARCHITECTURE §5): disposable, credential-less, CMDB `disposable` class with auto-approve policy, Gateway-executed, kill-switch-covered. **Design inputs → CMDB research (the `disposable` class + auto-approve policy shape) and Gateway planning (`execute_in_sandbox`-style surface + evidence capture for library verification).**
+- Embedding-model load → add to the agent-runtime gap-1.2 sizing artifact's scope.
+
 ## 4. Refuted candidates (no action ever needed — recorded so they aren't re-raised)
 
 Approval throughput/fatigue, mis-approval recovery, and inter-app event propagation were all adversarially verified as **already covered** — see the "Already well covered" section of `context/GAP_ANALYSIS_2026-07-01.md` for the exact doc locations.

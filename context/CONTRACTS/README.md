@@ -24,6 +24,8 @@ New contracts are written **here** (one file per seam, named `<producer>-<consum
 - auth ↔ each app: scope→tool map for MCP surfaces — currently defined unilaterally in auth's PLAN; each app's Stage-2 must consume and countersign its slice
 - board ↔ wazuh-connector: kickoff webhook + verification-evidence shape
 - mission-control ↔ agent-runtime: heartbeat/liveness + drain/kill compliance protocol
+- library ↔ agent-runtime: embedding-model serving (embeddings are inference — the load belongs in the gap-1.2 GPU sizing artifact)
+- library ↔ gateway/cmdb: tier-0 sandbox execution surface for documentation verification (disposable class, auto-approve policy, kill-switch-covered — ARCHITECTURE.md §5)
 
 ## The three shared registries — OWNER ASSIGNMENTS
 

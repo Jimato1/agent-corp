@@ -39,7 +39,7 @@ The agent orchestrates all four but holds no credentials and cannot approve its 
 
 **Escalation is the default failure mode.** A stuck agent files a `needs_review`/escalation explaining the blocker instead of spinning or retrying blindly. A host going unreachable escalates immediately and is never blind-retried.
 
-## 4. App inventory (9 apps + 3 platform layers)
+## 4. App inventory (10 apps + 3 platform layers)
 
 | App | Role | Agent surface | Human surface | Risk class |
 |-----|------|--------------|--------------|-----------|
@@ -49,6 +49,7 @@ The agent orchestrates all four but holds no credentials and cannot approve its 
 | **drive** | Artifact store (non-markdown outputs) | put/get/list files by ticket | browse, preview, download | Standard |
 | **chat** | Human-facing notifications + broadcast | post notifications/escalations | notification feed + broadcast | Standard |
 | **pdf** | Callable render/view tool + Drive preview | render note→PDF, view | manual view/edit | Safe |
+| **library** | Curated reference corpus (RAG) — the corporate reference shelf; markdown corpus canonical, vector/FTS index rebuildable | hybrid search returning chunks + citations + provenance tier; propose ingestion (never direct write to trusted tier) | browse corpus, ingestion review queue, manage collections | Standard |
 | **gateway** | **The hands** — only component that executes on hosts | `execute_approved_plan(ticket, host)` only | live execution monitor, per-command audit, kill-switch chokepoint | **Critical-infra** |
 | **vault** | Secrets store (deliberate two-view exception) | reference cred by handle only; **never** plaintext | manage secrets, rotation, access audit | **Critical-infra** |
 | **cmdb** | Inventory + policy brain | query policy (tier, window, in-window?) | manage fleet + policies | **Critical-infra** |
@@ -60,6 +61,7 @@ Notes:
 - **Wazuh is NOT an app you build.** It is existing infrastructure the system *reads from* and *verifies against*. A small connector (living in or beside the Gateway) talks to its API. Wazuh detects and tracks remediation; it never patches. The patching capability is the Gateway.
 - **Chat is deliberately human-facing.** Start as a one-way notification stream + operator broadcast. Do NOT build agent-to-agent chat here; deliberation lives in Notes (see §6).
 - **Vault inverts the two-view rule:** agents get almost no read surface — only handle references, redeemable to plaintext solely by the Gateway.
+- **The Library is deliberately NOT Notes.** Notes is the lab notebook (agent-written working memory, internal provenance, FTS); the Library is the reference shelf (externally-ingested documentation, provenance/confidence tiers, semantic+FTS hybrid retrieval). Its ingestion path is a first-class §12 surface: `sandbox-verified` content auto-admits (a sandbox test IS an external verifier), `cross-referenced` prose needs batched operator review, everything else quarantines. The Library confirms *how*; the external verifier still confirms *done*. See `apps/library/CLAUDE.md`. *(Added 2026-07-01, operator decision.)*
 - **The agent-runtime is the client half of every guardrail.** Leases, heartbeats, WIP limits, budgets, and the kill switch are enforced *server-side* by Board/MC/Gateway — and obeyed *client-side* by the runtime that hosts the agent processes. It is Critical-infra because it physically holds the per-agent signing keys (auth's "true root credential") and the local model stack (a supply-chain surface: one poisoned model compromises every role, including the Adversarial Reviewer). It holds identity key material only — never host credentials, never approval or execution authority. See `platform/agent-runtime/CLAUDE.md`. *(Added 2026-07-01, gap 1.1.)*
 
 ## 5. Cross-cutting mechanics
@@ -74,6 +76,8 @@ Notes:
 **Git-backed audit trail:** notes are files, so every agent edit is diffable and reversible for free. Non-negotiable for autonomous operation — and it **must have a configured git remote** (§10): a local-only `.git` means one disk failure destroys the source of truth and its reversibility history together.
 
 **Guardrails (continuous mode):** hard review/approval gates; WIP limits (per-agent and global); budgets as *compute/time/concurrency* caps plus action cooldowns (not dollars); loop guards (cap follow-up spawn depth; flag runaway chains); a **global kill switch** that physically bites at the Gateway chokepoint.
+
+**Sandbox execution tier (tier-0) *(added 2026-07-01)*:** disposable, credential-less sandbox targets (throwaway containers/VMs) are registered in **CMDB as a `disposable` class with auto-approve policy** — no maintenance windows, no Vault credentials (sandboxes hold nothing worth stealing) — and are executed against **only via the Gateway**, like every other target. This preserves the execution monopoly verbatim ("no destructive *real-world* action" — a sandbox has no real world) and keeps runaway loops killable: **the global kill switch covers sandbox execution** because everything funnels through the one chokepoint. Primary consumer: Library curation (sandbox evidence = external verification for testable documentation claims). Design input for CMDB research and Gateway planning — recorded in `context/GAP_REMEDIATION.md` §3.
 
 ## 6. The agentic-Agile deliberation layer
 
@@ -96,6 +100,8 @@ Planning is a **ceremony**, not a single agent call. This is mostly new *behavio
 
 **Where the conversation physically lives:** a structured thread persisted as a **note** attached to the planning ticket (external memory + full audit) — explicitly NOT the human-facing chat app. Keeps the coordination boundary clean and gives the operator a reviewable record of every huddle.
 
+**Teams *(added 2026-07-01)*:** a team is a **composition of existing primitives, not new machinery**: a standing epic (the team's mandate — e.g. "keep the library accurate," "maintain fleet readiness") + a persona set (agent-runtime config) + a ticket-type/tag subscription (the role-ready routing the workforce decision reserved) + the three kickoff types for its scheduled and event-driven work. A **steward persona** (the Scrum Master pattern scoped to a domain) owns the standing epic's triage and decomposition. The Board remains the only coordinator — teams never negotiate work among themselves; their agents claim tagged tickets atomically like everyone else. The `team` label lands in the Board and auth schemas at Stage 2 (design input recorded in `context/GAP_REMEDIATION.md` §3). Canonical examples: the Library curation team; the §7 fleet-maintenance flow run as a standing infrastructure team.
+
 ## 7. Reference scenario (canonical example for every app's research phase)
 
 Operator files an epic: "~20 homelab servers run Wazuh agents; most are behind on vulnerabilities and package updates; maintain and improve those metrics." End-to-end flow:
@@ -111,7 +117,7 @@ Operator files an epic: "~20 homelab servers run Wazuh agents; most are behind o
 ## 8. Risk classes (set rigor in PROCESS.md stages)
 
 - **Safe** (pdf): light security stage.
-- **Standard** (board, notes, mission-control, drive, chat, proxy): normal rigor.
+- **Standard** (board, notes, mission-control, drive, chat, library, proxy): normal rigor. (Library carries one elevated obligation: corpus poisoning via ingestion is its mandatory primary threat-model axis, per §12.)
 - **Critical-infra** (gateway, vault, cmdb, auth, agent-runtime): heavy security + verification stages — mandatory segregation-of-duties proof, "agent never holds plaintext" checks, kill-switch chokepoint verification, per-host mutex correctness, audit completeness. These apps cannot exit the security stage on a light checklist.
 
 ## 9. Tech leanings (validate current specifics in research)
@@ -131,6 +137,7 @@ The "markdown is truth / databases are rebuildable indexes" invariant is precise
 | Store | Class | Consequence |
 |---|---|---|
 | Notes markdown corpus (+ its git history) | **CANONICAL** | the invariant's subject; its FTS/link index is the rebuildable part |
+| Library markdown corpus (+ provenance/verification frontmatter) | **CANONICAL** | its chunk/vector/FTS index is the rebuildable part |
 | Board DB (tickets, approvals, leases, `ceremony_events`) | **CANONICAL** | approval state is load-bearing for SoD; not rebuildable from markdown |
 | Chat DB (notification/escalation record) | **CANONICAL** | the delivered-notification record exists nowhere else |
 | Drive blobs | **CANONICAL** | artifacts have no other home |
@@ -162,7 +169,7 @@ Intra-suite ("east-west") traffic is tiered, not flat:
 
 ## 13. Authoritative cross-cutting specs & contracts *(added 2026-07-01)*
 
-These bind every app session; they exist so 11 components built in separate sessions actually interoperate. Read the relevant ones before designing any schema or API:
+These bind every app session; they exist so 13 components built in separate sessions actually interoperate. Read the relevant ones before designing any schema or API:
 
 | Doc | Authority over |
 |---|---|
