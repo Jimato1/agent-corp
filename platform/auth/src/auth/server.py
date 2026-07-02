@@ -83,6 +83,7 @@ from .crypto.signer_hmac import HMACSigner
 from .killswitch.breakglass import BreakGlassController
 from .killswitch.killswitch import KILL_G0, KILL_G1, KILL_G2, KillSwitchController
 from .mcp.surface import AuthMCPSurface, CallerIdentity
+from .store.factory import make_hotstore, make_store
 from .store.memory_hot import MemoryHotStore
 from .store.sqlite_store import SQLiteStore
 from .tokens import revocation as REV
@@ -179,11 +180,13 @@ class AuthApp:
         # active is a CONSTRUCTOR swap here (PostgresStore, same Protocol) — NOT a
         # rewrite; DATABASE_URL is the documented swap trigger (CANNOT-VERIFY-HERE).
         # The HotStore is the in-process MemoryHotStore now; RedisHotStore later.
-        if store is not None:
-            self.store = store
-        else:
-            self.store = SQLiteStore(os.environ.get("AUTH_SQLITE_PATH", ":memory:"))
-        self.hot = hot if hot is not None else MemoryHotStore()
+        # Backend is a CONFIG choice behind the Protocol seam (decision #8): the
+        # factory returns SQLite/Memory by default (unchanged for the 247-test suite)
+        # and PostgresStore/RedisHotStore when AUTH_STORE=postgres / AUTH_HOTSTORE=redis
+        # (the migrated substrate the container runs). An explicit store/hot (tests)
+        # always wins.
+        self.store = store if store is not None else make_store()
+        self.hot = hot if hot is not None else make_hotstore()
         self.sessions = SessionStore()
 
         # -- signers: two DISTINCT keys (§8.7) -------------------------------
@@ -464,8 +467,14 @@ class AuthApp:
             return self._json(404, {"error": "not_found", "path": route})
         except AuthError as e:
             return self._json(400, {"error": type(e).__name__, "detail": str(e)})
-        except Exception as e:  # noqa: BLE001
-            return self._json(500, {"error": "internal", "detail": str(e)})
+        except Exception:  # noqa: BLE001
+            # Do NOT leak internal exception text to the client — on the migrated
+            # substrate a psycopg/redis error would disclose DSN host/port/user, DB
+            # and table names, or driver internals. Log server-side, return generic.
+            import sys
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            return self._json(500, {"error": "internal"})
 
     # ------------------------------------------------------------------ #
     # Route impls.
@@ -694,8 +703,18 @@ class AuthApp:
             elif kind == "client_id":
                 ack = self.killswitch.disable_client(data["target"], issued_by=issued_by, reason=reason)
             elif kind == "kid":
-                ack = self.killswitch.retire_signing_key(data["target"], issued_by=issued_by, reason=reason)
+                # The JWKS-kid-prune is the REDIS-INDEPENDENT kill (§7.3): it MUST
+                # land first so the operator can STOP even with Redis down. Do the
+                # local prune, THEN best-effort the Redis projection — if Redis is
+                # unreachable the kill still bites (RS token validation fails suite-
+                # wide on the next JWKS refresh); return an honest degraded ack.
                 self.keyring.retire(data["target"])
+                try:
+                    ack = self.killswitch.retire_signing_key(
+                        data["target"], issued_by=issued_by, reason=reason)
+                except Exception:
+                    return self._json(200, {"committed": True, "kind": kind,
+                                            "degraded": "redis_unavailable"})
             else:
                 return self._json(400, {"error": "invalid_request", "detail": f"unknown kind {kind!r}"})
             return self._json(200, {"committed": ack.committed, "epoch": ack.epoch, "kind": kind})
@@ -746,7 +765,9 @@ class AuthApp:
     # ------------------------------------------------------------------ #
     def _is_admin(self, headers: Dict[str, str]) -> bool:
         authz = headers.get("authorization") or headers.get("Authorization") or ""
-        return authz == f"Bearer {self.admin_token}"
+        # Constant-time compare so the admin bearer can't be recovered byte-by-byte
+        # via response timing (Critical-infra: this gates the kill switch / revoke).
+        return secrets.compare_digest(authz, f"Bearer {self.admin_token}")
 
     def _json(self, status: int, obj: object, *, extra: Optional[Dict[str, str]] = None
               ) -> Tuple[int, Dict[str, str], bytes]:
@@ -881,7 +902,11 @@ def make_handler(app: AuthApp):
 
 def serve(host: str = "0.0.0.0", port: Optional[int] = None) -> None:
     port = port or int(os.environ.get("AUTH_PORT", "8089"))
-    app = AuthApp()
+    # On the migrated substrate the one-shot `auth.migrate` job seeds the shared
+    # Postgres once; the active-active replicas must NOT re-seed (set AUTH_SEED_DEMO=0).
+    # Default "1" preserves single-node/dev behaviour (`python -m auth.server` seeds).
+    seed = os.environ.get("AUTH_SEED_DEMO", "1") == "1"
+    app = AuthApp(seed_demo=seed)
     httpd = ThreadingHTTPServer((host, port), make_handler(app))
     import sys
     sys.stderr.write(

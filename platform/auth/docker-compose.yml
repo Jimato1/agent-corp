@@ -1,61 +1,168 @@
-# auth — the identity plane stack (Stage-4 SHAPE). CANNOT-RUN-HERE.
+# auth — the identity plane stack (Stage-5 MIGRATED substrate). CANNOT-RUN-HERE.
 #
-# This compose file is the deployment SHAPE for the auth-owned identity plane plus
-# the three external systems it integrates against. It CANNOT RUN in the Stage-4
-# sandbox (no Docker/Keycloak/Redis/Postgres). It is the operator/CI artifact that
-# closes the CANNOT-VERIFY-HERE items; the exact commands are at the bottom.
+# Stage-5 (decision #8) migrated the Stage-4 substitutes to what actually runs:
+#   SQLite  -> Postgres (durable Store, sole writer)         AUTH_STORE=postgres
+#   MemoryHotStore -> Redis (revocation/kill/budget + pub/sub) AUTH_HOTSTORE=redis
+#   single-node    -> active-active: TWO stateless auth replicas (auth-a/auth-b)
+#                     over ONE shared Postgres + ONE shared Redis
+#   HMAC test-signer -> EdDSA-prod (AUTH_SIGNER_ALG=EdDSA; needs 'cryptography')
+# The Protocol seams made this a CONFIG swap, not a rewrite. It CANNOT RUN in the
+# sandbox (no Docker/Postgres/Redis/Keycloak); commands are at the bottom.
+#
+# HA framing (verified): "active-active" = N stateless APP replicas over one shared
+# single-primary Postgres, which gives read-your-writes for free (one source of
+# truth). TRUE database failover (multi-node Patroni + Redis Sentinel) is the
+# separate multi-node-hardware gate G9 — CANNOT-VERIFY-ON-A-LAPTOP (THREAT_MODEL.md).
 #
 # Segregation-of-duties note: auth is the identity SUBSTRATE, not one of the four
-# action-holders. It authenticates/authorizes principals; Keycloak is the adopted
-# Authorization Server (code/token flow); auth-core OWNS jwks/introspect/revoke/
-# verify/PDP/admin. proxy -> auth is plain-HTTP now (mTLS is a joint item).
+# action-holders. auth-core OWNS jwks/introspect/revoke/verify/PDP/admin over the
+# shared Postgres/Redis; Keycloak owns only the /authorize + /token OIDC flow.
+
+x-auth-build: &auth_build
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: agent-corp/auth:stage5
+
+# Shared env for the migrate job + both replicas (per-service AUTH_SEED_DEMO differs).
+x-auth-env: &auth_env
+  SUITE_DOMAIN: ${SUITE_DOMAIN:-suite.local}
+  AUTH_ISSUER: ${AUTH_ISSUER:-https://auth.suite.local}
+  AUTH_CANONICAL_ORIGIN: ${AUTH_CANONICAL_ORIGIN:-https://auth.suite.local:443}
+  AUTH_PORT: ${AUTH_PORT:-8089}
+  AUTH_SIGNER_ALG: ${AUTH_SIGNER_ALG:-EdDSA}   # PROD asymmetric signer (cryptography installed in image)
+  AUTH_AT_SECRET: ${AUTH_AT_SECRET:-}
+  AUTH_ID_SECRET: ${AUTH_ID_SECRET:-}
+  AUTH_ACCESS_TTL_S: ${AUTH_ACCESS_TTL_S:-300}
+  AUTH_IDENTITY_TTL_S: ${AUTH_IDENTITY_TTL_S:-30}
+  # --- MIGRATED backends (the Stage-5 substrate) ---
+  AUTH_STORE: postgres
+  AUTH_HOTSTORE: redis
+  # Single source of truth for the auth->Postgres password (nested interpolation keeps
+  # it in lockstep with POSTGRES_PASSWORD; no silent drift).
+  DATABASE_URL: ${DATABASE_URL:-postgresql://auth:${POSTGRES_PASSWORD:-change-me}@postgres:5432/auth}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  AUTH_REDIS_WAIT_REPLICAS: ${AUTH_REDIS_WAIT_REPLICAS:-0}   # >=1 = write-before-ack replica gate (needs a Redis replica)
+  # This compose is a SINGLE-NODE Redis gate boot (no replica); accept it EXPLICITLY.
+  # PROD: run a Redis replica + set AUTH_REDIS_WAIT_REPLICAS>=1 and drop this flag.
+  AUTH_ALLOW_SINGLE_NODE: ${AUTH_ALLOW_SINGLE_NODE:-1}
+  AUTH_UI_DIR: ${AUTH_UI_DIR:-/app/ui/build}
+  AUTH_DEMO: ${AUTH_DEMO:-0}                    # =1 exposes /debug/demo-tokens for the JC-1 harness
+  KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
+  KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agent-corp}
+  KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-auth-core}
+  KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-change-me-in-prod}
+  AUTH_ADMIN_TOKEN: ${AUTH_ADMIN_TOKEN:-change-me-operator-admin}
 
 services:
-  # ── auth-core: the stdlib Core API this build produces ─────────────────────
-  auth:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: agent-corp/auth:stage4
+  # ── auth-migrate: ONE-SHOT — create Postgres schema + seed demo, then exit ──
+  # Gates the replicas (service_completed_successfully): schema DDL runs ONCE (not
+  # raced by two booting replicas) and the demo principals are seeded ONCE into the
+  # shared Postgres. A non-zero exit leaves the replicas gated (fail-closed).
+  auth-migrate:
+    <<: *auth_build
+    command: ["python", "-m", "auth.migrate"]
+    restart: "no"
     environment:
-      SUITE_DOMAIN: ${SUITE_DOMAIN:-suite.local}
-      AUTH_ISSUER: ${AUTH_ISSUER:-https://auth.suite.local}
-      AUTH_CANONICAL_ORIGIN: ${AUTH_CANONICAL_ORIGIN:-https://auth.suite.local:443}
-      AUTH_PORT: ${AUTH_PORT:-8089}
-      AUTH_SIGNER_ALG: ${AUTH_SIGNER_ALG:-EdDSA}   # prod asymmetric; needs 'cryptography'
-      AUTH_ACCESS_TTL_S: ${AUTH_ACCESS_TTL_S:-300}
-      AUTH_IDENTITY_TTL_S: ${AUTH_IDENTITY_TTL_S:-30}
-      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
-      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agent-corp}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://auth:change-me@postgres:5432/auth}
-      AUTH_ADMIN_TOKEN: ${AUTH_ADMIN_TOKEN:-change-me-operator-admin}
-    ports:
-      - "8089:8089"       # proxy -> auth forward-auth subrequest (plain HTTP now)
+      <<: *auth_env
+      AUTH_SEED_DEMO: "1"
     depends_on:
-      keycloak:
-        condition: service_started
-      redis:
-        condition: service_started
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── auth-a / auth-b: active-active stateless replicas over shared Postgres+Redis ──
+  # A revoke written by one replica is honoured by the other on its next read of the
+  # SHARED Redis — this is the cross-replica kill-switch propagation. In production the
+  # proxy load-balances forward_auth across both (see THREAT_MODEL.md §proxy). Here
+  # each publishes a distinct host port so the operator can drive the cross-replica
+  # demo directly (revoke via :8089, confirm denied via :8090).
+  auth-a:
+    <<: *auth_build
+    environment:
+      <<: *auth_env
+      AUTH_SEED_DEMO: "0"          # migrate already seeded the shared Postgres
+    ports:
+      - "8089:8089"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-migrate:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started   # P2: DECOUPLED — auth-core verify/kill/introspect
+                                      # do NOT need Keycloak; a KC wobble must DEGRADE
+                                      # (only /authorize+/token), never KILL the plane.
+    restart: unless-stopped
+
+  auth-b:
+    <<: *auth_build
+    environment:
+      <<: *auth_env
+      AUTH_SEED_DEMO: "0"
+    ports:
+      - "8090:8089"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-migrate:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started
     restart: unless-stopped
 
   # ── Keycloak: the adopted Authorization Server (/authorize + /token) ───────
   # auth-core proxies to / adopts this for the OIDC code/token flow. CANNOT-VERIFY
   # -HERE: the /authorize + /token endpoints and passkey (WebAuthn) enrollment.
   keycloak:
-    image: quay.io/keycloak/keycloak:25.0
-    command: ["start", "--optimized", "--hostname=auth.${SUITE_DOMAIN:-suite.local}"]
+    # AUTH-D1: pinned to the current 26.4 patch (26.4.0 shipped 2025-09; 26.4.7 is
+    # the latest 26.4.x as of 2026-07). >=26.4 is required for DPoP GA (decision #7).
+    image: quay.io/keycloak/keycloak:26.4.7
+    # GATE-BOOT MODE: `start-dev` — needs NO prior `kc.sh build`, auto-enables HTTP,
+    # and sets hostname-strict=false, so no --hostname/KC_HOSTNAME is needed to reach
+    # the realm on :8080 for the G-gates. We deliberately do NOT use `start --optimized`
+    # here: in 26.x that REQUIRES a preceding `kc.sh build` (or a derived pre-built
+    # image) and skips the auto-build, which crash-loops without it. PRODUCTION (Stage-5)
+    # switches to a built image + `start` with `--hostname https://auth.<DOMAIN>` (26.x
+    # hostname v2 takes a FULL URL, not a bare host) + TLS behind the proxy.
+    command: ["start-dev"]
     environment:
+      # 26.x bootstrap admin env names (KEYCLOAK_ADMIN/_PASSWORD were replaced in 26.0
+      # by KC_BOOTSTRAP_ADMIN_*; the old names only warn + seed the first-boot account).
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me-in-prod}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-change-me}
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me-in-prod}
-      # Canonical passkey origin is https://auth.<SUITE_DOMAIN>:443 in BOTH modes.
-      KC_HOSTNAME_STRICT: "true"
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-change-me}   # MUST match the initdb role password
+      # Behind the suite reverse proxy: parse X-Forwarded-* (else KC 403s on proxied
+      # requests). The proxy overwrites these headers so clients cannot forge them.
+      KC_PROXY_HEADERS: xforwarded
+      # AUTH-D3: enable the health endpoints (served on the 9000 management port in 26.x).
+      # (start-dev already enables HTTP, so KC_HTTP_ENABLED is not needed here.)
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"   # /realms/... token/introspect/revoke for keycloak_gates.sh (host)
+    # AUTH-D3: readiness gate. The official image ships NO curl/wget (distroless/UBI-micro)
+    # but DOES ship bash, so probe /health/ready on the 9000 management port via /dev/tcp.
+    healthcheck:
+      # bash (guaranteed in the image; /bin/sh may not support /dev/tcp). Single-quoted
+      # YAML scalar keeps \r\n as literal backslash sequences that printf turns into real
+      # CRLF — no editor-normalization hazard. grep the 200 status line from the response.
+      test:
+        - CMD
+        - bash
+        - -c
+        - 'exec 3<>/dev/tcp/localhost/9000; printf "GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3; grep -q "200 OK" <&3'
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 180s   # cold first boot = start-dev auto-build + Liquibase schema create
     depends_on:
       postgres:
         condition: service_healthy
@@ -67,6 +174,13 @@ services:
   redis:
     image: redis:7
     command: ["redis-server", "--appendonly", "yes"]   # AOF everysec (§4.6)
+    # AUTH-D3: readiness gate (redis-cli ships in the image; returns PONG).
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     restart: unless-stopped
 
   # ── Postgres: the durable Store (decision #8 active-active HA) ─────────────
@@ -77,32 +191,69 @@ services:
     environment:
       POSTGRES_USER: auth
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
-      POSTGRES_MULTIPLE_DATABASES: auth,keycloak
+      POSTGRES_DB: auth
+      # AUTH-D0: consumed by the initdb script to create the keycloak DB role.
+      # (POSTGRES_MULTIPLE_DATABASES is NOT a real postgres env var — removed; the
+      # keycloak database is now created by ./postgres/initdb on first boot.)
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-change-me}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U auth"]
+      # -d auth so "ready" means the auth DB (not just the postmaster) accepts conns.
+      test: ["CMD-SHELL", "pg_isready -U auth -d auth"]
       interval: 10s
       timeout: 5s
       retries: 5
     volumes:
       - auth-pgdata:/var/lib/postgresql/data
+      # AUTH-D0: first-boot-only scripts (create the keycloak role + database).
+      - ./postgres/initdb:/docker-entrypoint-initdb.d:ro
     restart: unless-stopped
 
 volumes:
   auth-pgdata:
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CANNOT-RUN-HERE — operator/CI commands that close the Stage-4 substitutes:
+# CANNOT-RUN-HERE — operator/CI commands (Stage-5 migrated stack). See
+# security/THREAT_MODEL.md for the full acceptance + the GO/CVH matrix.
 #
-#   # bring the identity plane up (needs Docker; not available in the sandbox):
-#   cd platform/auth && cp .env.example .env && docker compose up -d --build
+#   # 0) cold-boot the MIGRATED stack (2 auth replicas + postgres + redis + keycloak):
+#   cp platform/auth/.env.example platform/auth/.env
+#   docker compose -f platform/auth/docker-compose.yml up -d --build
+#   #   order: postgres+redis healthy -> auth-migrate (schema+seed) exits 0 -> auth-a/auth-b start
 #
-#   # prove /api/verify END-TO-END through the real proxy against the real auth:
-#   cd platform/proxy && docker compose --env-file .env.internal up -d --build \
-#     && ./test/regression_headers.sh internal
+#   # 1) 258 unit tests green on the code (incl. Stage-5 conformance/parity), real EdDSA:
+#   docker compose -f platform/auth/docker-compose.yml run --rm \
+#     -e AUTH_STORE=sqlite -e AUTH_HOTSTORE=memory auth-a \
+#     python -m unittest discover -s /app/src/auth/tests -v
 #
-#   # asymmetric EdDSA signing (installs 'cryptography', runs the EdDSA round-trip):
-#   docker compose run --rm auth python -m unittest auth.tests.test_foundation -v
+#   # 2) SoD holds on the REAL Postgres (incl. concurrent multi-writer SERIALIZABLE guard):
+#   docker compose -f platform/auth/docker-compose.yml run --rm \
+#     -e TEST_DATABASE_URL=postgresql://auth:$POSTGRES_PASSWORD@postgres:5432/auth auth-a \
+#     python -m pytest tests/integration/test_postgres_store.py -v
 #
-#   # Redis cross-replica revocation/kill fan-out:
-#   docker compose run --rm auth python -m pytest tests/integration/test_redis_fanout.py
+#   # 3) kill-switch CROSS-REPLICA propagation on the REAL Redis:
+#   docker compose -f platform/auth/docker-compose.yml run --rm \
+#     -e TEST_REDIS_URL=redis://redis:6379/0 auth-a \
+#     python -m pytest tests/integration/test_redis_fanout.py -v
+#
+#   # 4) LIVE cross-replica revoke: revoke a token via replica A, confirm denied via replica B:
+#   curl -X POST localhost:8089/revoke -H 'Authorization: Bearer <admin>' -d 'token=<jti/at>'
+#   curl localhost:8090/introspect     -H 'Authorization: Bearer <admin>' -d 'token=<same>'  # active:false
+#
+#   # 5) P2 — auth-core survives a Keycloak outage (verify + kill still work):
+#   docker compose -f platform/auth/docker-compose.yml stop keycloak
+#   curl -fsS localhost:8089/healthz                      # still 200
+#   curl -i   localhost:8090/api/verify -H 'X-Forwarded-Host: board.suite.local' -H 'Authorization: Bearer <agent>'
+#   #   set G2 via admin, then /api/verify returns 403 at the door — kill works with KC down.
+#
+#   # 6) run the G-gate harness (Keycloak realm; G3 audience non-overlap = #1 gate):
+#   bash platform/auth/build/keycloak_gates.sh
+#
+#   # RECOVERY — if Keycloak crash-loops "unknown database", the postgres first-boot init
+#   # failed and is NOT retried while the volume is non-empty. Force a clean re-init:
+#   #   docker compose -f platform/auth/docker-compose.yml down
+#   #   docker volume rm auth_auth-pgdata    # (<project>_auth-pgdata; check `docker volume ls`)
+#   #   docker compose -f platform/auth/docker-compose.yml up -d --build
+#
+#   # CANNOT-VERIFY-ON-A-LAPTOP (G9): true DB failover = multi-node Patroni+etcd + Redis
+#   # Sentinel (survive loss of the Postgres PRIMARY / Redis master). See THREAT_MODEL.md.
 # ─────────────────────────────────────────────────────────────────────────────

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roles &amp; Scopes — auth operator console</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §8.2 — Roles & Scopes. SCAFFOLD. Shows the VISIBLE SSD prevention:
+   the SoD HOLDER CHECK verdict, conflicts non-selectable at input time, and the
+   immutable ConflictSet matrix with NO edit affordances (Decision #5). */
+window.AUTH_SHELL = {
+  level:'G0', deps:{redis:true,pdp:true,writer:true,idp:true},
+  freshness:{epoch:4471,ms:312,rs:'24/24'},
+  fleet:{flagged:0,detail:''}, operator:{sub:'op:eide',fresh:true}, activeNav:'roles_scopes'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <div class="scaffold-note" role="note"><b>SCAFFOLD</b> — realizes UI_SPEC §8.2. The SoD verdict, input-time grant
+        prevention, and immutable matrix are real markup; the authoritative grant-time SSD check is CANNOT-VERIFY-HERE
+        (it runs in the Core API / Cedar — Phase-1 build). The UI mirrors the check, never replaces it.</div>
+      <h1 class="screen">Roles &amp; Scopes <span class="mono muted" style="font-size:var(--fs-label)">· agent:patcher-07</span></h1>
+      <p class="sublede">approve-side ⊕ action-side holder scopes never co-exist on a principal; conflicting grants are
+        impossible <b>at input time</b> (PREVENT, not just detect).</p>
+
+      <!-- SoD HOLDER CHECK — INTACT (verdict word never "HOLDS"; §8.2.1 / finding C6) -->
+      <section class="panel" style="margin-bottom:16px" aria-labelledby="sod">
+        <div class="spread"><h2 id="sod" class="panel-title">SoD HOLDER CHECK (approve ⊕ execute)</h2>
+          <span class="freshness"><span class="ok">reconcile ✔ drift-checked 3s ago</span></span></div>
+        <div class="grid" style="grid-template-columns:1fr 1fr">
+          <div><div class="eyebrow">Authorization side (A)</div>
+            <p class="mono">▸ board:approve <span style="color:var(--ink-500)">✗ not held</span></p>
+            <p class="mono">▸ cmdb:write-policy <span style="color:var(--ink-500)">✗ not held</span></p></div>
+          <div><div class="eyebrow">Action side (X)</div>
+            <p class="mono">▸ gateway:execute <span style="color:var(--ok-500)">✓ held</span></p>
+            <p class="mono">▸ vault:read-cred <span style="color:var(--ink-500)">✗ not held</span></p></div>
+        </div>
+        <p style="color:var(--ok-500);font-weight:600;margin-top:8px">✅ SEPARATION INTACT — this principal occupies at most ONE side.</p>
+        <p class="freshness">If the drift-check read is stale/unavailable, this shows
+          <span style="color:var(--halt-500)">⚠ CANNOT CONFIRM SEPARATION — treat as UNVERIFIED</span> (halt-gold),
+          never a fabricated green. VIOLATED-DRIFT is driven by the PLAN §3.5 reconciliation guardrail, not local closure.</p>
+      </section>
+
+      <!-- Grant flow — conflicts NON-SELECTABLE at input time, with "why" (§8.2.2) -->
+      <section class="panel" style="margin-bottom:16px" aria-labelledby="grant">
+        <h2 id="grant" class="panel-title">Manage roles</h2>
+        <div class="stack">
+          <div class="row"><input type="radio" name="role" checked> <span class="mono">role:agent-planner</span>
+            <span class="muted">(adds board:run-ceremony)</span> <a class="btn btn--ghost" href="#" style="margin-left:auto">Grant</a></div>
+          <div class="row well" style="padding:8px;opacity:.7">
+            <span aria-hidden="true">🚫</span> <span class="mono">role:operator-approver</span> <b style="color:var(--attn-500)">UNAVAILABLE</b>
+            <div class="freshness" style="flex-basis:100%">└ would grant board:approve → conflicts with HELD gateway:execute
+              (ConflictPair board:approve ● gateway:execute). approve ⊕ execute.</div></div>
+          <div class="row well" style="padding:8px;opacity:.7">
+            <span aria-hidden="true">🚫</span> <span class="mono">any role incl. vault:read-credential</span> <b style="color:var(--attn-500)">UNAVAILABLE</b>
+            <div class="freshness" style="flex-basis:100%">└ vault:read-credential is SERVICE-only; agents may not hold it (kind-gating).</div></div>
+        </div>
+        <p style="color:var(--ok-500);margin-top:8px">Preview of effective closure AFTER this grant: ✅ SEPARATION INTACT (one side)</p>
+      </section>
+
+      <!-- Immutable ConflictSet reference — read-only, no edit affordances (§8.2.3, §2.5.10) -->
+      <section class="panel" aria-labelledby="cs">
+        <h2 id="cs" class="panel-title">SoD Conflict Set · <span class="mono">"sod-holders"</span></h2>
+        <div class="lockcap"><span aria-hidden="true">🔒</span> IMMUTABLE (compiled-in) — cannot be added, deleted, weakened, or disabled from this console or the Core API.</div>
+        <table class="matrix" aria-label="Immutable holder conflict set">
+          <thead><tr><th></th><th>board:approve</th><th>cmdb:write-policy</th><th>vault:read-cred</th><th>gateway:execute</th></tr></thead>
+          <tbody>
+            <tr><th>board:approve</th><td class="diag">—</td><td class="allow">○ allowed</td><td class="excl">● excl.</td><td class="excl">● excl.</td></tr>
+            <tr><th>cmdb:write-policy</th><td class="allow">○ allowed</td><td class="diag">—</td><td class="excl">● excl.</td><td class="excl">● excl.</td></tr>
+            <tr><th>vault:read-cred</th><td class="excl">● excl.</td><td class="excl">● excl.</td><td class="diag">—</td><td class="excl">● excl.</td></tr>
+            <tr><th>gateway:execute</th><td class="excl">● excl.</td><td class="excl">● excl.</td><td class="excl">● excl.</td><td class="diag">—</td></tr>
+          </tbody>
+        </table>
+        <p class="freshness" style="margin-top:8px">● mutually exclusive (approve-side ⊕ action-side) · ○ allowed (both governance).
+          This matrix and its Cedar <span class="mono">forbid</span> are HARDCODED. <b>[no edit controls rendered]</b></p>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="shell.js"></script>
+</body>
+</html>

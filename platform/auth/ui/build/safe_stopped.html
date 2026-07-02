@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAFE-STOPPED — auth operator console</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §5.5 — SAFE-STOPPED (Redis DOWN). Must read as SAFE, not broken.
+   Pattern D rendered as a full standalone surface. */
+window.AUTH_SHELL = {
+  level:'G0',
+  deps:{redis:false,pdp:true,writer:true,idp:true},
+  freshness:{epoch:4471,ms:0,rs:'?'},
+  degraded:'Redis',
+  fleet:{flagged:0,detail:''},
+  operator:{sub:'op:eide',fresh:true},
+  activeNav:'halt'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+
+      <!-- FRAME FIRST: "holding in a SAFE posture", halt gold, never red/"error" -->
+      <div class="halt-band" role="status" aria-live="assertive" style="border-radius:var(--r-panel);margin-bottom:20px">
+        <span class="halt-band__edge"></span>
+        <div><span class="halt-band__word"><span class="halt-band__ico">⛊</span>SAFE-STOPPED — the suite is holding in a SAFE posture</span></div>
+        <p style="margin-top:8px">Redis is unreachable, so every destructive, approve, and redeem path is
+          <b>FAILING CLOSED</b> suite-wide. <b>Nothing dangerous can happen right now.</b>
+          This is the designed safe direction (PLAN §7.5), <b>not a fault</b> in the safety controls.</p>
+      </div>
+
+      <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start">
+
+        <!-- WHAT STILL WORKS — STOP is the most prominent affordance -->
+        <section class="panel" aria-labelledby="works">
+          <h2 id="works" class="panel-title">✔ What still works</h2>
+          <p><b>STOP is still ONE MOTION</b> — Redis-independent, no typed intent, no HW key:</p>
+          <div class="row" style="justify-content:center;margin:16px 0">
+            <!-- PRIMARY, one-motion press-and-hold (0.6s), same low-friction motion as header FREEZE -->
+            <button class="actuator actuator--danger" id="stopEpoch" data-dwell="600" data-level="G1" autofocus style="min-width:100%">
+              <span class="actuator__fill"></span>
+              <span class="actuator__label">◯ HOLD TO STOP — raise signed kill epoch (G1)</span>
+              <span class="actuator__count" hidden></span>
+            </button>
+          </div>
+          <p class="freshness">↳ same low-friction motion as the header FREEZE · propagates via JWKS / AS-metadata / forward-auth header.</p>
+
+          <p style="margin-top:12px">Heavier / broader stops, only if you need them:</p>
+          <div class="stack">
+            <a class="btn btn--danger" href="#" onclick="return false">⛊ RETIRE AS KEY ▸
+              <span class="freshness" style="color:inherit">(suite-wide · typed kid · ends your session §5.4)</span></a>
+            <a class="btn btn--danger" href="breakglass.html">⛊ BREAK-GLASS STOP ▸
+              <span class="freshness" style="color:inherit">(offline factor — ONLY if auth login/verify itself is down; NOT needed just for Redis)</span></a>
+          </div>
+
+          <hr class="hair">
+          <p>✔ Benign reads keep flowing, <b>BOUNDED</b> — local in-process ceiling (PLAN §6.2).</p>
+          <p>✔ Introspection answers <b>CORRECTLY</b> — a revoked token still reads <span class="mono">active:false</span>
+            from the durable mirror (degraded-but-correct — PLAN §4.6).</p>
+          <p>✔ Engaged kill epochs still enforced (JWKS-kid, Redis-independent).</p>
+        </section>
+
+        <!-- WHAT DOES NOT WORK (accepted residual §12.2) -->
+        <section class="panel" aria-labelledby="dont">
+          <h2 id="dont" class="panel-title">✕ What does not work <span class="muted" style="font-size:var(--fs-label)">(accepted, PLAN §12.2)</span></h2>
+          <p>✕ No in-band destructive / SoD-governed action — including legitimate emergency remediation needing the
+            Gateway. <b>There is no way to approve+execute while Redis is down</b>; that is intentional and safe.</p>
+          <p>✕ Surgical per-token (<span class="mono">jti</span>) / per-agent (<span class="mono">sub</span>)
+            denylist writes — they need Redis.</p>
+          <div class="scaffold-note" style="margin-top:12px">→ For legitimate emergency remediation:
+            <a href="#" onclick="return false">Open operator runbook ▸</a>
+            <span class="freshness">(out-of-band; Stage-7 deliverable, PLAN §12.2)</span></div>
+        </section>
+
+      </div>
+
+      <!-- Dependency-status strip: distinguishing WHICH dep is down is itself reassuring -->
+      <section class="panel panel--raised" style="margin-top:20px">
+        <div class="eyebrow">Dependency status</div>
+        <p class="mono" style="margin-top:8px">
+          Redis <span style="color:var(--halt-500)">✕</span> ·
+          auth-verify <span style="color:var(--ok-500)">✔ (2/2 replicas)</span> ·
+          writer <span style="color:var(--ok-500)">✔</span> ·
+          PDP <span style="color:var(--attn-500)">⚠</span> ·
+          JWKS <span style="color:var(--ok-500)">✔ served</span>
+        </p>
+        <p class="freshness" style="margin-top:8px">"auth-verify still 2/2 replicas" is itself reassuring — the destructive
+          plane is fail-closed, the verify plane is <b>not broken</b> (PLAN §7.6). Break-glass here presents STOP and RESTORE only.</p>
+      </section>
+
+    </main>
+  </div>
+</div>
+<script src="shell.js"></script>
+</body>
+</html>

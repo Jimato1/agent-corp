@@ -28,12 +28,12 @@ import sqlite3
 import time
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
+from . import _graph as GRAPH
+from . import _invariants as INV
 from ..core import scopes as S
 from ..core.errors import (
-    AttestationRequired,
     KindGateViolation,
     RoleHierarchyError,
-    SoDViolation,
     UnknownPrincipal,
     UnknownRole,
     UnknownScope,
@@ -44,10 +44,6 @@ from ..core.principals import (
     Principal,
     Role,
 )
-
-# Scopes that demand a hardware-bound (non_exportable) key at assignment time
-# (PLAN §3.6, finding 1a): the action-side holders that release real-world power.
-_ATTESTATION_REQUIRED_SCOPES: FrozenSet[str] = S.ACTION_SIDE
 
 
 class SQLiteStore:
@@ -349,43 +345,20 @@ class SQLiteStore:
             for r in self._conn.execute("SELECT role, inherits FROM role_hierarchy").fetchall()
         ]
 
-    def _role_closure_roles(self, role_id: str) -> Set[str]:
-        """The set of roles reachable from role_id via `inherits` edges (incl. itself)."""
-        edges: Dict[str, List[str]] = {}
+    def _adjacency(self) -> Dict[str, List[str]]:
+        adj: Dict[str, List[str]] = {}
         for role, inh in self._hierarchy_edges():
-            edges.setdefault(role, []).append(inh)
-        seen: Set[str] = set()
-        stack = [role_id]
-        while stack:
-            r = stack.pop()
-            if r in seen:
-                continue
-            seen.add(r)
-            stack.extend(edges.get(r, []))
-        return seen
+            adj.setdefault(role, []).append(inh)
+        return adj
+
+    def _role_closure_roles(self, role_id: str) -> Set[str]:
+        """The set of roles reachable from role_id via `inherits` edges (incl. itself).
+        Uses the shared pure graph helper so SQLite and Postgres compute identical
+        closures (Stage-5 parity)."""
+        return GRAPH.reachable(self._adjacency(), role_id)
 
     def _creates_cycle(self) -> bool:
-        # DFS cycle detection over the whole hierarchy graph.
-        edges: Dict[str, List[str]] = {}
-        nodes: Set[str] = set()
-        for role, inh in self._hierarchy_edges():
-            edges.setdefault(role, []).append(inh)
-            nodes.add(role)
-            nodes.add(inh)
-        WHITE, GREY, BLACK = 0, 1, 2
-        color = {n: WHITE for n in nodes}
-
-        def visit(n: str) -> bool:
-            color[n] = GREY
-            for m in edges.get(n, []):
-                if color[m] == GREY:
-                    return True
-                if color[m] == WHITE and visit(m):
-                    return True
-            color[n] = BLACK
-            return False
-
-        return any(color[n] == WHITE and visit(n) for n in nodes)
+        return GRAPH.has_cycle(self._adjacency())
 
     def _direct_scopes(self, role_id: str) -> Set[str]:
         return {
@@ -413,6 +386,12 @@ class SQLiteStore:
             out |= self._role_closure_roles(role_id)
         return out
 
+    def effective_roles(self, sub: str) -> Set[str]:
+        """Public alias used by the shared grant-time invariant facade (auth.store
+        ._invariants). Same value as the private helper; exposed so the enforcement
+        code is identical across the SQLite and Postgres backends."""
+        return self._effective_roles(sub)
+
     def principals_assigned_role(self, role_id: str) -> FrozenSet[str]:
         """Every principal whose EFFECTIVE role set includes role_id (downward fan-out)."""
         result: Set[str] = set()
@@ -426,92 +405,13 @@ class SQLiteStore:
     # The §3.5 enforcement leaf + the attestation invariant
     # ================================================================== #
     def _enforce_grant_invariants(self, affected_subs: FrozenSet[str] | Set[str]) -> None:
-        """The COMPLETE grant-time invariant set, applied over the downward-
-        transitive AFFECTED set on EVERY widening mutation (grant_scope_to_role /
-        add_role_hierarchy_edge / assign_role / put_role). Closes review findings
-        1a (attestation) and 2 (kind-gating) which previously fired ONLY on
-        assign_role, letting a soft-key or wrong-kind principal acquire a holder
-        scope through a role scope-grant / hierarchy edge / role replacement.
-
-        For EACH affected principal, over its recomputed POST-mutation effective
-        closure (order matters — SSD first so an SoD collapse is named as such):
-          (1) §3.5 SSD holder-pair conflict                     -> SoDViolation
-          (2) §3.5 per-holder kind restriction (table)          -> KindGateViolation
-          (3) §3.5 g2 role kind_gate/agent_class_gate over the
-              EFFECTIVE role closure (catches a gate reached via
-              an inherited/replaced role)                        -> KindGateViolation
-          (4) §3.6/finding-1a non-exportable-key attestation
-              for action-side holders                           -> AttestationRequired
-        Any failure rolls back the caller's whole transaction (atomic reject)."""
-        self._enforce_ssd(affected_subs)
-        for sub in affected_subs:
-            self._enforce_holder_kind(sub)
-            self._enforce_kind_gates(sub)
-            self._enforce_attestation(sub)
-
-    def _enforce_ssd(self, affected_subs: FrozenSet[str] | Set[str]) -> None:
-        for sub in affected_subs:
-            pair = S.find_holder_conflict(self.effective_scopes(sub))
-            if pair is not None:
-                # Atomic reject — the caller's transaction is rolled back.
-                raise SoDViolation(sub, pair)
-
-    def _enforce_holder_kind(self, sub: str) -> None:
-        """§3.5 per-holder kind restriction over the effective closure: an agent
-        can never EFFECTIVELY hold vault:read-credential/cmdb:write-policy; a
-        service can never hold gateway:execute/board:approve; etc. Enforced here so
-        the restriction holds regardless of the widening path (review finding 2)."""
-        principal = self.get_principal(sub)
-        if principal is None:
-            return
-        violation = S.find_holder_kind_violation(self.effective_scopes(sub), principal.kind)
-        if violation is not None:
-            scope, allowed = violation
-            raise KindGateViolation(
-                f"holder scope {scope!r} is restricted to kinds {sorted(allowed)}; "
-                f"principal {sub!r} is kind={principal.kind!r} — refusing to grant "
-                f"(PLAN §3.5 decision table). A grant/hierarchy/role-replacement "
-                f"path cannot escalate a holder scope onto a disallowed kind."
-            )
-
-    def _enforce_kind_gates(self, sub: str) -> None:
-        """§3.5 guarantee 2: re-validate EVERY role in the principal's effective
-        role closure against its immutable kind/agent_class — catches a kind-gated
-        role reached via an inherited or replaced role, not just direct assignment."""
-        principal = self.get_principal(sub)
-        if principal is None:
-            return
-        for role_id in self._effective_roles(sub):
-            role = self.get_role(role_id)
-            if role is None:
-                continue
-            if role.kind_gate is not None and principal.kind not in role.kind_gate:
-                raise KindGateViolation(
-                    f"role {role_id!r} is restricted to kinds {sorted(role.kind_gate)}; "
-                    f"{sub!r} is kind={principal.kind!r}"
-                )
-            if role.agent_class_gate is not None and (
-                principal.agent_class is None
-                or principal.agent_class not in role.agent_class_gate
-            ):
-                raise KindGateViolation(
-                    f"role {role_id!r} is restricted to agent_class "
-                    f"{sorted(role.agent_class_gate)}; {sub!r} is "
-                    f"agent_class={principal.agent_class!r}"
-                )
-
-    def _enforce_attestation(self, sub: str) -> None:
-        eff = self.effective_scopes(sub)
-        needs = eff & _ATTESTATION_REQUIRED_SCOPES
-        if not needs:
-            return
-        keys = self.get_agent_keys(sub)
-        if not any(k.is_hardware_bound and k.status == "active" for k in keys):
-            raise AttestationRequired(
-                f"principal {sub!r} would hold {sorted(needs)} but has no active "
-                f"non-exportable (hardware-bound) AgentKey — a soft-key holder is a "
-                f"NO-GO (PLAN §3.6, finding 1a). Refusing to activate the role."
-            )
+        """Delegate the COMPLETE grant-time invariant set to the shared, backend-
+        agnostic enforcement (auth.store._invariants) so the SQLite and Postgres
+        backends run IDENTICAL SSD/attestation/kind logic — the 247 unit tests that
+        exercise this store are therefore a faithful regression for the Postgres
+        path (Stage-5 migration parity by construction). Any raise leaves the
+        caller's open transaction to roll back atomically."""
+        INV.enforce_grant_invariants(self, affected_subs)
 
     # ================================================================== #
     # Agent keys

@@ -15,6 +15,7 @@ it need only match the shape. runtime_checkable so tests can assert conformance.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import (
     Dict,
     FrozenSet,
@@ -136,6 +137,24 @@ class Store(Protocol):
 # from the durable Store (§4.6).
 # ---------------------------------------------------------------------------
 
+@dataclass(frozen=True)
+class RevocationSnapshot:
+    """All revocation granularities for one token, read in ONE round-trip.
+
+    Stage-6 hot-path optimization: instead of up to five SEQUENTIAL HotStore reads
+    on the live-check door path (killswitch, jti, sub, kid, client), the Redis impl
+    pipelines them into a single round-trip and returns this snapshot. The fields
+    are EXACTLY what the individual reads return; deny-PRECEDENCE is evaluated by the
+    caller (auth.tokens.revocation.consult_denylist) in the identical fail-closed
+    order — batching changes the number of round-trips, never the decision."""
+    kill_level: str
+    kill_epoch: int
+    jti_denied: bool
+    revoked_before: Optional[int]
+    kid_retired: bool = False
+    client_disabled: bool = False
+
+
 @runtime_checkable
 class HotStore(Protocol):
     # -- revocation denylist (three granularities, §4.6) -------------------
@@ -177,6 +196,21 @@ class HotStore(Protocol):
 
     def killswitch(self) -> Tuple[str, int]:
         """(level, epoch). Read on every gated call (§6.6 step 0)."""
+        ...
+
+    # -- batched live-revocation read (Stage-6 hot path: ONE round-trip) ---
+    def consult_snapshot(
+        self,
+        *,
+        jti: str,
+        sub: str,
+        kid: Optional[str] = None,
+        client_id: Optional[str] = None,
+    ) -> "RevocationSnapshot":
+        """All revocation granularities for one token in a SINGLE round-trip (the
+        Redis impl pipelines them; the in-process impl just reads its dicts). The
+        caller evaluates deny-precedence — this method only fetches, never decides,
+        and MUST raise (not swallow) on a read failure so the caller fails closed."""
         ...
 
     # -- epoch / freshness (staleness guard, fail-closed) ------------------

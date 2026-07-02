@@ -31,9 +31,28 @@
 		# So we DO NOT set trusted_proxies — default is trust-none → Caddy uses the
 		# direct peer address for {remote_host}. Never trust private_ranges here.
 		timeouts {
+			# read_header: slowloris-header mitigation (Stage-5). read_body and write are
+			# DELIBERATELY UNSET: read_body is a wall-clock cap on the WHOLE upload and would
+			# kill legitimate large uploads (drive/pdf) + streaming request bodies; write is a
+			# hard deadline on the whole response and would kill SSE/chat long-lived streams.
+			# Body abuse is bounded by per-route request_body max_size instead. (Stage-5 research)
 			read_header 10s
 			idle        2m
 		}
+		# Cap request header size to blunt header-flood / oversized-header abuse (Stage-5).
+		# Default is 1MB; 64KB is generous vs a Bearer JWT + session Cookie + X-Auth-Identity
+		# (a few KB) yet refuses absurd header floods. Exceeding it → HTTP 431. (Stage-5 research)
+		max_header_size 64KB
+
+		# [STAGE-6] Serve HTTP/1.1 + HTTP/2 only; do NOT advertise HTTP/3. Caddy's default is
+		# `h1 h2 h3`, which would emit an `Alt-Svc: h3` header — but HTTP/3 needs UDP/443, and
+		# docker-compose publishes only TCP 443 (:80 + :443). So default would make clients waste a
+		# QUIC probe on an unreachable UDP port, then fall back. On a homelab LAN h3's benefit is
+		# marginal and TLS session-ticket resumption (Caddy default, 12h STEK) already covers repeat-
+		# handshake cost. To ENABLE h3 later: set `protocols h1 h2 h3` here AND add `443:443/udp` to
+		# compose (do not do one without the other). This is a SHARED (issuer-agnostic) option, so it
+		# stays byte-identical across both TLS modes — Option-C invariant preserved. (Stage-6 research)
+		protocols h1 h2
 	}
 }
 
@@ -41,8 +60,12 @@
 # Reusable snippets (shared by every route — the "byte-identical across modes" core)
 # ─────────────────────────────────────────────────────────────────────────────
 
-# (a) Security response headers — R§6.1/6.5. First in every route so it wraps
-#     EVERY response, including forward-auth short-circuits (302/401/403) and 429.
+# (a) Security response headers — R§6.1/6.5. First in every route so it wraps every ROUTE-LEVEL
+#     response, including forward-auth short-circuits (302/401/403) and the 429 from ratelimit.
+#     Caveat (Stage-5 red-team): a 413 (request_body, set in the handle before the route) and a 431
+#     (max_header_size, emitted by Go's HTTP server before Caddy's chain) render OUTSIDE this route,
+#     so those two error pages do not carry these headers. Accepted: error pages with no body to
+#     sniff/frame, over an already-established TLS connection — not an exploitable gap.
 (sec_headers) {
 	header {
 		Strict-Transport-Security "max-age=63072000; includeSubDomains"   # no `preload` yet (R§6.1)
@@ -84,20 +107,69 @@
 	request_header -Remote_Groups
 	request_header -Remote_Name
 	request_header -Remote_Email
-	# NOTE (PLAN S2-04): this is the EXPLICIT-NAMES half of A§8.6 R1. Caddy's
-	# request_header has no prefix-wildcard delete, so the A§8.9 regression test
-	# (test/regression_headers.sh) is the contract-sync gate: it MUST fail if auth's
-	# §8.7 identity-header set ever grows beyond this enumeration.
+	# MIXED dash/underscore variants of the 3-part names (Stage-5 red-team). Go/Caddy canonicalize
+	# case only around '-'; '_' is NOT a word boundary, so X-Auth_Identity / X_Auth-Identity are
+	# DISTINCT header keys from both pure forms — yet a separator-folding upstream (WSGI/CGI/nginx map
+	# '-' and '_' to the SAME variable) would conflate them with the real header. Strip them too.
+	request_header -X-Auth_Identity
+	request_header -X_Auth-Identity
+	request_header -X-Forwarded_User
+	request_header -X_Forwarded-User
+	request_header -X-Forwarded_Groups
+	request_header -X_Forwarded-Groups
+	request_header -X-Forwarded_Prefix
+	request_header -X_Forwarded-Prefix
+	# cert-header underscore twin (parity; mTLS not enabled yet — see NOTE re: fuller permutations)
+	request_header -X_Forwarded_Tls_Client_Cert
+	request_header -X_Forwarded_Tls_Client_Cert_Thumbprint
+	# NOTE (PLAN S2-04, Stage-5): this is the EXPLICIT-NAMES half of A§8.6 R1. Caddy's request_header
+	# has no prefix-wildcard delete, and full separator-permutation coverage of long names (the mTLS
+	# cert header has 5 separators → 32 combos) is impractical by enumeration. The ULTIMATE backstop is
+	# auth §8.6 R3: every RS re-validates the SIGNED X-Auth-Identity + its own aud-bound token and MUST
+	# NOT authorize off a bare forwarded header. The A§8.9 regression test (test/regression_headers.sh,
+	# now injecting mixed variants too) is the contract-sync gate: it MUST fail if auth's §8.7 identity
+	# set grows beyond this enumeration.
 }
 
 # (c) Edge rate limiting — mholt/caddy-ratelimit (PLAN §9). Keyed on the DIRECT peer
 #     ({remote_host}), NEVER {client_ip} (spoofable via X-Forwarded-For; PLAN S2-03).
-#     Placement (before authgate) is fixed; numeric size tuned in Stage 5.
+#     Placement (before authgate) is fixed; numeric sizes SET in Stage 5 (below).
+#
+#     Zone names are GLOBAL in caddy-ratelimit: the SAME name shares ONE counter across every
+#     route that imports it. So `edge_per_ip` is a single suite-wide per-IP budget (a coarse
+#     DoS backstop, NOT the per-app fine limit — that is each app's own job). On limit → 429 +
+#     Retry-After. Exceeding is visible via caddy-ratelimit's default Prometheus metrics.
+#
+#     Baseline: 600 events / 1m per source IP (~10 req/s sustained). Rationale: this ONE counter is
+#     shared across all subdomains for a given IP, so it must clear an operator's single browser IP
+#     loading Mission Control + several polling app tabs + per-page asset bursts, while still shedding
+#     a single-IP flood (agents each have a distinct container IP, so they don't share this budget).
+#     Deliberately generous because the fine per-app limit is each app's job, not the edge's. Stage-6
+#     load-test lever: raise further, or switch key to `{remote_host} {host}` for a per-(IP,subdomain)
+#     counter so one busy subdomain can't exhaust a client's whole suite budget.
+#     RELOAD CAVEAT (Stage-5 red-team): caddy-ratelimit keeps zone state in a process-global pool keyed
+#     by zone name; changing events/window and `caddy reload` keeps the OLD limiter. Re-tuning requires
+#     a full `docker compose restart proxy`, not a hot reload — see optimization/NOTES.md (Stage 6).
 (ratelimit) {
 	rate_limit {
 		zone edge_per_ip {
 			key    {remote_host}
-			events 100
+			events 600
+			window 1m
+		}
+	}
+}
+
+# (c2) TIGHTER per-IP zone for the credential surface (the @auth login/verify subdomain), imported
+#      IN ADDITION to the baseline on the @auth route only (two rate_limit handlers stack). DISTINCT
+#      zone name → its OWN counter, independent of the baseline. 60 events / 1m per IP (~1 req/s) on
+#      the auth host blunts credential brute-force at the edge. This is defense-in-depth: auth's own
+#      §8 account lockout / revocation is the PRIMARY brute-force control; this is a coarse backstop.
+(ratelimit_auth) {
+	rate_limit {
+		zone auth_per_ip {
+			key    {remote_host}
+			events 60
 			window 1m
 		}
 	}
@@ -123,6 +195,14 @@
 		transport http {
 			dial_timeout            2s
 			response_header_timeout 250ms
+			# [STAGE-6] Explicit connection reuse (these EQUAL Caddy's defaults — a no-op made visible).
+			# The verify subrequest is the edge's per-request hot path; pooling a keepalive connection to
+			# auth avoids a TCP handshake per request (dial_timeout only applies on a cold dial). 32 idle
+			# conns/host is ample for a local authgate. `response_header_timeout` is per-request and does
+			# NOT evict the pool. Do NOT set `keepalive off`. HTTP/1.1 keepalive is sufficient — no h2c
+			# (a single small GET gains nothing from multiplexing; h2c also needs upstream support). (S6 research)
+			keepalive                     2m
+			keepalive_idle_conns_per_host 32
 		}
 		@ok status 200
 		handle_response @ok {
@@ -163,36 +243,66 @@
 	import {$TLS_ISSUER_FILE}
 
 	# [OBS] Structured JSON access log → stdout (Docker logs / log shipper collects it).
-	# Sensitive fields deleted (defense-in-depth; Caddy already redacts Authorization/Cookie).
-	# X-Auth-Identity MUST be deleted: after copy_headers it rides the request and is a token.
-	# No token contents, no raw identity-header values are ever logged. [VERIFY-AT-BUILD OBS-4]
+	# CREDENTIAL + IDENTITY REDACTION (Stage-5 hardened — CARRY-IN 2 close):
+	#   REQUEST side: Caddy AUTO-redacts Authorization/Cookie by default; we also delete them +
+	#     X-Auth-Identity (NOT auto-redacted — it is the auth JWT copied onto the upstream request).
+	#   RESPONSE side (the Stage-5 gap): auth's verify response can carry X-Auth-Identity (a REAL
+	#     signed identity JWT at Stage 7) and Remote-* principal headers into resp_headers, which
+	#     Caddy does NOT auto-redact — logging them verbatim would write identity tokens to disk.
+	#     Delete every token/principal-bearing response header.
+	#   NOT redacted: the authoritative traceparent — it is the audit correlation key (bound to
+	#     sub inside X-Auth-Identity), a non-secret we WANT for edge_req_id↔trace joins (OBSERVABILITY §2).
+	#   Field-path asymmetry is LOAD-BEARING (Stage-5 research): request headers are nested
+	#     (request>headers>Name); response headers are TOP-LEVEL (resp_headers>Name). Writing
+	#     `response>headers>...` silently no-ops and would leak the JWT with no error.
+	#   Redaction is LOG-ONLY: the filter mutates the log entry, never the wire header the app receives.
 	log {
 		output stdout
 		format filter {
 			wrap json
 			fields {
-				request>headers>Authorization delete
-				request>headers>Cookie delete
+				request>headers>Authorization   delete
+				request>headers>Cookie          delete
 				request>headers>X-Auth-Identity delete
-				resp_headers>Set-Cookie delete
+				resp_headers>Set-Cookie         delete
+				resp_headers>X-Auth-Identity    delete
+				resp_headers>Remote-User        delete
+				resp_headers>Remote-Groups      delete
+				resp_headers>Remote-Name        delete
+				resp_headers>Remote-Email       delete
+				resp_headers>Authorization      delete   # DiD: real auth never returns a credential
+				                                          # response header, but don't assume it (Stage-5)
 			}
 		}
 	}
 
 	# ---- app routes: subdomain label == auth audience segment (A§8.3; PLAN §4) ----
+	# NB (Stage-5): normal app routes carry a conservative 25MB request-body cap (edge DoS
+	# backstop; exceed → 413). drive/pdf override with larger caps below. Each handle holds
+	# exactly ONE request_body so the "no-matcher default wraps outermost" override trap
+	# (Stage-5 research) cannot silently shrink a per-route cap.
 	@board host board.{$SUITE_DOMAIN}
 	handle @board {
+		request_body {
+			max_size 25MB
+		}
 		import app board:8080
 	}
 
 	@notes host notes.{$SUITE_DOMAIN}
 	handle @notes {
+		request_body {
+			max_size 25MB
+		}
 		import app notes:8080
 	}
 
 	@mc host mc.{$SUITE_DOMAIN}
 	# audience `mc`, container `mission-control`
 	handle @mc {
+		request_body {
+			max_size 25MB
+		}
 		import app mission-control:8080
 	}
 
@@ -206,6 +316,9 @@
 
 	@chat host chat.{$SUITE_DOMAIN}
 	handle @chat {
+		request_body {
+			max_size 25MB
+		}
 		import app chat:8080
 	}
 
@@ -219,16 +332,25 @@
 
 	@gateway host gateway.{$SUITE_DOMAIN}
 	handle @gateway {
+		request_body {
+			max_size 25MB
+		}
 		import app gateway:8080
 	}
 
 	@vault host vault.{$SUITE_DOMAIN}
 	handle @vault {
+		request_body {
+			max_size 25MB
+		}
 		import app vault:8080
 	}
 
 	@cmdb host cmdb.{$SUITE_DOMAIN}
 	handle @cmdb {
+		request_body {
+			max_size 25MB
+		}
 		import app cmdb:8080
 	}
 
@@ -239,14 +361,23 @@
 		route {
 			import sec_headers
 			import ratelimit
+			import ratelimit_auth   # Stage-5: tighter credential-surface zone, stacks ON TOP of baseline
+			request_body {
+				max_size 25MB
+			}
 			import scrub
 			reverse_proxy auth:{$AUTH_VERIFY_PORT}
 		}
 	}
 
-	# default-deny: any unmapped subdomain (PLAN §5.3 / F7)
+	# default-deny: any unmapped subdomain (PLAN §5.3 / F7). Rate-limited too (Stage-5 red-team) so a
+	# flood of nonexistent *.SUITE subdomains still hits the coarse per-IP backstop; route{} fixes
+	# ratelimit-before-respond ordering.
 	handle {
-		respond "Not found" 404
+		route {
+			import ratelimit
+			respond "Not found" 404
+		}
 	}
 }
 

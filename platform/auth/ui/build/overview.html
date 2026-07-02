@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overview — auth operator console</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §3.6 — Overview / landing dashboard. SCAFFOLD (structure real, data mocked). */
+window.AUTH_SHELL = {
+  level:'G0', deps:{redis:true,pdp:true,writer:true,idp:true},
+  freshness:{epoch:4471,ms:312,rs:'24/24'},
+  fleet:{flagged:2,detail:'deny-storm ×1 · budget-trip ×1'},
+  operator:{sub:'op:eide',fresh:true}, activeNav:'overview'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <div class="scaffold-note" role="note"><b>SCAFFOLD</b> — realizes UI_SPEC §3.6 (fleet-at-a-glance oversight).
+        Layout/tiles are real; tile data is mocked. Pivots and live SSE wiring are CANNOT-VERIFY-HERE (no backend).</div>
+      <h1 class="screen">Overview</h1>
+      <p class="sublede">Is the whole agent workforce healthy right now, and if not, who — in one glance?</p>
+
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <section class="panel"><h2 class="panel-title">Halt posture</h2>
+          <p><span class="pill pill--ok"><span class="dot"></span>● G0 ARMED</span> · <span class="mono">epoch 4471 · 24/24 RS fresh</span></p>
+          <p class="freshness">No halt engaged. Header <span class="mono">◉ FREEZE</span> (Shift+Esc) — hold to stop the suite.
+            If engaged, the honest triad + Triggered-by render here (§5.2).</p></section>
+
+        <section class="panel"><h2 class="panel-title">Standing hazards <span class="muted" style="font-size:var(--fs-label)">(§8.1.1 / §8.2.1)</span></h2>
+          <p><span class="pill pill--attn"><span class="dot"></span>⚠ 1 SOFT-KEY NO-GO</span> <span class="mono">patcher-09</span> ▸</p>
+          <p><span class="pill pill--halt">▮▮ 0 auto-frozen agents</span></p>
+          <p>⊘ 0 SoD drift detected <span class="freshness">(reconcile ✔ 3s)</span></p>
+          <p class="mono freshness">🔑 IdP ✔ · writer ✔ · Redis ✔</p></section>
+
+        <section class="panel"><h2 class="panel-title">Flagged principals <span class="muted" style="font-size:var(--fs-label)">(unacknowledged)</span></h2>
+          <p>▲ <span class="mono">patcher-07</span> — 6 denies/40s · self_approval <a href="#">view ▸</a> <a href="#">revoke ▸</a></p>
+          <p>▲ <span class="mono">crawler-02</span> — budget concurrency trip ×3 <a href="#">view ▸</a> <a href="#">revoke ▸</a></p>
+          <p class="freshness">Stays counted until dispositioned — a rogue that flared while you were elsewhere is not lost (§3.1-2a).</p></section>
+
+        <section class="panel"><h2 class="panel-title">Fleet roster</h2>
+          <p class="mono">agents 18 (●16 active · ◼2 disabled) · services 4 · humans 1 · break-glass 1</p>
+          <p class="mono">executors 7 · planners 9 · other 2</p></section>
+
+        <section class="panel"><h2 class="panel-title">Budget-headroom outliers</h2>
+          <p class="mono">planner-02 ▓░░░ 20% rate · near cap ▸</p>
+          <p class="mono">crawler-02 ▓▓▓▓ 88% conc · trip ▸</p></section>
+
+        <section class="panel"><h2 class="panel-title">Recent oversight events</h2>
+          <p class="mono">16:42 ⛔ DENY gateway:execute patcher-07</p>
+          <p class="mono">16:41 ◆ ANOMALY mint off-host ▸</p>
+          <p><a href="audit_timeline.html">Full timeline ▸</a></p></section>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="shell.js"></script>
+</body>
+</html>

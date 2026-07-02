@@ -10,4 +10,8 @@
 # under this block while iterating, to avoid a production rate-limit lockout (R§4).
 tls {
 	dns cloudflare {$CLOUDFLARE_API_TOKEN}
+	# Stage-5 hardening: identical explicit TLS-1.2 floor as the internal partial (see that file's
+	# note). `protocols` is a connection-policy setting independent of the ACME/DNS issuer, so it
+	# coexists with `dns`. Ciphers/curves left at Caddy's secure (AEAD + post-quantum) defaults.
+	protocols tls1.2 tls1.3
 }

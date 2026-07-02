@@ -1,0 +1,98 @@
+/* ============================================================================
+   auth — Operator Console · GLOBAL SHELL LAYOUT (UI_SPEC §3)
+   The persistent Global System-State Header (§3.1), left nav rail (§3.2),
+   ENGAGED/degraded band mount, and the always-above-scrim halt exemption.
+   Injected by shell.js into <div id="global-shell"> so every screen shares
+   ONE partial (dependency-free, no build step, no server includes).
+   ========================================================================== */
+
+.app{min-height:100vh;display:flex;flex-direction:column}
+
+/* ---- 3.1 Global System-State Header — fixed, present on EVERY screen ----- */
+.gs-header{position:sticky;top:0;z-index:60;background:var(--sub-800);
+  border-bottom:1px solid var(--sub-600);
+  display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:var(--sp-4);
+  padding:var(--sp-3) var(--sp-4);align-items:center}
+.gs-zone{min-width:0}
+.gs-brand{font-size:var(--fs-label);letter-spacing:.04em;text-transform:uppercase;color:var(--ink-600)}
+.gs-brand b{color:var(--ink-900);font-weight:600}
+
+/* LEVEL readout — the console's single loudest word (§3.1-1) */
+.gs-level{display:inline-flex;align-items:center;gap:var(--sp-2);margin-top:var(--sp-1);
+  padding:var(--sp-1) var(--sp-3);border-radius:var(--r-pill);background:var(--sub-750);
+  font-size:var(--fs-status);line-height:var(--lh-status);font-weight:600;color:var(--ink-700)}
+.gs-level .dot{width:8px;height:8px;border-radius:50%;background:var(--ok-500)}
+.gs-level--g1,.gs-level--g2{background:var(--halt-tint);color:var(--halt-500);border:1px solid var(--halt-500)}
+.gs-level--g2{box-shadow:inset 0 0 0 2px var(--halt-500)}     /* non-hue: heavier */
+.gs-op{display:block;margin-top:var(--sp-1);font-size:var(--fs-micro);color:var(--ink-600)}
+.gs-op .mono{color:var(--ink-700)}
+
+/* CENTER — two INDEPENDENT truths, never conflated (§3.1 finding B1):
+   DEPS = auth's own dependency health ; FLEET = live agent-behaviour health */
+.gs-deps,.gs-fleet{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+.gs-fleet{margin-top:var(--sp-1)}
+.gs-tag{font-size:var(--fs-label);font-weight:500}
+.gs-deps .ok{color:var(--ok-500)} .gs-deps .halt{color:var(--halt-500)}
+.gs-fleet .nominal{color:var(--ink-700)} .gs-fleet .flagged{color:var(--attn-500);cursor:pointer}
+.gs-depdots{font-family:var(--ff-mono);font-size:var(--fs-micro);color:var(--ink-600)}
+.gs-depdots .ok{color:var(--ok-500)} .gs-depdots .down{color:var(--halt-500)}
+
+/* RIGHT — the fastest path to halt (§3.1-3 / §2.5.7) */
+.gs-kill{display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-2)}
+.gs-gauge{display:inline-flex;gap:2px;font-family:var(--ff-mono);font-size:var(--fs-label);
+  border:1px solid var(--sub-600);border-radius:var(--r-pill);overflow:hidden}
+.gs-gauge span{padding:2px var(--sp-2);color:var(--ink-500);background:var(--sub-750)}
+.gs-gauge span.lit{color:#04141a;background:var(--ok-500);font-weight:600}
+.gs-gauge span.lit-halt{color:#170707;background:var(--halt-500);font-weight:600}
+.gs-freeze{min-width:220px}
+.gs-freeze .actuator{min-width:220px;min-height:44px;padding:var(--sp-2) var(--sp-3);font-size:var(--fs-label)}
+.gs-freeze small{display:block;text-align:right;margin-top:2px;font-size:var(--fs-micro);color:var(--ink-600)}
+.gs-bg-ind{font-size:var(--fs-micro);color:var(--ink-600)}
+.gs-bg-ind.active{color:var(--danger-500);font-weight:600}
+
+/* ---- Break-glass persistent hazard banner (§6.7) — above ALL nav --------- */
+.bg-banner{position:sticky;top:0;z-index:70;width:100%;
+  background:var(--danger-tint);border-bottom:3px solid var(--danger-500);
+  padding:var(--sp-2) var(--sp-4);display:flex;gap:var(--sp-4);align-items:center;flex-wrap:wrap}
+.bg-banner .lead{color:var(--danger-500);font-weight:600}   /* STOP glyph allowed here (actionable) */
+.bg-banner .actuator{min-height:40px;min-width:180px}
+
+/* ---- Body: fixed left rail + content (§3.2) ----------------------------- */
+.body{flex:1;display:flex;min-height:0}
+.rail{width:224px;flex:0 0 224px;background:var(--sub-800);border-right:1px solid var(--sub-600);
+  padding:var(--sp-3) 0;display:flex;flex-direction:column;gap:2px}
+.rail a{display:flex;gap:var(--sp-3);align-items:center;padding:var(--sp-2) var(--sp-4);
+  color:var(--ink-700);font-size:var(--fs-label);border-left:3px solid transparent}
+.rail a:hover{background:var(--sub-750);text-decoration:none}
+.rail a.active{border-left-color:var(--signal-500);background:var(--signal-tint);color:var(--ink-900)}
+.rail a.kill.engaged{outline:1px solid var(--halt-500);outline-offset:-1px}  /* gold ring when >G0 */
+.rail a.bg{color:var(--danger-500)}
+.rail .sep{height:1px;background:var(--sub-600);margin:var(--sp-2) var(--sp-4)}
+.rail .grp{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-500);
+  padding:var(--sp-1) var(--sp-4)}
+.content{flex:1;min-width:0;padding:var(--sp-5) var(--sp-6);max-width:1100px}
+.content h1.screen{font-size:var(--fs-h2);margin-bottom:var(--sp-1)}
+.content .sublede{color:var(--ink-600);font-size:var(--fs-body);margin-bottom:var(--sp-5)}
+
+/* ---- Safety override: the header halt is NEVER occluded by a modal (§2.5.4).
+   The scrim sits at z-index 80; the header at 60 but the halt control is lifted
+   above the scrim via .halt-exempt so it stays interactive while a dialog is open. */
+.halt-exempt{position:relative;z-index:90}
+body.modal-open .gs-freeze{z-index:90}
+
+/* ---- Responsive (§3.3) — down to ~375px, no horizontal scroll ----------- */
+@media (max-width:1200px){
+  .rail{width:56px;flex-basis:56px} .rail a span.lab,.rail .grp{display:none}
+  .rail a{justify-content:center;padding:var(--sp-3) 0}
+}
+@media (max-width:768px){
+  .gs-header{grid-template-columns:1fr;gap:var(--sp-2)}
+  .body{flex-direction:column} .rail{width:100%;flex-basis:auto;flex-direction:row;overflow-x:auto}
+  .rail a span.lab{display:inline} .rail .sep,.rail .grp{display:none}
+  .content{padding:var(--sp-4)}
+  /* The halt affordance NEVER collapses into a drawer (§3.3). */
+  .gs-kill{align-items:stretch} .gs-freeze .actuator{min-width:100%}
+}
+@media (max-width:640px){
+  .content{padding:var(--sp-3)}
+}

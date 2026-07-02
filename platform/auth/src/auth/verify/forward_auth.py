@@ -210,8 +210,15 @@ def _aud_from_host(host: str) -> str:
 
 
 def _mint_identity_header(identity: Identity, aud: str, deps: VerifyDeps,
-                          claimed_parent: Optional[str]) -> str:
-    """Build + sign the X-Auth-Identity JWT set on 200 (§8.7)."""
+                          claimed_parent: Optional[str],
+                          kill_level: str, kill_epoch: int) -> str:
+    """Build + sign the X-Auth-Identity JWT set on 200 (§8.7).
+
+    Stage-6: the (level, epoch) are READ ONCE by verify() and threaded in — not
+    re-read from deps.killswitch() here. On the Redis-backed HotStore each read is a
+    round-trip, and this function previously called it TWICE more, so the allow path
+    did 3 killswitch round-trips for one value. Reading once is also strictly MORE
+    consistent (the door gate and the minted header now reflect the same instant)."""
     iat = int(deps.now())
     claims = IdentityHeaderClaims(
         iss=deps.issuer,
@@ -222,8 +229,8 @@ def _mint_identity_header(identity: Identity, aud: str, deps: VerifyDeps,
         iat=iat,
         exp=iat + int(deps.identity_ttl_s),
         jti=deps.new_jti(),
-        kill_epoch=deps.killswitch()[1],
-        kill_level=deps.killswitch()[0],
+        kill_epoch=kill_epoch,
+        kill_level=kill_level,
         traceparent=deps.new_traceparent(),   # AUTHORITATIVE, server-minted
         client_id=identity.client_id,
         claimed_parent=claimed_parent,         # untrusted client value, audit-only
@@ -232,7 +239,8 @@ def _mint_identity_header(identity: Identity, aud: str, deps: VerifyDeps,
 
 
 def _allow(identity: Identity, aud: str, deps: VerifyDeps,
-           claimed_parent: Optional[str]) -> Tuple[int, Dict[str, str]]:
+           claimed_parent: Optional[str],
+           kill_level: str, kill_epoch: int) -> Tuple[int, Dict[str, str]]:
     """Return the ONLY allow response: EXACTLY 200 + a fresh signed X-Auth-Identity.
 
     §8.7 default: emit ONLY the signature-verified X-Auth-Identity — NOT the
@@ -241,7 +249,7 @@ def _allow(identity: Identity, aud: str, deps: VerifyDeps,
     response-header dict is freshly built here, so any inbound identity header is
     structurally absent from what the proxy copies upstream.
     """
-    hdr = _mint_identity_header(identity, aud, deps, claimed_parent)
+    hdr = _mint_identity_header(identity, aud, deps, claimed_parent, kill_level, kill_epoch)
     return STATUS_ALLOW, {"X-Auth-Identity": hdr, "Cache-Control": "no-store"}
 
 
@@ -271,7 +279,9 @@ def verify(request_headers: Mapping[str, str],
     # door with a 403 posture; the operator (human) still authenticates so they can
     # regain control (break-glass never blanket-allows). The physical bite stays at
     # the Gateway (§7.1) — this is the door reflection of it.
-    kill_level, _kill_epoch = deps.killswitch()
+    # Stage-6: read the kill switch ONCE here (one Redis round-trip) and reuse the
+    # same (level, epoch) for both the G2 door gate and the minted X-Auth-Identity.
+    kill_level, kill_epoch = deps.killswitch()
 
     # The G2 quiesce posture is applied to the RESOLVED identity regardless of
     # which credential proved it (Cookie or Bearer), so "agents are refused at the
@@ -280,7 +290,7 @@ def verify(request_headers: Mapping[str, str],
     def _gated_allow(identity: Identity) -> Tuple[int, Dict[str, str]]:
         if kill_level == KILL_G2 and identity.principal_type == PRINCIPAL_TYPE_AGENT:
             return 403, {}   # quiesce posture (§8.8) — uniform across credential types
-        return _allow(identity, aud, deps, claimed_parent)
+        return _allow(identity, aud, deps, claimed_parent, kill_level, kill_epoch)
 
     # ── 1. Cookie session first (§8.4: valid cookie -> use it) ───────────────
     if cookie:

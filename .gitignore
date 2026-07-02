@@ -19,6 +19,13 @@ build/
 .next/
 out/
 *.tsbuildinfo
+# EXCEPTIONS: auth's build/ and ui/build/ are SOURCE-OF-TRUTH, not build output —
+# build/ holds the IdP bake-off gate docs + keycloak_gates.sh; ui/build/ is the static
+# operator UI the Dockerfile COPYs. Keep them tracked despite the generic build/ rule.
+!platform/auth/build/
+!platform/auth/build/**
+!platform/auth/ui/build/
+!platform/auth/ui/build/**
 
 # Environment / secrets
 .env
