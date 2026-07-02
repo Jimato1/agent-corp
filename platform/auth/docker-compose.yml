@@ -22,6 +22,14 @@ x-auth-build: &auth_build
   build:
     context: .
     dockerfile: Dockerfile
+    # PIN THE STAGE (boot-defect fix): the Dockerfile is multi-stage
+    # (`runtime` then `test`). A build with NO `target` produces the LAST stage —
+    # which D-AUTH-1 made `test` (pytest CMD). Without this line, auth-migrate/
+    # auth-a/auth-b build the TEST image (tagged :stage5) and — having no explicit
+    # `command` — run `python -m pytest …`, so the replicas crash-loop and never
+    # serve /healthz. Pinning `runtime` here makes every SERVER build the server
+    # image; the test image is reachable ONLY via auth-test's explicit `target: test`.
+    target: runtime
   image: agent-corp/auth:stage5
 
 # Shared env for the migrate job + both replicas (per-service AUTH_SEED_DEMO differs).
@@ -80,6 +88,11 @@ services:
   # demo directly (revoke via :8089, confirm denied via :8090).
   auth-a:
     <<: *auth_build
+    # Explicit server command (defense-in-depth over the `target: runtime` pin): a
+    # compose `command` overrides the image CMD, so a replica can NEVER run pytest
+    # even if the image were mis-targeted. Also makes `docker compose config` show
+    # the server command outright.
+    command: ["python", "-m", "auth.server"]
     environment:
       <<: *auth_env
       AUTH_SEED_DEMO: "0"          # migrate already seeded the shared Postgres
@@ -100,6 +113,7 @@ services:
 
   auth-b:
     <<: *auth_build
+    command: ["python", "-m", "auth.server"]   # explicit server command (see auth-a)
     environment:
       <<: *auth_env
       AUTH_SEED_DEMO: "0"
