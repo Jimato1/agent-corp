@@ -132,22 +132,27 @@ def consult_denylist(
     'could not read revocation state'.
     """
     try:
+        # Stage-6: ONE batched round-trip for all granularities (the Redis impl
+        # pipelines them). The deny-PRECEDENCE below is byte-for-byte the same order
+        # as the previous sequential reads — batching changes round-trips, not the
+        # decision. The only difference is no server-side early-exit (we fetched all
+        # keys), which is cheap and irrelevant to correctness.
+        snap = hot.consult_snapshot(jti=jti, sub=sub, kid=kid, client_id=client_id)
+
         # kill switch first (§6.6 step 0): a G2 quiesce denies even here.
-        level, _kepoch = hot.killswitch()
-        if level == KILL_G2:
+        if snap.kill_level == KILL_G2:
             return RevocationDecision.deny(enforcement, "killswitch_g2_quiesce", "killswitch")
 
-        if hot.is_jti_denied(jti):
+        if snap.jti_denied:
             return RevocationDecision.deny(enforcement, "jti_revoked", "jti")
 
-        watermark = hot.revoked_before(sub)
-        if watermark is not None and iat < watermark:
+        if snap.revoked_before is not None and iat < snap.revoked_before:
             return RevocationDecision.deny(enforcement, "sub_revoked_before", "sub")
 
-        if kid is not None and hot.is_kid_retired(kid):
+        if kid is not None and snap.kid_retired:
             return RevocationDecision.deny(enforcement, "kid_retired", "kid")
 
-        if client_id is not None and hot.is_client_disabled(client_id):
+        if client_id is not None and snap.client_disabled:
             return RevocationDecision.deny(enforcement, "client_disabled", "client_id")
 
     except FailClosed:

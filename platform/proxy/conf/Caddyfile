@@ -43,6 +43,16 @@
 		# Default is 1MB; 64KB is generous vs a Bearer JWT + session Cookie + X-Auth-Identity
 		# (a few KB) yet refuses absurd header floods. Exceeding it → HTTP 431. (Stage-5 research)
 		max_header_size 64KB
+
+		# [STAGE-6] Serve HTTP/1.1 + HTTP/2 only; do NOT advertise HTTP/3. Caddy's default is
+		# `h1 h2 h3`, which would emit an `Alt-Svc: h3` header — but HTTP/3 needs UDP/443, and
+		# docker-compose publishes only TCP 443 (:80 + :443). So default would make clients waste a
+		# QUIC probe on an unreachable UDP port, then fall back. On a homelab LAN h3's benefit is
+		# marginal and TLS session-ticket resumption (Caddy default, 12h STEK) already covers repeat-
+		# handshake cost. To ENABLE h3 later: set `protocols h1 h2 h3` here AND add `443:443/udp` to
+		# compose (do not do one without the other). This is a SHARED (issuer-agnostic) option, so it
+		# stays byte-identical across both TLS modes — Option-C invariant preserved. (Stage-6 research)
+		protocols h1 h2
 	}
 }
 
@@ -185,6 +195,14 @@
 		transport http {
 			dial_timeout            2s
 			response_header_timeout 250ms
+			# [STAGE-6] Explicit connection reuse (these EQUAL Caddy's defaults — a no-op made visible).
+			# The verify subrequest is the edge's per-request hot path; pooling a keepalive connection to
+			# auth avoids a TCP handshake per request (dial_timeout only applies on a cold dial). 32 idle
+			# conns/host is ample for a local authgate. `response_header_timeout` is per-request and does
+			# NOT evict the pool. Do NOT set `keepalive off`. HTTP/1.1 keepalive is sufficient — no h2c
+			# (a single small GET gains nothing from multiplexing; h2c also needs upstream support). (S6 research)
+			keepalive                     2m
+			keepalive_idle_conns_per_host 32
 		}
 		@ok status 200
 		handle_response @ok {

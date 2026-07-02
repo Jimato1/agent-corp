@@ -28,6 +28,17 @@ services:
       dockerfile: Dockerfile
     image: agent-corp/proxy:dev
     restart: unless-stopped
+    # [STAGE-6] Concurrency bounds. Caddy imposes NO max-connection cap of its own — it accepts until
+    # the OS file-descriptor limit, so set nofile explicitly for deterministic headroom across hosts
+    # (65536 is generous for ~20 agents + operator; each conn/upstream socket is one FD). mem_limit gives
+    # OOM protection; per-conn goroutine growth is bounded (HTTP/2 rapid-reset, CVE-2023-39325, is patched
+    # in Caddy 2.11.2's Go build), so memory stays predictable — an edge Caddy idles in tens of MB. (S6 research)
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    mem_limit: 512m
+    memswap_limit: 512m        # = mem_limit → no swap growth (avoid thrash under a flood)
     networks: [edge]
     ports:
       - "443:443"

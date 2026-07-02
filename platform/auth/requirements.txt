@@ -25,7 +25,10 @@ redis>=5,<6
 # substitute now, behind the same auth.core.interfaces.Store Protocol; swap
 # PostgresStore in AuthApp.__init__ — a config swap, not a rewrite.
 #   closes: Postgres + active-active durable HA.
-psycopg[binary]>=3.1,<4
+# NOTE: the [pool] extra is REQUIRED — PostgresStore uses psycopg_pool.ConnectionPool
+# for thread-safe pooled connections under the ThreadingHTTPServer (a single psycopg
+# Connection is not thread-safe).
+psycopg[binary,pool]>=3.1,<4
 
 # NOTE: Keycloak (the adopted Authorization Server for /authorize + /token) is a
 # SEPARATE container (see docker-compose.yml), not a pip dependency. auth-core

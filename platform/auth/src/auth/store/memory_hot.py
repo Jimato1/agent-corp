@@ -138,6 +138,25 @@ class MemoryHotStore:
         with self._lock:
             return (self._kill_level, self._kill_epoch)
 
+    def consult_snapshot(self, *, jti, sub, kid=None, client_id=None):
+        """Batched read parity with RedisHotStore. In-process (no round-trips), so
+        this just takes the lock ONCE and reads each dict — identical values the
+        individual reads would return, under one consistent snapshot."""
+        from ..core.interfaces import RevocationSnapshot
+        with self._lock:
+            level, epoch = self._kill_level, self._kill_epoch
+            jti_denied = self.is_jti_denied(jti)          # re-enters RLock (ok)
+            rb = self._revoked_before.get(sub)
+            kid_retired = (kid in self._retired_kids) if kid is not None else False
+            client_disabled = (
+                client_id in self._disabled_clients if client_id is not None else False
+            )
+        return RevocationSnapshot(
+            kill_level=level, kill_epoch=epoch,
+            jti_denied=jti_denied, revoked_before=rb,
+            kid_retired=kid_retired, client_disabled=client_disabled,
+        )
+
     # -- epoch / freshness -------------------------------------------------
     def current_epoch(self) -> int:
         with self._lock:
