@@ -1,0 +1,14 @@
+# auth — DEV/TEST-only dependencies (NOT installed in the production runtime image).
+#
+# Why this file exists (D-AUTH-1, found on operator first-boot): the CV-B/CV-C/CV-D
+# verification commands run pytest, but pytest was declared nowhere, the prod image
+# runs non-root (cannot pip-install at run time), and the integration tests/ dir was
+# not COPYied into the image — so the documented commands could not run as written
+# (the operator had to --user root + bind-mount tests). The Dockerfile `test` stage
+# (target: test) installs THIS file as root and COPYs the tests in, so the tests run
+# in-image with real service DNS. Production (`runtime` target) never sees pytest.
+#
+# The runtime deps (cryptography / redis / psycopg) live in requirements.txt and ARE
+# needed by the integration tests too — the test stage builds FROM runtime, so it
+# inherits them; this file adds only the test runner.
+pytest>=8,<9

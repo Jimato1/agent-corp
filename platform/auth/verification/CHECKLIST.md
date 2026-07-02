@@ -56,7 +56,7 @@ approve-side ⊕ action-side holder scopes are never co-issued; the ConflictSet 
 |---|---|---|---|---|
 | A1.1 | Written SoD proof on the new substrate | `security/THREAT_MODEL.md §1` (walkthrough: immutable compiled-in `CONFLICT_SET`/`HOLDER_ALLOWED_KINDS`; per-mutation full affected-set enforcement on one tx cursor; approve⊕execute unco-issuable) | — (read the proof) | proof holds; no Postgres row feeds the conflict set |
 | A1.2 | SoD enforcement identical across backends | 268 unit tests exercise the **shared** `_invariants`/`_graph` via SQLite; `test_store_backends.py` asserts both backends delegate to them | — | green in sandbox ✓ (`268 OK`) |
-| A1.3 | **CV-C** — concurrent conflicting grants can't both commit on real Postgres (the SERIALIZABLE guard that was *dead-on-arrival* in Stage-5 finding #1 — **must be seen to pass, not trusted**) | test authored: `tests/integration/test_postgres_store.py::test_concurrent_conflicting_grants_cannot_both_commit` | `docker compose … run --rm -e TEST_DATABASE_URL=postgresql://auth:$POSTGRES_PASSWORD@postgres:5432/auth auth-a python -m pytest tests/integration/test_postgres_store.py -v` | exactly **one** side of a conflict pair commits; the other aborts (40001 → bounded jittered retry → fail-closed reject). Never both. |
+| A1.3 | **CV-C** — concurrent conflicting grants can't both commit on real Postgres (the SERIALIZABLE guard that was *dead-on-arrival* in Stage-5 finding #1 — **must be seen to pass, not trusted**) | test authored: `tests/integration/test_postgres_store.py::test_concurrent_conflicting_grants_cannot_both_commit` | **(D-AUTH-1 recipe — runs in the `test` image with pytest + tests baked in and `TEST_DATABASE_URL` preset):** `docker compose -f platform/auth/docker-compose.yml --profile test run --rm auth-test pytest tests/integration/test_postgres_store.py -v` | exactly **one** side of a conflict pair commits; the other aborts (40001 → bounded jittered retry → fail-closed reject). Never both. |
 | A1.4 | **M5** — SERIALIZABLE retry stays fail-closed under contention | `postgres_store.py::_with_serialization_retry` (bounded, re-raises after last attempt; jitter) | fire N parallel jointly-conflicting `POST /admin/roles/assign`; `psql -c "SELECT xact_rollback FROM pg_stat_database WHERE datname=current_database();"` | exactly one commits, rest deny (400/500); `xact_rollback` bounded (jitter caps re-collisions), no runaway storm |
 
 ### A2 — INVARIANT: Kill switch physically halts action (cross-replica)
@@ -64,7 +64,7 @@ The new distributed safety surface. Revoke on one replica must be honored by the
 
 | # | Property | SOLO-provable now | Real-host close-out (operator) | Pass criterion |
 |---|---|---|---|---|
-| A2.1 | Cross-replica fan-out mechanics | `test_redis_fanout.py` (revoke on A read by B; pub/sub delta carries monotonic epoch; `consult_snapshot` parity) — skips w/o Redis | `docker compose … run --rm -e TEST_REDIS_URL=redis://redis:6379/0 auth-a python -m pytest tests/integration/test_redis_fanout.py -v` | all pass: A's SET/INCR/PUBLISH read live by B; epoch monotonic |
+| A2.1 | Cross-replica fan-out mechanics | `test_redis_fanout.py` (revoke on A read by B; pub/sub delta carries monotonic epoch; `consult_snapshot` parity) — skips w/o Redis | **(D-AUTH-1 recipe):** `docker compose -f platform/auth/docker-compose.yml --profile test run --rm auth-test pytest tests/integration/test_redis_fanout.py -v` | all pass: A's SET/INCR/PUBLISH read live by B; epoch monotonic |
 | A2.2 | **CV-E** — live revoke on A (`:8089`) denied via B (`:8090`) — exact procedure | wiring verified in code: `POST /admin/revoke` (kind `sub`→`killswitch.revoke_principal`→ledger append **then** `hot.set_revoked_before` = Redis `denylist:sub:{sub}`; kind `client_id`→`disable_client`; kind `kid`→JWKS-prune-first) | (P1) revoke on A: `curl -X POST localhost:8089/admin/revoke -H "Authorization: Bearer $ADMIN" -d '{"kind":"sub","target":"agent:x","reason":"drill"}'` → then on B: `curl -i localhost:8090/api/verify -H 'X-Forwarded-Host: board.suite.local' -H 'Authorization: Bearer <agent:x token, iat<now>>'` | B returns **403/deny** for the revoked principal (no stale-replica window — verify reads Redis live) |
 | A2.3 | Kill-switch G2 door posture bites cross-replica | unit: `test_verify` KillSwitchPosture + `test_g2_refuses_an_agent_typed_COOKIE_session_too` | (P1) `POST localhost:8089/admin/killswitch -d '{"level":"G2"}'` → `curl -i localhost:8090/api/verify …` with an agent Bearer **and** an agent cookie | both agent credentials → **403** at B; operator (human) still authenticates |
 | A2.4 | Redis-independent kill (heartbeat + JWKS-prune) | `retire_kid` ordering fixed (JWKS prune first, Redis best-effort) — `server.py` `_route_admin` kind=`kid`; THREAT_MODEL §3 | (P1) with Redis **down**: `POST localhost:8089/admin/revoke -d '{"kind":"kid","target":"<kid>"}'` → confirm `GET /jwks` no longer serves that kid; response `committed:true, degraded:redis_unavailable` | JWKS kill lands even with Redis down; RS token validation fails suite-wide on next JWKS refresh |
@@ -153,6 +153,14 @@ all. Verify contract authority: `PLAN §8` (esp. §8.6 header-scrub, §8.10 one-
    healthcheck in a follow-up (not this stage — no behavior change permitted).
 5. **Framing correction** (§0): single-Redis-node ≠ single-auth-replica; CV-D/CV-E run on the
    default 2-replica profile without a Redis replica.
+6. **D-AUTH-1 FIXED** (operator first-boot): the CV-C/CV-D pytest close-outs could not run as
+   written — pytest was undeclared, the prod image is non-root (no run-time pip), and the
+   integration `tests/` dir was not COPYied in. Fixed: `requirements-dev.txt` (pytest), a
+   Dockerfile `test` target (root, installs dev deps, COPYs `tests/`), and a `--profile test`
+   `auth-test` compose service that presets `TEST_DATABASE_URL`/`TEST_REDIS_URL` on the stack
+   network. CV-C/CV-D/CV-4 commands updated to `--profile test run --rm auth-test pytest …`.
+   CV-B unit tests are unchanged — they run in the `runtime` image via stdlib `unittest`
+   (no pytest, no dev deps needed). **Still NEEDS-OPERATOR-RUN** — not run in this sandbox.
 
 ---
 

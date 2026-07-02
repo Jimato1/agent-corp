@@ -116,6 +116,32 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # ── auth-test: D-AUTH-1 test runner (profile `test`; never starts on a plain `up`) ──
+  # Builds the Dockerfile `test` target (pytest + integration tests baked in, root) and
+  # runs on the SAME network as postgres/redis, so TEST_DATABASE_URL/TEST_REDIS_URL resolve
+  # by service name and the integration tests EXECUTE (skipUnless those env vars are set —
+  # so they cannot silently pass on the in-proc default). Usage (CV-C / CV-D):
+  #   docker compose -f platform/auth/docker-compose.yml --profile test run --rm \
+  #     auth-test pytest tests/integration/test_postgres_store.py -v
+  auth-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    image: agent-corp/auth:test
+    profiles: ["test"]
+    environment:
+      <<: *auth_env
+      # Point the integration tests at the REAL Postgres/Redis (not the sqlite/memory default).
+      TEST_DATABASE_URL: ${TEST_DATABASE_URL:-postgresql://auth:${POSTGRES_PASSWORD:-change-me}@postgres:5432/auth}
+      TEST_REDIS_URL: ${TEST_REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: "no"
+
   # ── Keycloak: the adopted Authorization Server (/authorize + /token) ───────
   # auth-core proxies to / adopts this for the OIDC code/token flow. CANNOT-VERIFY
   # -HERE: the /authorize + /token endpoints and passkey (WebAuthn) enrollment.
@@ -226,14 +252,14 @@ volumes:
 #     python -m unittest discover -s /app/src/auth/tests -v
 #
 #   # 2) SoD holds on the REAL Postgres (incl. concurrent multi-writer SERIALIZABLE guard):
-#   docker compose -f platform/auth/docker-compose.yml run --rm \
-#     -e TEST_DATABASE_URL=postgresql://auth:$POSTGRES_PASSWORD@postgres:5432/auth auth-a \
-#     python -m pytest tests/integration/test_postgres_store.py -v
+#   #    (D-AUTH-1: the `test` profile builds the test image w/ pytest+tests and presets
+#   #     TEST_DATABASE_URL — do NOT use auth-a, which is the lean prod image with neither.)
+#   docker compose -f platform/auth/docker-compose.yml --profile test run --rm \
+#     auth-test pytest tests/integration/test_postgres_store.py -v
 #
 #   # 3) kill-switch CROSS-REPLICA propagation on the REAL Redis:
-#   docker compose -f platform/auth/docker-compose.yml run --rm \
-#     -e TEST_REDIS_URL=redis://redis:6379/0 auth-a \
-#     python -m pytest tests/integration/test_redis_fanout.py -v
+#   docker compose -f platform/auth/docker-compose.yml --profile test run --rm \
+#     auth-test pytest tests/integration/test_redis_fanout.py -v
 #
 #   # 4) LIVE cross-replica revoke: revoke a token via replica A, confirm denied via replica B:
 #   curl -X POST localhost:8089/revoke -H 'Authorization: Bearer <admin>' -d 'token=<jti/at>'
