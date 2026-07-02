@@ -1,0 +1,119 @@
+# ═════════════════════════════════════════════════════════════════════════════
+# ROOT JOINT compose — the Stage-7 JOINT-CHECKPOINT bring-up (gap 3.1).
+#
+#   Purpose: bring up the REAL auth identity plane AND the proxy on ONE shared
+#   network so Caddy's forward_auth reaches the REAL /api/verify (NOT the Stage-4
+#   stub). This is the artifact that makes JC-1/JC-2/JC-4/JC-7/JC-P6 runnable.
+#
+#   ⚠ NEEDS-OPERATOR-RUN — authored in a sandbox with NO Docker/Postgres/Redis/
+#   Keycloak. Nothing here has been booted. Treat every value as guilty until the
+#   operator's run proves it. The exact procedure + pass criteria per checkpoint:
+#   context/verification/JOINT_CHECKPOINT.md.
+#
+#   Reconciliations pinned here (gap-review R3/R4 · context/specs/DEPLOYMENT.md §4):
+#     • network      = `edge` (the single shared name; no invented `proxy_internal`)
+#     • auth port    = 8089 (real auth's AUTH_PORT; the proxy targets auth:8089)
+#     • service name the proxy resolves = `auth` → network-aliased to `auth-a`
+#
+#   Requires Docker Compose ≥ v2.20 (the `include:` element). `include` re-bases the
+#   auth file's relative paths to platform/auth/ (build context, ./postgres/initdb),
+#   so the real, tested auth stack is reused verbatim — no duplication, no drift.
+#
+#   Bring-up (see JOINT_CHECKPOINT.md for the full ordered procedure + waits):
+#     docker compose -f compose.yaml up -d --build
+#   Then, from platform/proxy/ , with SUITE=suite.local:
+#     AUTH_TARGET=real ./test/regression_headers.sh internal
+# ═════════════════════════════════════════════════════════════════════════════
+name: agent-corp
+
+# Pull the REAL auth stack verbatim (postgres, redis, keycloak, auth-migrate,
+# auth-a, auth-b, and the `test` profile service). Paths inside it re-base to
+# platform/auth/ automatically.
+include:
+  - path: platform/auth/docker-compose.yml
+
+networks:
+  # The single shared edge network. (Production tiers edge/creds per DEPLOYMENT.md
+  # §11; this joint bring-up is a test harness, so it uses one edge network and
+  # documents the divergence rather than modelling `creds` — vault/gateway aren't
+  # built yet.)
+  edge:
+    driver: bridge
+
+services:
+  # ── auth-a: attach the REAL first replica to `edge` with the alias the Caddyfile
+  #    resolves. This block MERGES onto the auth-a defined in the included file
+  #    (adds `networks` + forces AUTH_DEMO for the JC-1 token mint); it does not
+  #    restate auth-a's build/env/ports/depends_on. If your Compose version refuses
+  #    to merge a same-named included service (warns instead), use the two-stack
+  #    fallback in JOINT_CHECKPOINT.md §Fallback (docker network connect --alias).
+  auth-a:
+    networks:
+      default: {}                 # keep reaching postgres/redis/keycloak (auth stack's net)
+      edge:
+        aliases: [auth]           # Caddyfile `reverse_proxy auth:8089` resolves here → auth-a
+    environment:
+      # JOINT-TEST ONLY: exposes GET /debug/demo-tokens so the JC-1 harness mints a
+      # real agent token. NEVER set in production (auth's A7.2 keeps it off by default).
+      AUTH_DEMO: "1"
+
+  # ── proxy: the real edge, INTERNAL TLS mode, forward_auth → real auth:8089 ──
+  proxy:
+    build:
+      context: platform/proxy
+      dockerfile: Dockerfile
+    image: agent-corp/proxy:dev
+    restart: unless-stopped
+    ulimits:
+      nofile: { soft: 65536, hard: 65536 }
+    mem_limit: 512m
+    memswap_limit: 512m
+    networks: [edge]
+    ports:
+      - "443:443"
+      - "80:80"
+    expose:
+      - "9100"
+    environment:
+      TLS_ISSUER_FILE:  /etc/caddy/issuer.internal.caddy
+      SUITE_DOMAIN:     ${SUITE_DOMAIN:-suite.local}   # MUST match auth's issuer domain (auth.suite.local)
+      AUTH_VERIFY_PORT: "8089"                          # RECONCILED: real auth listens on 8089
+      MODE_LABEL:       INTERNAL
+      ACME_EMAIL:       ""
+      CLOUDFLARE_API_TOKEN: ""
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9100/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      # auth-a has no compose healthcheck (it serves /healthz for a manual probe — auth
+      # CHECKLIST divergence #4), so gate on start only; the proxy fail-closes (502) until
+      # auth-a is actually answering — bring the auth stack up healthy FIRST (JOINT doc §1).
+      auth-a:
+        condition: service_started
+      board:
+        condition: service_started
+
+  # ── board: a real echo upstream (reuses the proxy's Stage-4 stub) so the trust
+  #    boundary is proven end-to-end at a real app edge (browser/agent → proxy →
+  #    real auth verify → board). Replace with the real board RS once it is built. ──
+  board:
+    image: python:3.12-slim
+    restart: unless-stopped
+    networks: [edge]
+    working_dir: /stub
+    volumes:
+      - ./platform/proxy/stub:/stub:ro
+    environment:
+      PORT: "8080"
+      UPSTREAM_NAME: board
+    command: ["python", "/stub/echo_upstream.py"]
+
+volumes:
+  caddy_data:
+  caddy_config:
