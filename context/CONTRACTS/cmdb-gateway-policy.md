@@ -1,6 +1,6 @@
 # CONTRACT — CMDB → Gateway: decision-time policy verdict (+ Board triage read; + flagged host-facts additions)
 
-> **Status: FROZEN core** (MERGE-RESEARCH-1, 2026-07-02); §6 additions are **recommended, pending operator ratification** (MERGE_REVIEW_1 D-6). Producer: **CMDB** (the PDP). Consumers: **Gateway** (deny-biased PEP — the binding caller), **Board** (triage signals), agents (advisory planning probes). Reconciles CMDB RESEARCH §1–§6 with Gateway RESEARCH §4 and Board RESEARCH §9/§10. This closes the gap-6.1 flagship item ("Gateway assumes CMDB duties CMDB never agreed to") — what CMDB actually offers is below; what it does NOT yet offer is called out.
+> **Status: FROZEN** (MERGE-RESEARCH-1, 2026-07-02; §6 additions **ratified D-6** — see `context/RATIFICATIONS_2026-07-02.md`). Producer: **CMDB** (the PDP). Consumers: **Gateway** (deny-biased PEP — the binding caller), **Board** (triage signals), agents (advisory planning probes). Reconciles CMDB RESEARCH §1–§6 with Gateway RESEARCH §4 and Board RESEARCH §9/§10. This closes the gap-6.1 flagship item ("Gateway assumes CMDB duties CMDB never agreed to") — what CMDB actually offers is below; what it does NOT yet offer is called out.
 
 ## 1. The decision query (one canonical shape — supersedes the field-name drift inside CMDB's own research)
 
@@ -29,14 +29,14 @@ unknown `host_id` → deny(no_such_host); known host, no policy → deny(no_poli
 
 **CMDB owns the task-type registry** (types + destructiveness/reversibility + **external-verifier binding** — the attribute CMDB's research omitted; CMDB Stage-2 must add it) and the **policy attributes** of the runbook catalog; the **Gateway owns playbook implementations**; the **Board mints the per-approval plan→playbook allowlist** bound by `plan_hash`. Board triage consumes tier + task-type + catalog-novelty through THIS surface (its five-signal decision table), never by restating policy.
 
-## 6. Host-facts additions — RECOMMENDED, pending ratification (Gateway assumed these; CMDB never offered them)
+## 6. Host-facts additions — **RATIFIED D-6 (2026-07-02): these are now CMDB duties**, landing at CMDB Stage-2
 
-To land in CMDB Stage-2 as **inventory facts / policy attributes** (they fit `get_host` / `get_host_policy`), if the operator ratifies D-6:
+As **inventory facts / policy attributes** (they fit `get_host` / `get_host_policy`):
 - (a) `snapshot_capability` per host (btrfs/lvm/zfs/none) — hosts with no in-band rollback route to ask-tier/manual;
 - (b) per-tier **health-check / wait-for-SSH timeout policy**;
 - (c) the host's **Syscollector scan interval** (sizes the Gateway's Wazuh confirmation-poll window);
 - (d) window-close mid-run semantics (abort-and-rollback vs finish-current-atomic-step) as a window policy attribute.
-Until ratified these remain Gateway assumptions, not CMDB duties.
+Also ratified (D-6c): CMDB's mandatory fail-closed escalations (DST-gap window-never-opened, new-host needs-tiering, break-glass post-hoc review) land as **Board escalations**, not a CMDB-UI-only queue.
 
 ## 7. Not in this contract
 

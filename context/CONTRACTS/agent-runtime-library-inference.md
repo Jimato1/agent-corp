@@ -25,6 +25,6 @@
 
 Structured-output mode = schema/grammar constraint (XGrammar default, Outlines fallback, GBNF on the llama.cpp lane) + backend hint; **role schemas are validated against the chosen backend at config-load** (schema-feature gaps like array-length/int-bounds fall back explicitly, never discovered at runtime). Constrained decoding guarantees syntax, not semantics — the gap-1.3 spike measures semantic transition correctness before Board/Notes freeze tool schemas (seam C10).
 
-## 4. Centralization decision (operator ratifies as D-13)
+## 4. Centralization decision — **RATIFIED D-13 (2026-07-02)**
 
-Library embeds via the runtime's facade (dedicated TEI instance) rather than loading its own embedder — one guarded provenance surface, at the cost of making agent-runtime a hard dependency of Library indexing. Runtime research recommends it; Library research assumes it. Recommended: ratify.
+Library embeds via the runtime's facade (dedicated TEI instance), never loading its own embedder — one guarded provenance surface. **agent-runtime is accordingly a hard dependency of Library indexing** (query serving over an already-built index survives runtime downtime; ingestion/re-embed does not). Binding on both Stage-2 plans.

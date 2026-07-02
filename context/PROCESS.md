@@ -13,6 +13,8 @@ Each stage has an explicit **artifact** and **exit criteria**. Do not advance un
 
 ## Stage 2 — Planning
 **Purpose:** Turn research into a concrete implementation plan. **Run the plan through an adversarial review** (a critic pass that attacks the plan's premises and blast radius) before accepting it — this mirrors the deliberative principle the product itself runs on.
+
+> **Entry gate (ratified D-17, 2026-07-02 — SOFT-START / HARD-FREEZE):** the gap-1.3 local-model-drives-MCP feasibility spike gates Board and Notes Stage 2. Drafting may proceed, but **no MCP tool schema freezes and no Stage-2 exit for Board or Notes until the spike PASSES** its ratified thresholds (N≥50 runs/model; zero-tolerance SoD hard gate — any unauthorized terminal-state write or accepted fencing/ticket mismatch is an automatic FAIL; 0 schema violations on transition calls; ≥95% clean success; 100% termination within ≤2× optimal steps; ≥95% graceful escalation / 0% spin on the unsatisfiable variant). **Every other MCP-serving app inherits a schema-complexity ceiling:** keep tool schemas within whatever complexity the spike validates (flat, low-arity, enum-biased until proven otherwise). Ceremony parameters (huddle size, round caps, draft-isolation) additionally wait on the gap-1.2 sizing measurement.
 **Artifact:** `planning/PLAN.md` — data model, API surface, MCP tool list, UI surface, sequencing, and the residual risks the adversarial pass raised.
 **Exit criteria:** data model and both surfaces (MCP + UI) are specified over one shared state; adversarial concerns are resolved or explicitly accepted with reason.
 

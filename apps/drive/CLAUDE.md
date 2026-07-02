@@ -1,6 +1,6 @@
 # CLAUDE.md — Drive (`drive`)
 
-> Read `/_context/ARCHITECTURE.md` and `/_context/PROCESS.md` first. This file only covers what is specific to Drive. Run the 7-stage pipeline; this app is **Standard**, so normal rigor applies.
+> Read `context/ARCHITECTURE.md` and `context/PROCESS.md` first. This file only covers what is specific to Drive. Run the 7-stage pipeline; this app is **Standard**, so normal rigor applies.
 
 ## Identity
 
@@ -30,3 +30,6 @@ Drive is **the artifact store for everything that isn't markdown** — the binar
 - Every artifact is traceable to its originating ticket.
 - Preview path works through the `pdf` tool; no markdown canonicalized here.
 - Standard invariants pass (MCP authz, audit logging of state changes).
+## SETTLED DECISIONS (ratified 2026-07-02 — `context/RATIFICATIONS_2026-07-02.md`)
+
+1. **(D-14)** **Build: plain filesystem CAS** (blobs by SHA-256) **+ SQLite metadata/version chain**. MinIO rejected (upstream archived Apr 2026); SeaweedFS/Garage/Nextcloud rejected. **Versity Gateway is the designated zero-migration S3 swap-path** if an external S3 consumer ever materializes — no suite component speaks S3 today.

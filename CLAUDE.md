@@ -11,7 +11,7 @@ The two `@` lines above import the shared context at session launch. From anywhe
 
 ## Per-app instructions
 
-Each app has its own `CLAUDE.md` under `apps/<app>/` (or `platform/<svc>/`), loaded on demand when Claude works in that subtree. Keep them thin — they cover only what is specific to that app. Do not restate shared context in them; if something is true for every app, it belongs in `\_context/`, not duplicated.
+Each app has its own `CLAUDE.md` under `apps/<app>/` (or `platform/<svc>/`), loaded on demand when Claude works in that subtree. Keep them thin — they cover only what is specific to that app. Do not restate shared context in them; if something is true for every app, it belongs in `context/`, not duplicated.
 
 > \*\*Naming note (intentional):\*\* every per-app file is named `CLAUDE.md` on purpose — that exact filename is what Claude Code auto-discovers by walking up the directory tree. They are disambiguated by their \*path\* (`apps/gateway/CLAUDE.md`, `apps/vault/CLAUDE.md`, …), which is the intended monorepo pattern, not a collision. The shared docs are deliberately \*\*not\*\* named `CLAUDE.md` (they are `ARCHITECTURE.md` / `PROCESS.md`) so they load via `@import` above rather than directory-walk. Do not rename any of these — the names are load-bearing.
 

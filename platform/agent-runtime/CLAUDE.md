@@ -1,6 +1,6 @@
 # CLAUDE.md — Agent Runtime (`agent-runtime`)
 
-> Read `/_context/ARCHITECTURE.md` and `/_context/PROCESS.md` first. This file only covers what is specific to the Agent Runtime. Run the 7-stage pipeline; this platform layer is **Critical-infra**, so Stages 5 and 7 have teeth.
+> Read `/context/ARCHITECTURE.md` and `/context/PROCESS.md` first. This file only covers what is specific to the Agent Runtime. Run the 7-stage pipeline; this platform layer is **Critical-infra**, so Stages 5 and 7 have teeth.
 
 ## Identity
 
@@ -53,3 +53,8 @@ Likely thin — fleet process status surfaced *through* Mission Control rather t
 - Heartbeat/liveness contract demonstrated against MC under crash, wedge, and drain.
 - Model provenance controls demonstrated (pinned versions, checksum verification at load).
 - Critical-infra security stage cannot exit on a light checklist (§8).
+## SETTLED DECISIONS (ratified 2026-07-02 — `context/RATIFICATIONS_2026-07-02.md`)
+
+1. **(D-14)** Serving stack: **vLLM primary / SGLang evaluated alternate / llama.cpp CPU-quiesce lane / TEI for embeddings**, behind the one inference facade; **fail-closed Sigstore `model-signing` provenance gate** (safetensors-only, digest-pinned, SHA-256-verified) on every model load including the embedder.
+2. **(D-13)** The **Library embeds via this runtime's TEI facade** — the runtime is a hard dependency of Library indexing (`context/CONTRACTS/agent-runtime-library-inference.md`).
+3. **(D-17)** The gap-1.3 spike gate is **SOFT-START / HARD-FREEZE** with the §7 thresholds ratified as proposed (N≥50/model; zero-tolerance SoD gate; 0 transition-schema violations; ≥95% clean success; 100% termination ≤2× optimal; ≥95% graceful escalation). Encoded as the PROCESS.md Stage-2 entry gate. The spike and the gap-1.2 sizing measurement run as their own sessions, next, before any Stage-2.

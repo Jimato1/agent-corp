@@ -1,6 +1,6 @@
 # CLAUDE.md — Coordination Board (`board`)
 
-> Read `/_context/ARCHITECTURE.md` and `/_context/PROCESS.md` first. This file only covers what is specific to the Board. Run the 7-stage pipeline; this app is **Standard**, so normal rigor applies.
+> Read `context/ARCHITECTURE.md` and `context/PROCESS.md` first. This file only covers what is specific to the Board. Run the 7-stage pipeline; this app is **Standard**, so normal rigor applies.
 
 ## Identity
 
@@ -35,3 +35,12 @@ The Board is **the org's coordination spine** — the single place where work is
 - Full lifecycle + ceremony transitions exercised over one shared state by both surfaces.
 - All three kickoff types create tickets; standing tickets spawn children on trigger.
 - Standard invariants pass (MCP authz, audit logging of state changes).
+## SETTLED DECISIONS (ratified 2026-07-02 — `context/RATIFICATIONS_2026-07-02.md`)
+
+1. **(D-14)** Claim engine is **hand-built on SQLite** (WAL, `BEGIN IMMEDIATE`, status-guarded CAS — SKIP LOCKED does not exist in SQLite; Postgres `FOR UPDATE SKIP LOCKED` only as a future graduation). Per-host mutex is **data**: `host_locks` table + TTL lease + Board-minted monotonic `lock_generation` fencing token. Scheduled kickoffs = in-process **node-cron** (`noOverlap`); dedup via UNIQUE `spawn_key` in Board data. MCP pinned to **2025-11-25 Streamable HTTP** (suite-wide pin).
+2. **(D-1)** Huddle tie-break = the DACI split, ratified as written — see TICKET_STATE_MACHINE.md "Ceremony governance". Stage-2 encodes it (server-side watchdog = amendment A1 `board_escalation`).
+3. **(D-2)** Ceremony scaling = the deterministic three-lane triage decision table over five signals, ratified as written. Never an LLM score; lane floors inherit; lane governs planning rigor only.
+4. **(D-11)** The Board **enforces lineage/spawn-depth caps at claim time** (it already enforces WIP there); MC surfaces and auto-triages; auth keeps token/identity budgets only.
+5. **(D-15)** The Board **hosts `svc:tier-approver`** as an internal service process (auto-tier clearing of `awaiting_approval`; auth kind-gates it from destructive/high tiers).
+
+Stage-2 obligations register: `context/MERGE_REVIEW_1.md` §6 (approval record + allowlist, PIP facts, four-eyes, provenance-taint lane eligibility, `team` label, backup, outage-aware reaper). Binding contracts: `context/CONTRACTS/board-agents-claim.md`, `board-wazuh-connector-kickoff.md`.

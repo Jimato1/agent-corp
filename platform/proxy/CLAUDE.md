@@ -1,6 +1,6 @@
 # CLAUDE.md — Reverse Proxy (`proxy`)
 
-> Read `/_context/ARCHITECTURE.md` and `/_context/PROCESS.md` first. This file only covers what is specific to the Proxy. Run the 7-stage pipeline; this app is **Standard**, but it is pure plumbing — several stages are thin or N/A (called out below).
+> Read `context/ARCHITECTURE.md` and `context/PROCESS.md` first. This file only covers what is specific to the Proxy. Run the 7-stage pipeline; this app is **Standard**, but it is pure plumbing — several stages are thin or N/A (called out below).
 
 ## Identity
 

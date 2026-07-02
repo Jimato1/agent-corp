@@ -37,6 +37,10 @@ The map is auth's **offered half**; it binds an app only when that app's Stage-2
 
 Holder conflict-set is immutable/compiled-in; TPM-sealed non-exportable keys mandatory for any principal whose closure contains a holder/destructive scope; holder-scope keys never provisioned on a host running executor-agent code; RFC 8693 token exchange off by default and never emits holder scopes.
 
-## 5. Deployment naming conflict — flagged, not resolved here
+## 5. Deployment naming — **RESOLVED (ratified D-3, 2026-07-02)**
 
-PLAN §3.2's audience segment for mission-control is **`mc`**; DEPLOYMENT.md §1 requires subdomain == audience == compose name and §2 names the service **`mission-control`**. Chat's research also assumed `mc.<SUITE_DOMAIN>`. One must yield — operator decision D-3 in MERGE_REVIEW_1 (recommendation: rename the unbuilt MC service/subdomain to `mc`; amend DEPLOYMENT §2).
+Mission Control's service/subdomain/audience are all **`mc`** — DEPLOYMENT.md §2 amended; built auth's `mc` audience segment stands unchanged; Chat's assumed `mc.<SUITE_DOMAIN>` deep links are now correct. The directory remains `apps/mission-control/`.
+
+## 6. svc:tier-approver runner — **RATIFIED D-15 (2026-07-02)**
+
+The **Board hosts `svc:tier-approver` as an internal service process**: approval state is the Board's; the process queries the CMDB verdict and applies the auto-tier clearing of `awaiting_approval → approved`; auth kind-gates it structurally away from destructive-exec/high-tier work (it holds `board:approve` + reads only, per PLAN §3.4). Board Stage-2 designs it; auth's registration of the principal is unchanged.

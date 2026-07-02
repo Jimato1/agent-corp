@@ -1,6 +1,6 @@
 # CLAUDE.md — Mission Control (`mission-control`)
 
-> Read `/_context/ARCHITECTURE.md` and `/_context/PROCESS.md` first. This file only covers what is specific to Mission Control. Run the 7-stage pipeline; this app is **Standard**, so normal rigor applies.
+> Read `context/ARCHITECTURE.md` and `context/PROCESS.md` first. This file only covers what is specific to Mission Control. Run the 7-stage pipeline; this app is **Standard**, so normal rigor applies.
 
 ## Identity
 
@@ -32,3 +32,9 @@ Mission Control is **the manager's cockpit** — the operator's single console o
 - WIP/budget/loop guards enforced under simulated multi-agent load.
 - Both approval and review gates clear correctly from the unified queue.
 - Standard invariants pass (MCP authz, audit logging of state changes).
+## SETTLED DECISIONS (ratified 2026-07-02 — `context/RATIFICATIONS_2026-07-02.md`)
+
+1. **(D-3)** Runtime identity is **`mc`** — compose service, subdomain, and auth audience are all `mc` (DEPLOYMENT §2; matches built auth's audience segment). The directory stays `apps/mission-control/`.
+2. **(kill-switch sub-question)** MC **keeps its kill button** — the cockpit affordance, wired to CALL auth's raise-kill-epoch; auth remains the single enforcement point; fail-loud + hard hand-off to auth's outage-surviving console on any non-2xx (`context/CONTRACTS/killswitch-chain.md`).
+3. **(D-10)** MC owns the observability sidecars: `mc_prometheus`, `mc_blackbox`, and the **log shipper + log store** (ownership ratified — was unowned). DEPLOYMENT §3a.
+4. **(D-11)** MC **surfaces and auto-triages** loop-guard/spawn-depth signals; enforcement lives at the Board (claim-time lineage caps); auth keeps token/identity budgets only.

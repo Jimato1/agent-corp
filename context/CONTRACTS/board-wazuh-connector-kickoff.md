@@ -23,7 +23,7 @@ Vulnerability alerts fire **only on state change** in later scans, never on init
 
 Connector (at Gateway): baseline pulls, verification polling, evidence capture. Board: webhook receipt, dedup, ticket spawn, `verifying` transitions. CMDB: the mapping table + scan-interval fact. Ticket closure runs through **the connector's disappearance poll**, not through Solved-event webhooks (resolves Board's open either/or — D-9 records it for sign-off).
 
-## 5. Open (flagged, not blocking the shape)
+## 5. Ratified (D-9, 2026-07-02)
 
-- Webhook authentication upgrade: static HMAC secret (researched mechanism) vs a scoped auth-minted identity for the integrator script — decide at Board Stage-2 with auth (D-9).
-- Whether `Solved` events also flow through the webhook as advisory corroboration (harmless if idempotent; never the confirmation).
+- Webhook authentication: **static HMAC shared secret over the raw body, now**; revisit when auth's machine-principal enrollment is routine. (Was the open item; now ruled.)
+- Closure path (CF-H): confirmed — **document disappearance via the connector poll is the confirmation**; `Solved` events may additionally flow through the webhook as advisory corroboration (harmless if idempotent; never the confirmation).

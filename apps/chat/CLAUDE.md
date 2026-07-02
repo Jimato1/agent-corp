@@ -1,6 +1,6 @@
 # CLAUDE.md — Chat (`chat`)
 
-> Read `/_context/ARCHITECTURE.md` and `/_context/PROCESS.md` first. This file only covers what is specific to Chat. Run the 7-stage pipeline; this app is **Standard**, so normal rigor applies.
+> Read `context/ARCHITECTURE.md` and `context/PROCESS.md` first. This file only covers what is specific to Chat. Run the 7-stage pipeline; this app is **Standard**, so normal rigor applies.
 
 ## Identity
 
@@ -29,3 +29,6 @@ Chat is **the human-facing notification channel** — a one-way stream where age
 - Notifications/escalations flow agent→operator; broadcast flows operator→fleet, over one shared state.
 - No agent-to-agent messaging path exists (coordination boundary held).
 - Standard invariants pass (MCP authz, audit logging of state changes).
+## SETTLED DECISIONS (ratified 2026-07-02 — `context/RATIFICATIONS_2026-07-02.md`)
+
+1. **(D-14)** **Build a thin bespoke Chat service** (own canonical SQLite = feed + audit log, own SSE feed, one write-only MCP tool). **ntfy is adopted ONLY as an outbound push sink** (`chat_ntfy` sidecar, DEPLOYMENT §3a) — never the core, never a second source of truth, never a second identity system; Chat is its only publisher.

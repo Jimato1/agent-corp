@@ -1,6 +1,6 @@
 # CLAUDE.md — Secrets Vault (`vault`)
 
-> Read `/_context/ARCHITECTURE.md` and `/_context/PROCESS.md` first. This file only covers what is specific to the Vault. Run the 7-stage pipeline; this app is **Critical-infra**, so Stages 5 and 7 have teeth.
+> Read `context/ARCHITECTURE.md` and `context/PROCESS.md` first. This file only covers what is specific to the Vault. Run the 7-stage pipeline; this app is **Critical-infra**, so Stages 5 and 7 have teeth.
 
 ## Identity
 
@@ -34,3 +34,13 @@ The Vault holds **the credentials** — one of the four holders that must indepe
 - Demonstrated: an agent cannot obtain plaintext credentials by any path; only the Gateway redeems handles.
 - Access audit is complete and immutable; rotation works.
 - Critical-infra security stage cannot exit on a light checklist (§8).
+## SETTLED DECISIONS (ratified 2026-07-02 — `context/RATIFICATIONS_2026-07-02.md`)
+
+1. **(D-14)** **Adopt OpenBao, pinned 2.5.x (≥ 2.5.5)** — never the 2.6.0 beta; BUSL HashiCorp Vault retained only as a license-encumbered **break-glass fallback**. Minimum surface: KV v2 + SSH secrets engine + exactly one Gateway auth method. The Vault app is a thin API/MCP wrapper owning the SoD inversion.
+2. **(D-4)** Redemption preconditions: Gateway-side enforcement baseline **plus** the redeem endpoint independently verifies the approval (`approval_id` named) — `context/CONTRACTS/vault-gateway-redemption.md` §3.
+3. **(D-16, each tagged _operator-posture, revisit before prod_):**
+   - **Fail-closed-on-audit:** a redemption is refused if it cannot be logged to ≥2 sinks (availability deliberately traded for non-repudiation).
+   - **Off-box WORM sink = a hardened log host** (not Drive object-lock, not a SIEM).
+   - **Seal model = on-prem Transit auto-unseal** via a second minimal unsealer OpenBao (`vault_unsealer` sidecar, DEPLOYMENT §3a) + 3-of-5 recovery shares escrowed offline.
+
+> **Stage-2 obligations:** sequence AFTER auth pins the holder-scope claim shape (planning-blocking); this file's shared-context pointer was broken (`/_context/`) during Stage-1 — re-check RESEARCH.md against the frozen contracts and tier-1 specs before planning hardens.
