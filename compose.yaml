@@ -48,6 +48,12 @@ services:
   #    to merge a same-named included service (warns instead), use the two-stack
   #    fallback in JOINT_CHECKPOINT.md §Fallback (docker network connect --alias).
   auth-a:
+    # Force the SERVER command here too (belt-and-suspenders): the auth compose already
+    # pins `target: runtime` + sets this command, but restating it makes the joint bring-up
+    # immune to any merge surprise — a replica on THIS compose can never run pytest.
+    # (The boot-defect where auth-a ran `python -m pytest` was the Dockerfile's trailing
+    # `test` stage being the default build target — fixed in platform/auth/docker-compose.yml.)
+    command: ["python", "-m", "auth.server"]
     networks:
       default: {}                 # keep reaching postgres/redis/keycloak (auth stack's net)
       edge:
