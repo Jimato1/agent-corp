@@ -15,17 +15,33 @@ Two contracts already exist and prove the pattern (they stay where they are; thi
 
 New contracts are written **here** (one file per seam, named `<producer>-<consumer>-<topic>.md`) when the earlier-built side reaches the seam — at latest, before the later side's Stage-2 exit.
 
-## Known seams requiring contracts (from the gap review; write when the producing side reaches Stage 2)
+## Contract ledger (updated by MERGE-RESEARCH-1, 2026-07-02 — see `context/MERGE_REVIEW_1.md` for the full reconciliation)
 
+**Frozen in this directory:**
+
+| Seam | Contract | Status |
+|---|---|---|
+| board → agent-runtime (+ all agents): claim/lease/fencing/transitions | `board-agents-claim.md` | FROZEN (numbers finalize post-sizing) |
+| agent-runtime → MC: heartbeat/liveness + drained report | `agent-runtime-mc-heartbeat.md` | FROZEN |
+| MC → auth → Gateway → agent-runtime: kill-switch chain | `killswitch-chain.md` | FROZEN in shape; 2 auth-side verify items |
+| cmdb → gateway (+ board triage): policy verdict | `cmdb-gateway-policy.md` | FROZEN core; §6 host-facts additions await ratification (D-6) |
+| vault → gateway: handle redemption + SSH-CA | `vault-gateway-redemption.md` | FROZEN core; §3 check-placement awaits ratification (D-4). **Supersedes Gateway research's response-wrapping assumptions** |
+| auth → every app: RS baseline + scope→tool countersign index | `auth-apps-tokens-scopes.md` | FROZEN by reference to auth PLAN; per-app countersigns tracked there |
+| agent-runtime → library/all: `generate()`/`embed()` inference facade | `agent-runtime-library-inference.md` | FROZEN in shape; pins finalize with gap-1.2 |
+| cmdb → library: host inventory facts | `cmdb-library-hostfacts.md` | FROZEN in shape (NEW seam from Library Stage-1) |
+| board ↔ wazuh-connector: kickoff + verification evidence | `board-wazuh-connector-kickoff.md` | FROZEN in shape; webhook-auth open item |
+| gateway+cmdb → library: tier-0 sandbox execution | `gateway-cmdb-library-sandbox.md` | **SKETCH — NOT FROZEN** (neither producer researched it; mandatory Stage-2 design input for both) |
+
+**Still to write (producer side not yet researched/reached):**
 - board ↔ everyone: ticket/ceremony state machine — **already extracted**: `context/specs/TICKET_STATE_MACHINE.md`
 - all apps: shared identifiers — **already extracted**: `context/specs/IDENTIFIERS.md`
-- gateway ↔ cmdb: policy-query surface (tier, window, in-window?, snapshot-capability, health timeouts) — Gateway research currently *assumes* CMDB duties CMDB's docs never mention; none of it binds until contracted here
-- gateway ↔ vault: handle-redemption protocol — Gateway research currently bakes in HashiCorp-specific semantics while Vault has zero research; **flagged, not binding**
-- auth ↔ each app: scope→tool map for MCP surfaces — currently defined unilaterally in auth's PLAN; each app's Stage-2 must consume and countersign its slice
-- board ↔ wazuh-connector: kickoff webhook + verification-evidence shape
-- mission-control ↔ agent-runtime: heartbeat/liveness + drain/kill compliance protocol
-- library ↔ agent-runtime: embedding-model serving (embeddings are inference — the load belongs in the gap-1.2 GPU sizing artifact)
-- library ↔ gateway/cmdb: tier-0 sandbox execution surface for documentation verification (disposable class, auto-approve policy, kill-switch-covered — ARCHITECTURE.md §5)
+- drive ↔ pdf: render-call input contract + viewer byte-fetch (Range/ETag) expectations — pdf has no Stage-1 research yet
+- notes → pdf: md→PDF/docx render call (frontmatter strip/remap rule) — same blocker
+- mc → chat: resolve-event feed + the stable review-item URL scheme (`/review/<id>` is Chat's unverified assumption); freeze at MC Stage-2 before Chat planning exits
+- gateway → mc: signed audit-chain HEAD anchoring (receive-and-retain duty MC's docs don't know about yet) — freeze at Gateway Stage-2
+- board ↔ notes: ceremony convergence signaling (Board API is the signal; Notes frontmatter is display-only per TICKET_STATE_MACHINE.md §3) + note-visibility semantics if mechanical independent-draft enforcement is chosen
+- agent-runtime ↔ auth: key-provisioning (C7/C8 — enrollment payload, TPM2_Certify attestation, EK allow-list ownership, rotation/revocation) — freeze at runtime Stage-2 jointly with auth
+- agent-runtime → notes: resumable-checkpoint note contract (C12)
 
 ## The three shared registries — OWNER ASSIGNMENTS
 
