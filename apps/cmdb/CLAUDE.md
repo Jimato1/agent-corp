@@ -1,6 +1,6 @@
 # CLAUDE.md — CMDB (`cmdb`)
 
-> Read `/_context/ARCHITECTURE.md` and `/_context/PROCESS.md` first. This file only covers what is specific to the CMDB. Run the 7-stage pipeline; this app is **Critical-infra**, so Stages 5 and 7 have teeth.
+> Read `context/ARCHITECTURE.md` and `context/PROCESS.md` first. This file only covers what is specific to the CMDB. Run the 7-stage pipeline; this app is **Critical-infra**, so Stages 5 and 7 have teeth.
 
 ## Identity
 
@@ -34,3 +34,10 @@ The CMDB holds **the policy** — one of the four holders that must independentl
 - Demonstrated: an out-of-window or insufficiently-approved host is refused regardless of ticket/plan state.
 - Both surfaces read/write the same fleet + policy over one shared state.
 - Critical-infra security stage cannot exit on a light checklist (§8).
+## SETTLED DECISIONS (ratified 2026-07-02 — `context/RATIFICATIONS_2026-07-02.md`)
+
+1. **(D-14)** **Bespoke thin fail-closed policy registry** — do NOT adopt NetBox/iTop/Ralph (canonicality + SoD-independence grounds); graft NetBox's tag/config-context precedence and iTop's first-class recurring windows. Markdown+git canonical, SQLite rebuildable index.
+2. **(D-6)** CMDB **accepts the host-facts duties** the Gateway assumed: `snapshot_capability`, per-tier health/SSH timeout policy, Syscollector scan-interval fact, mid-run window-close semantics. Fail-closed escalations land as **Board escalations**. See `context/CONTRACTS/cmdb-gateway-policy.md` §6.
+3. **(D-7)** The tier-0 **`disposable` sandbox class** (auto-approve, no windows, no Vault creds, explicit carve-out from the destructive-never-auto floor) is a **mandatory Stage-2 EXIT item** — `context/CONTRACTS/gateway-cmdb-library-sandbox.md`.
+
+> **Stage-2 obligation (ratification ledger):** this file's shared-context pointer was broken (`/_context/`) during Stage-1 — re-check RESEARCH.md against the frozen contracts and tier-1 specs before planning hardens.

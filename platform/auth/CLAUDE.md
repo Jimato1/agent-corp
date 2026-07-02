@@ -1,6 +1,6 @@
 # CLAUDE.md — Identity Gateway (`auth`)
 
-> Read `/_context/ARCHITECTURE.md` and `/_context/PROCESS.md` first. This file only covers what is specific to Auth. Run the 7-stage pipeline; this app is **Critical-infra**, so Stages 5 and 7 have teeth.
+> Read `context/ARCHITECTURE.md` and `context/PROCESS.md` first. This file only covers what is specific to Auth. Run the 7-stage pipeline; this app is **Critical-infra**, so Stages 5 and 7 have teeth.
 
 ## Identity
 

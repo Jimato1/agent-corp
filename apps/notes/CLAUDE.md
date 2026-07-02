@@ -1,6 +1,6 @@
 # CLAUDE.md — Notes (`notes`)
 
-> Read `/_context/ARCHITECTURE.md` and `/_context/PROCESS.md` first. This file only covers what is specific to Notes. Run the 7-stage pipeline; this app is **Standard**, so normal rigor applies.
+> Read `context/ARCHITECTURE.md` and `context/PROCESS.md` first. This file only covers what is specific to Notes. Run the 7-stage pipeline; this app is **Standard**, so normal rigor applies.
 
 ## Identity
 

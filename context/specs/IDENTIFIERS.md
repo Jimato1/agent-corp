@@ -23,6 +23,22 @@
 
 > **Fencing-counter ownership note:** auth's PLAN §5.3 and Board research were found drifting on who owns this counter. This spec assigns it to the **Board** (the lease issuer — a fencing token is meaningless except relative to the lease sequence). auth's PDP treats it as an opaque presence/freshness check. Reconciliation item recorded in `context/GAP_REMEDIATION.md`.
 
+## Rows added by MERGE-RESEARCH-1 (2026-07-02) — IDs the Stage-1 artifacts minted that crossed app boundaries unregistered
+
+| ID | Minted by | Format | Referenced by | Validation posture |
+|---|---|---|---|---|
+| `op_id` (idempotency key) | **the calling agent/client**, one per logical operation | opaque string (UUID recommended), ≤128 chars | every mutating MCP tool (Board `op_id`), auth's `admission_claim` / `budget:idem:{sub}:{key}`, the Gateway double-execution guard — **one concept, one name**: Board's `op_id` and auth's "idempotency key" are unified here | **Validated by uniqueness** — server collapses replays and returns the prior result / `409 in_progress` |
+| kill/revocation **`epoch`** | **auth** (sole writer) | monotonic integer | every RS (`last_epoch` tracking), proxy, Gateway L2, MC read-mirror, agent-runtime drain/kill commands (the command's `epoch` IS this counter) | **Validated by comparison** — monotonic; a lower/stale epoch never un-does a higher one |
+| `release_id` | **Vault** | opaque, non-redeemable (must provably NOT be a wrapping token); prefix-typing decided at Vault Stage-2 | Board tickets (agent writes it as a reference), Gateway (presents at redemption), `vault.release_status` | **Validated live** by Vault at redemption; powerless everywhere else |
+| credential `handle` | **Vault** | `cred://hosts/<host_id>/<name>` — a powerless application-level URI; consumers never parse it (the embedded `host_id` is display/routing inside Vault only) | agents (list/describe/request_release), Board tickets | **Opaque** — never redeemable by any holder |
+| `decision_id` | **CMDB**, one per issued policy verdict | opaque nonce inside the signed verdict token | Gateway (validates + audit-logs), CMDB decision log | **Validated** as part of verdict-token signature verification |
+| `artifact_id` | **Drive** | UUIDv7 (time-ordered) | agents (MCP put/get results), audit rows, pdf preview keying | **Opaque** |
+| `version_id` | **Drive** | opaque PK of the append-only version chain | agents, audit rows | **Opaque** |
+| `notification_id` | **Chat** | opaque envelope PK; doubles as the SSE `Last-Event-ID` replay cursor | posting agents (returned by `post_notification`), operator feed clients | **Opaque** |
+| `model_id` (+ resolved digest) | **agent-runtime** (inference facade) | served model id + pinned commit digest + provenance-verified flag | Library (compares on every `embed()` to detect swaps → full re-embed), audit attribution of any generated output | **Validated by comparison** — a change is a breaking, versioned contract event, never silent |
+
+**Deliberately NOT registered** (app-internal or contract-scoped; do not promote without a new row): Board `spawn_key` (internal dedup), Board `expected_version`/`ticket_version` (Board-scoped opaque concurrency token), runtime `session_id` (heartbeat-contract-scoped), Gateway MCP task handles (hidden behind `get_execution_status(run_id)`), CMDB `window_id`/`policy_version` (verdict-evidence fields, contract-scoped), Drive `upload_ref`/`download_ref` (ephemeral bearer references), Chat `dedup_key` (opaque, never parsed), auth `claimed_parent` (audit field). **Killed:** the Gateway research's "plan id" — a plan is identified by `plan_hash`; playbooks by their catalog key inside the Board-minted allowlist. **Pending mint:** the sandbox harness/config version identifier (Gateway, when `gateway-cmdb-library-sandbox.md` freezes); an MC review-item id if MC Stage-2 mints one (Chat's `source_ref.kind: review` currently has no registered referent — reuse `ticket_id` if possible).
+
 ## Rules for new identifiers
 
 1. A new cross-app ID does not exist until a row is added here (one PR, one row, minting app stated).

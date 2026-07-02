@@ -1,6 +1,6 @@
 # CLAUDE.md — Execution Gateway (`gateway`)
 
-> Read `/_context/ARCHITECTURE.md` and `/_context/PROCESS.md` first. This file only covers what is specific to the Gateway. Run the 7-stage pipeline; this app is **Critical-infra**, so Stages 5 and 7 have teeth.
+> Read `context/ARCHITECTURE.md` and `context/PROCESS.md` first. This file only covers what is specific to the Gateway. Run the 7-stage pipeline; this app is **Critical-infra**, so Stages 5 and 7 have teeth.
 
 ## Identity
 
@@ -44,3 +44,9 @@ Only then does it run. It holds **no long-term secrets**, and **never returns pl
 - Demonstrated: kill switch halts an in-flight run.
 - Per-host mutex holds under simulated concurrent claims.
 - External-verification evidence: a dry-run/patch against a **canary host** confirmed via Wazuh.
+## SETTLED DECISIONS (ratified 2026-07-02 — `context/RATIFICATIONS_2026-07-02.md`)
+
+1. **(D-14)** Execution engine = **embedded ansible-runner, playbook-only** (`process_isolation=True`; never forward module/module_args/cmdline; ansible-core ≥2.19). Rundeck and salt-ssh rejected.
+2. **(D-8)** **Gateway-private Postgres** granted as DEPLOYMENT §3 invariant-exception #1 (`data_gateway` network) — for the append-only signed audit chain + advisory-lock mutex.
+3. **(D-7)** The tier-0 **sandbox execution surface** (evidence capture, harness attestation) is a **mandatory Stage-2 EXIT item** — `context/CONTRACTS/gateway-cmdb-library-sandbox.md`.
+4. **SUPERSEDED:** this app's Stage-1 response-wrapping/cubbyhole brokering assumptions are replaced by `context/CONTRACTS/vault-gateway-redemption.md` (ACL model, `release_id` flow, Board-minted fencing token, `consume_approval`, `creds`+mTLS hop). Stage-2 binds to the contracts, not RESEARCH.md, wherever they differ.

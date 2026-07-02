@@ -18,7 +18,8 @@ Rules: subdomain label == auth audience segment == compose service name (proxy P
 |---|---|---|---|
 | proxy | `proxy` | 443/80 published; 9100 internal | only host-published service |
 | auth | `auth` | **8089** | as built — `AUTH_PORT=8089` in auth's compose. **`AUTH_VERIFY_PORT=8089` is the ONE correct value** (see §4) |
-| board, notes, mission-control, drive, chat, pdf, library, cmdb | own name | **8080** | suite convention (Caddyfile `import app <name>:8080`) |
+| board, notes, drive, chat, pdf, library, cmdb | own name | **8080** | suite convention (Caddyfile `import app <name>:8080`) |
+| mission-control | **`mc`** | 8080 | **renamed by ratified D-3 (2026-07-02):** service/subdomain/audience are all `mc`, matching built auth's audience segment (PLAN §3.2) and the §1 subdomain==audience==service rule. The directory stays `apps/mission-control/`; only the runtime name is `mc` |
 | gateway, vault | own name | 8080 | also join `creds` |
 | agent-runtime | `agent-runtime` | TBD in its research | joins `edge` for MCP/API calls to the suite; never joins `creds` |
 
@@ -26,7 +27,20 @@ Rules: subdomain label == auth audience segment == compose service name (proxy P
 
 - **Default: SQLite per app**, inside the app's own volume (settled, ARCHITECTURE.md §9). No app ever opens another app's database file or store — cross-app data moves over APIs only. This is load-bearing for SoD (no back-door reads around the Board/CMDB/Vault/Gateway surfaces).
 - **auth graduates to its own Postgres + replicated Redis** at Stage 5 (auth settled decision #8). These are **auth-private** (`data_auth` network), not suite-shared infrastructure.
+- **INVARIANT EXCEPTION #1 (ratified D-8, 2026-07-02): the Gateway gets a gateway-private Postgres** on a `data_gateway` network — justified by its append-only hash-chained/Ed25519-signed audit table and session-level advisory-lock mutex, neither of which SQLite serves. It is gateway-private like `data_auth`; nothing else ever connects. This is the first and (so far) only exception to SQLite-per-app — recorded here deliberately so it reads as a ruling, not silent drift.
 - A suite-shared Postgres exists only if a future genuine shared-data need forces it (§9); it must be introduced by amending THIS spec, not by one app's compose file.
+
+## 3a. Sidecar convention (ratified D-10, 2026-07-02)
+
+Stage-1 research legitimately introduced auxiliary containers. Rule: a **sidecar** is owned by exactly one app, named `<owner>_<function>`, joins only the networks its owner's charter requires, publishes no host ports, and is added to the §2 table by a DEPLOYMENT.md amendment **at the owning app's Stage-2** (approved in principle now; each amendment is one row + one line of justification). Approved sidecar set and owners:
+
+| Sidecar | Owner | Purpose |
+|---|---|---|
+| `chat_ntfy` | chat | self-hosted push sink (Chat is its only publisher; never a second identity system) |
+| `mc_prometheus`, `mc_blackbox` | mc | edge-metrics query layer + TLS/cert-expiry probe (edge network) |
+| log shipper + log store | **mc** (assignment ratified — was unowned) | collects container stdout (proxy access logs etc.) into the store MC tails |
+| `vault_unsealer` | vault | minimal second OpenBao for Transit auto-unseal (D-16) |
+| off-box WORM audit sink | vault (posture: hardened log host, D-16) | immutable copy of the redemption audit log — physically off the suite host |
 
 ## 4. Resolved divergence (the ONE correct values)
 
