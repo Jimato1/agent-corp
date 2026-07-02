@@ -21,7 +21,13 @@ ARG CADDY_VERSION=2.11.2
 #   - caddy-ratelimit      @ 5625512…      — the module has ONLY a stale v0.1.0 tag (Caddy-2.8-era), so we
 #       pin the current master COMMIT (2026-06-12, "re-register Prometheus collectors on each config
 #       reload" — a real fix for our reload/metrics-under-load behavior). Commit pin = reproducible + current.
-# `xcaddy build v2.11.2` also pins the Caddy CORE version (belt-and-suspenders with the builder image).
+# The build passes the Caddy CORE version to xcaddy (belt-and-suspenders with the builder image).
+# BOOT-DEFECT FIXED (operator first-boot): the caddy:<v>-builder base image sets its OWN
+# `ENV CADDY_VERSION=v2.11.2`, and Docker resolves `ENV` OVER a same-named `ARG` inside a RUN.
+# So the previous `xcaddy build v${CADDY_VERSION}` expanded to `xcaddy build vv2.11.2`
+# (ENV's already-v-prefixed value + our literal `v`) → xcaddy "[FATAL] invalid version".
+# The RUN below strips any leading `v` and re-adds exactly one, so it is a single valid
+# `v2.11.2` no matter whether the ARG or the base-image ENV wins the expansion.
 # CANNOT-VERIFY-HERE (no Docker): the OPERATOR must rebuild and re-run the harness to confirm the pinned
 # build (see NOTES.md "Image/build"). Also watch caddy-ratelimit issue #94 (spurious first-request 429 on
 # 2.11.x) — the test harness warms up per zone to tolerate it.
@@ -29,7 +35,11 @@ ARG CADDY_VERSION=2.11.2
 #   docker buildx imagetools inspect caddy:${CADDY_VERSION}          # → FROM caddy:2.11.2@sha256:<digest>
 #   docker buildx imagetools inspect caddy:${CADDY_VERSION}-builder  # → FROM ...-builder@sha256:<digest>
 FROM caddy:${CADDY_VERSION}-builder AS build
-RUN xcaddy build v${CADDY_VERSION} \
+# Re-declare so the global ARG's value is in this stage's scope (the base image's
+# ENV of the same name still takes precedence in the expansion — that is exactly why
+# the normalize-to-single-v below is required, not optional).
+ARG CADDY_VERSION
+RUN CV="${CADDY_VERSION#v}" && xcaddy build "v${CV}" \
     --with github.com/caddy-dns/cloudflare@v0.2.4 \
     --with github.com/mholt/caddy-ratelimit@5625512f24f6f59d6f64fb3aafe5eecff0b286db
 
