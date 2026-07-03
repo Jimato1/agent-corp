@@ -27,8 +27,8 @@ Shared grace budget (one deadline covering stop-claiming + finish-in-flight, siz
 - **An already-issued Vault SSH certificate is NOT revocable** by the kill switch, Vault sealing, or Gateway-token revocation — only TTL expiry (5–15 min) or KRL push/CA rotation. Kill-switch demos claim "no NEW issuance/execution," with cert TTL + enforced NTP as the residual-exposure bound (see `vault-gateway-redemption.md` §4).
 - Sandbox (tier-0) execution is covered: it funnels through the same Gateway chokepoint (ARCHITECTURE §5).
 
-## 6. Flagged for verification (auth next session — recorded in MERGE_REVIEW_1)
+## 6. Flagged for verification — **CLOSED by the auth countersign session (2026-07-02); authoritative disposition in `auth-apps-tokens-scopes.md` §10**
 
-- **H4:** confirm/shape the raise-kill-epoch endpoint as a monotonic "raise-to-at-least-N" with Idempotency-Key; RFC 7009 per-token revocation stays a separate targeted call.
-- **H5:** remove any "Gateway/MC mirror" L2 source from auth's halt board; auth reads the Gateway directly.
-- Only the **operator** lifts a kill; automated guardrails fire only in the safe (stopping) direction (auth PLAN, binding).
+- **H4 — CONFIRMED.** The trigger endpoint is **level-addressed** (`POST /admin/killswitch {level, issued_by, reason}`): callers never supply an epoch; auth (sole writer) mints a strictly-monotonic `epoch := current + 1`, write-before-ack — so "raise-to-at-least-N" holds by construction and a stale/replayed command can never lower level or epoch. Idempotency: a replay is effect-idempotent today; a caller-minted `op_id` replay-collapse is pinned as additive Stage-5 wiring. RFC 7009 per-token revocation stays a separate targeted call.
+- **H5 — RESOLVED.** "Gateway/MC mirror" removed as an L2-CONFIRMED source from auth's halt board (UI_SPEC §5.2, halt_status_board, MANIFEST amended); L2-CONFIRMED = **auth's direct Gateway read only**; MC relays render only as STALE-UNKNOWN with mirror-age, never CONFIRMED.
+- Only the **operator** lifts a kill; automated guardrails fire only in the safe (stopping) direction (auth PLAN, binding — built: `arm(automated=True)` refuses loosening).

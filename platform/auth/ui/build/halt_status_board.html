@@ -52,14 +52,15 @@ window.AUTH_SHELL = {
                 <td class="freshness">authoritative write</td></tr>
             <tr><td>L2 · Gateway physical stop</td>
                 <td><span class="pill pill--ok"><span class="dot"></span>CONFIRMED</span></td>
-                <td class="mono">read-only mirror</td>
-                <td class="freshness"><span class="ok">0.4s ago</span> · source: Gateway/MC mirror</td></tr>
+                <td class="mono">direct Gateway read</td>
+                <td class="freshness"><span class="ok">0.4s ago</span> · source: Gateway direct</td></tr>
           </tbody>
         </table>
-        <p class="freshness" style="margin-top:8px">Either layer alone halts action (PLAN §7.1). L2 is a
-          <b>READ-ONLY mirror</b>: states are <b>PENDING</b> (not yet mirrored) / <b>CONFIRMED</b> (fresh ack within bound) /
+        <p class="freshness" style="margin-top:8px">Either layer alone halts action (PLAN §7.1). L2-CONFIRMED comes
+          <b>only from auth's DIRECT Gateway read</b> (never an MC relay — merge H5/R9): states are <b>PENDING</b> (no direct ack yet) /
+          <b>CONFIRMED</b> (fresh direct ack within bound) /
           <b>STALE-UNKNOWN</b> (<span class="mono">cannot confirm L2 from here — verify at Mission Control ▸</span>).
-          A stale mirror <b>never</b> reads as a live confirmation.</p>
+          A stale or relayed value <b>never</b> reads as a live confirmation.</p>
       </section>
 
       <!-- AGENTS honest triad — always sums, else "? N unaccounted" (§5.2 dev #2, §2.5.3) -->
