@@ -31,17 +31,20 @@ New contracts are written **here** (one file per seam, named `<producer>-<consum
 | cmdb → library: host inventory facts | `cmdb-library-hostfacts.md` | FROZEN in shape (NEW seam from Library Stage-1) |
 | board ↔ wazuh-connector: kickoff + verification evidence | `board-wazuh-connector-kickoff.md` | FROZEN in shape; webhook-auth open item |
 | gateway+cmdb → library: tier-0 sandbox execution | `gateway-cmdb-library-sandbox.md` | **SKETCH — NOT FROZEN** (neither producer researched it; mandatory Stage-2 design input for both) |
+| mc → chat (+ all deep-linkers): review-item URL scheme + resolve-event feed | `mc-chat-review-resolve.md` | FROZEN (MC Stage-2, 2026-07-02; seams #23/#24 — no new ID minted, review items keyed by `ticket_id`); Chat countersigns at its next session |
 
 **Still to write (producer side not yet researched/reached):**
 - board ↔ everyone: ticket/ceremony state machine — **already extracted**: `context/specs/TICKET_STATE_MACHINE.md`
 - all apps: shared identifiers — **already extracted**: `context/specs/IDENTIFIERS.md`
 - drive ↔ pdf: render-call input contract + viewer byte-fetch (Range/ETag) expectations — pdf has no Stage-1 research yet
 - notes → pdf: md→PDF/docx render call (frontmatter strip/remap rule) — same blocker
-- mc → chat: resolve-event feed + the stable review-item URL scheme (`/review/<id>` is Chat's unverified assumption); freeze at MC Stage-2 before Chat planning exits
-- gateway → mc: signed audit-chain HEAD anchoring (receive-and-retain duty MC's docs don't know about yet) — freeze at Gateway Stage-2
+- gateway → mc: signed audit-chain HEAD anchoring (receive-and-retain duty) — freeze at Gateway Stage-2; **MC's consumer half is pre-committed** (`apps/mission-control/planning/PLAN.md` §6.3: append-only retain, idempotent by `(chain_id, seq)`, monotonic-seq alarm, dedicated `mc:anchor` scope). **Producer ask raised at MC Stage-2:** on (re)connect the Gateway re-pushes all retained HEADs above MC's advertised last `(chain_id, seq)` — backfill clears benign gaps (MC restore/downtime); HEADs past Gateway-side retention are a permanent, alarmed hole (MC PLAN §3.3/§9-R3)
+- board → mc: ticket/queue/lineage read surface (list + since-cursor or SSE) + the WIP-cap write surface + CORS-allowlisting the `mc` origin for browser-direct operator decisions — **raised at MC Stage-2** (`apps/mission-control/planning/PLAN.md` §9-R1); freeze at Board Stage-2; MC runs degraded until then
 - board ↔ notes: ceremony convergence signaling (Board API is the signal; Notes frontmatter is display-only per TICKET_STATE_MACHINE.md §3) + note-visibility semantics if mechanical independent-draft enforcement is chosen
 - agent-runtime ↔ auth: key-provisioning (C7/C8 — enrollment payload, TPM2_Certify attestation, EK allow-list ownership, rotation/revocation) — freeze at runtime Stage-2 jointly with auth
 - agent-runtime → notes: resumable-checkpoint note contract (C12)
+- agent-runtime → drive: deterministic file-upload step (workspace path + Drive-minted `upload_ref` + agent token → authenticated HTTP PUT), so local models never hand-roll HTTP — raised by Drive Stage-2 (`apps/drive/planning/PLAN.md` §2.2/§15.6); freeze at runtime Stage-2
+- board → drive: ticket-exists read (consumed by Drive's `ticket_id` existence check, `apps/drive/planning/PLAN.md` §2.1; same class as the PIP facts endpoint Board already owes auth) — freeze at Board Stage-2; Drive runs degraded (flag-always) until it exists
 
 ## The three shared registries — OWNER ASSIGNMENTS
 
