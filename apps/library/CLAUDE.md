@@ -1,6 +1,6 @@
 # CLAUDE.md — Reference Library (`library`)
 
-> Read `/_context/ARCHITECTURE.md` and `/_context/PROCESS.md` first. This file only covers what is specific to the Library. Run the 7-stage pipeline; this app is **Standard**, with one elevated obligation: its ingestion path is a first-class §12 (untrusted-content) surface and cannot be designed without it.
+> Read `/context/ARCHITECTURE.md` and `/context/PROCESS.md` first. This file only covers what is specific to the Library. Run the 7-stage pipeline; this app is **Standard**, with one elevated obligation: its ingestion path is a first-class §12 (untrusted-content) surface and cannot be designed without it.
 
 ## Identity
 

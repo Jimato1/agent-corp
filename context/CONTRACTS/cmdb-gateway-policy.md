@@ -1,6 +1,8 @@
 # CONTRACT — CMDB → Gateway: decision-time policy verdict (+ Board triage read; + flagged host-facts additions)
 
 > **Status: FROZEN** (MERGE-RESEARCH-1, 2026-07-02; §6 additions **ratified D-6** — see `context/RATIFICATIONS_2026-07-02.md`). Producer: **CMDB** (the PDP). Consumers: **Gateway** (deny-biased PEP — the binding caller), **Board** (triage signals), agents (advisory planning probes). Reconciles CMDB RESEARCH §1–§6 with Gateway RESEARCH §4 and Board RESEARCH §9/§10. This closes the gap-6.1 flagship item ("Gateway assumes CMDB duties CMDB never agreed to") — what CMDB actually offers is below; what it does NOT yet offer is called out.
+>
+> **Unblock note (auth countersign session, 2026-07-02):** the token/claim shape CMDB validates on its inbound **`cmdb:write-policy`** holder calls is now PINNED in `auth-apps-tokens-scopes.md` §8 — CMDB Stage-2 builds against it verbatim. (CMDB's outbound verdict token remains a separate, CMDB-signed artifact per §3 below.)
 
 ## 1. The decision query (one canonical shape — supersedes the field-name drift inside CMDB's own research)
 

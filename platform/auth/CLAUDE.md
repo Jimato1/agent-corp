@@ -66,6 +66,13 @@ Auth is not one of the four action-holders (Board / CMDB / Vault / Gateway), but
 
 **Build outcome (Stage 4; full report `platform/auth/BUILD.md`, IdP gates `platform/auth/build/PHASE0_IDP_BAKEOFF.md`):** built in Python (stdlib-first) — core API (sole writer) + thin MCP + static operator UI, **247 unit tests green** (1 EdDSA skip pending `cryptography`). IdP: **Keycloak provisional-CONFIRMED by docs**, Zitadel not promoted. The build is SQLite/in-process/HMAC-signer; the following carry forward.
 
+**COUNTERSIGN + SCOPE-REGISTRATION SESSION (2026-07-02; docs/contract only — zero enforcement-code change; authority: `context/CONTRACTS/auth-apps-tokens-scopes.md` §7–§11):**
+- **R7 closed:** `library` audience + slice (`library:read/propose/curate/admin`; admin human-kind-gated operator-only; `team` label = additive schema attribute) countersigned. Notes (4-scope, append-bias), Chat (`chat:post/read/manage`; `chat:broadcast` superseded), Drive rows all COUNTERSIGNED in the §3 ledger.
+- **THE PIN:** holder-scope claim shape FROZEN in §8 — Vault + CMDB Stage-2 are UNBLOCKED and build against it verbatim.
+- **Service principals registered (§9):** `svc:notes` + `svc:drive` (client-credentials, `board:read` only, non-holders) and `svc:tier-approver` (D-15 identity: `board:approve` HOLDER + reads, AUTO-tier-bounded, TPM-key + isolation + G5 mandatory).
+- **R8 CONFIRMED / R9 RESOLVED (§10):** kill-epoch = auth-sole-writer, level-addressed trigger, strictly monotonic, write-before-ack; `op_id` replay-collapse pinned for Stage-5 wiring. Halt board's L2-CONFIRMED source is now `Gateway direct` (UI_SPEC/MANIFEST/halt_status_board amended); MC relay never CONFIRMED.
+- **NEW Stage-5 items (add to the migration opener below):** (a) **`HOLDER_ALLOWED_KINDS[board:approve]` must add `service`** (and review dropping `agent` + break-glass admissibility) — compiled-constant change + redeploy per settled #5; until it lands `svc:tier-approver` is registered but non-activatable (safe direction); (b) additive scope constants (`library:*`, `notes:append`, `chat:manage`; retire `chat:broadcast`); (c) `op_id` collapse on the kill trigger. **Open item parked for root-review-#2:** the budget-middleware "one shared Redis" vs DEPLOYMENT §3 auth-private-Redis contradiction (§11) — suite-topology, not auth-scope.
+
 **Stage 5 OPENS WITH THIS (precondition, NOT optional — decision #8):**
 - **Migrate BEFORE any hardening:** `sqlite_store` → **Postgres**; in-process `memory_hot` → **replicated Redis** (pub/sub fan-out); single-node → **active-active HA**; **HMAC test-signer → EdDSA-prod**. All behind existing `Protocol` seams (config swap, not rewrite). **Harden the thing you will actually run, not the SQLite/in-process build.**
 

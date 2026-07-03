@@ -22,6 +22,11 @@ Rules: subdomain label == auth audience segment == compose service name (proxy P
 | mission-control | **`mc`** | 8080 | **renamed by ratified D-3 (2026-07-02):** service/subdomain/audience are all `mc`, matching built auth's audience segment (PLAN §3.2) and the §1 subdomain==audience==service rule. The directory stays `apps/mission-control/`; only the runtime name is `mc` |
 | gateway, vault | own name | 8080 | also join `creds` |
 | agent-runtime | `agent-runtime` | TBD in its research | joins `edge` for MCP/API calls to the suite; never joins `creds` |
+| chat_ntfy *(sidecar, owner: chat)* | `chat_ntfy` | 80 | **added at Chat Stage-2 per D-10/D-14:** outbound push sink; Chat is its sole publisher; `edge` only, no host ports; proxied at `ntfy.<SUITE_DOMAIN>` (forward-auth-exempt route — ntfy device clients can't OIDC; compensated by deny-all ntfy ACL + tokens; never a suite identity system) |
+| mc_prometheus *(sidecar, owner: mc)* | `mc_prometheus` | 9090 internal | **added at MC Stage-2 per D-10:** edge-metrics query layer scraping `proxy:9100`; `edge` only, no host ports |
+| mc_blackbox *(sidecar, owner: mc)* | `mc_blackbox` | 9115 internal | **added at MC Stage-2 per D-10:** TLS/cert-expiry probe (`probe_ssl_earliest_cert_expiry`) for the Edge panel; `edge` only |
+| mc_logship *(sidecar, owner: mc)* | `mc_logship` | n/a (collector) | **added at MC Stage-2 per D-10 (ownership ratified to MC):** collects container stdout (proxy access logs etc.) into `mc_logstore`; impl recommendation Vector — VERIFY-AT-BUILD |
+| mc_logstore *(sidecar, owner: mc)* | `mc_logstore` | 3100 internal | **added at MC Stage-2 per D-10:** the log store MC's BFF tails (Loki-class single binary — VERIFY-AT-BUILD); `edge` + its own volume |
 
 ## 3. Shared vs per-app stores
 
