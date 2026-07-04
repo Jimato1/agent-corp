@@ -1,0 +1,60 @@
+# Notes — Stage-4 run unit (DEPLOYMENT.md §1/§2/§5).
+#
+#   service / DNS / audience  = notes            (subdomain == audience == service; §1)
+#   internal port             = 8080             (suite convention; NO published host ports)
+#   networks                  = edge ONLY        (Standard-class; never joins `creds`)
+#   volume                    = notes_data:/data (the markdown corpus IS a git repo w/ a remote)
+#   auth resolves at          = auth:8089        (§2/§4)
+#
+# The reverse proxy reaches this over `edge`; only the proxy publishes host ports. Secrets and the
+# BOOT-REQUIRED git remote come from the gitignored .env (see .env.example).
+
+services:
+  notes:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agent-corp/notes:latest
+    restart: unless-stopped
+    networks: [edge]
+    # No `ports:` — the proxy is the only host-published surface (DEPLOYMENT §1).
+    env_file:
+      - .env
+    environment:
+      # DEPLOYMENT §5 layout, made explicit (also the config.js defaults).
+      - NOTES_PORT=8080
+      - NOTES_CORPUS_PATH=/data/corpus
+      - NOTES_DB_PATH=/data/index/notes.db
+      # auth gateway (§2/§4) — audience is exactly `notes`.
+      - NOTES_AUTH_JWKS_URL=http://auth:8089/.well-known/jwks.json
+      - NOTES_AUTH_INTROSPECT_URL=http://auth:8089/introspect
+      - NOTES_AUTH_TOKEN_URL=http://auth:8089/oauth/token
+      - NOTES_AUTH_BUDGET_URL=http://auth:8089/budget/admission
+      # Board seam (svc:notes, board:read only).
+      - NOTES_BOARD_URL=http://board:8080
+      - NODE_ENV=production
+    volumes:
+      - notes_data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+    healthcheck:
+      # Alive if the server answers /healthz at all — 200 (ok) OR 503 (degraded-but-serving, e.g. the
+      # backup remote is down) both count as live; only a non-response is unhealthy.
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:8080/healthz',r=>process.exit(r.statusCode?0:1)).on('error',()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+networks:
+  # Defined by the proxy stack; joined here as an external network (DEPLOYMENT §1).
+  edge:
+    external: true
+
+volumes:
+  notes_data:
