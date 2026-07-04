@@ -1,0 +1,36 @@
+<!-- @dsCard group="Colors" viewport="700x210" name="Workshop paper" subtitle="The one warm surface — document reading panes only" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-app); padding: var(--space-6); display: flex; gap: var(--space-4); align-items: stretch; }
+  .desk { flex: 0 0 210px; display: flex; flex-direction: column; justify-content: center; gap: var(--space-2); }
+  .lbl { font-family: var(--font-ui); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+  .note { font-family: var(--font-ui); font-size: 12px; line-height: 17px; color: var(--text-secondary); }
+  .swatch-row { display: flex; gap: var(--space-1); margin-top: var(--space-1); }
+  .sw { flex: 1; height: 22px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 9px; }
+  .paper { flex: 1; background: var(--paper-page); border-radius: var(--radius-panel); padding: var(--space-4) var(--space-6); box-shadow: var(--shadow-dialog); }
+  .paper h4 { font-family: var(--font-serif); font-size: 17px; font-weight: 600; color: var(--paper-ink); margin: 0 0 var(--space-2); }
+  .paper p { font-family: var(--font-serif); font-size: 15px; line-height: 24px; color: var(--paper-ink); margin: 0; }
+  .paper .inset { background: var(--paper-inset); border-left: 2px solid var(--paper-hairline); padding: 6px 12px; margin-top: var(--space-3); font-size: 13px; color: #45453E; }
+</style>
+</head>
+<body>
+  <div class="desk">
+    <div class="lbl">Paper surface</div>
+    <div class="note">A lit sheet on the dark desk — used only inside a document content pane. Never for shell, tables, or safety.</div>
+    <div class="swatch-row">
+      <div class="sw" style="background: var(--paper-page); color: #6A6A62;">F5F3ED</div>
+      <div class="sw" style="background: var(--paper-inset); color: #6A6A62;">EAE7DE</div>
+      <div class="sw" style="background: var(--paper-hairline); color: #45453E;">D8D4C8</div>
+    </div>
+  </div>
+  <div class="paper">
+    <h4>The reading surface</h4>
+    <p>Source Serif 4 carries sustained reading. Ink is <b>#1C1E22</b> on warm off-white — never pure black on white.</p>
+    <div class="inset">Insets step to #EAE7DE with a #D8D4C8 hairline.</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!-- @dsCard group="Spacing" viewport="700x200" name="The nav shell" subtitle="224px rail (56px collapsed) · 52px header · content region" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-app); padding: var(--space-6); }
+  .frame { display: flex; height: 148px; border: 1px solid var(--border-default); border-radius: var(--radius-panel); overflow: hidden; }
+  .rail { width: 96px; background: var(--surface-raised); border-right: 1px solid var(--border-default); display: flex; flex-direction: column; }
+  .rail .brand { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--text-primary); padding: var(--space-3); border-bottom: 1px solid var(--border-default); }
+  .rail .dim { font-family: var(--font-ui); font-size: 10px; color: var(--text-muted); padding: var(--space-2) var(--space-3); }
+  .main { flex: 1; display: flex; flex-direction: column; }
+  .hdr { height: 40px; background: var(--surface-raised); border-bottom: 1px solid var(--border-default); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-3); }
+  .hdr .mid { font-family: var(--font-ui); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+  .content { flex: 1; background: var(--surface-screen); position: relative; }
+  .anno { position: absolute; font-family: var(--font-mono); font-size: 9px; color: var(--signal-cyan); background: var(--signal-cyan-wash); border: 1px solid #14424F; padding: 1px 5px; border-radius: 3px; }
+  .haltmini { height: 18px; background: var(--halt-gold-wash); border-bottom: 1px solid var(--halt-gold-edge); display: flex; align-items: center; padding: 0 var(--space-3); font-family: var(--font-ui); font-size: 9px; font-weight: 600; letter-spacing: 0.04em; color: var(--halt-gold-ink); }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="rail">
+      <div class="brand">Helm</div>
+      <div class="dim">suite<br>switcher</div>
+      <div class="dim" style="margin-top:auto;color:var(--halt-gold-ink)">▮▮ posture<br>shown once</div>
+    </div>
+    <div class="main">
+      <div class="hdr"><span style="font-family:var(--font-ui);font-size:11px;font-weight:600;color:var(--text-primary)">Mission Control</span><span class="mid">System state</span><span style="color:var(--halt-gold);font-size:13px">▮▮</span></div>
+      <div class="haltmini">▮▮ Kill-status mirror pinned right · band under header</div>
+      <div class="content"><span class="anno" style="top:8px;left:8px">content region</span></div>
+    </div>
+  </div>
+</body>
+</html>

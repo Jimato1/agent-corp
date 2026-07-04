@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x172" name="Ink ramp" subtitle="Four stops — muted #94A1AE is the minimum readable" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-screen); padding: var(--space-6); }
+  .rows { display: flex; flex-direction: column; }
+  .r { display: flex; align-items: baseline; gap: var(--space-4); padding: var(--space-2) 0; border-bottom: 1px solid var(--border-default); }
+  .r:last-child { border-bottom: 0; }
+  .sample { font-family: var(--font-ui); font-size: 15px; font-weight: 500; width: 220px; }
+  .role { font-family: var(--font-ui); font-size: 12px; color: var(--text-muted); width: 160px; }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+  .min { font-family: var(--font-ui); font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--halt-gold-ink); background: var(--halt-gold-wash); border: 1px solid var(--halt-gold-edge); padding: 1px 6px; border-radius: var(--radius-pill); margin-left: var(--space-2); }
+</style>
+</head>
+<body>
+  <div class="rows">
+    <div class="r"><div class="sample" style="color: var(--ink-primary);">Primary text &amp; counts</div><div class="role">primary</div><div class="hex">#EEF2F6</div></div>
+    <div class="r"><div class="sample" style="color: var(--ink-secondary);">Secondary text</div><div class="role">secondary</div><div class="hex">#C2CBD5</div></div>
+    <div class="r"><div class="sample" style="color: var(--ink-muted);">Muted labels &amp; metadata<span class="min">min readable</span></div><div class="role">muted</div><div class="hex">#94A1AE</div></div>
+    <div class="r"><div class="sample" style="color: var(--ink-disabled);">Disabled only</div><div class="role">disabled</div><div class="hex">#66727F</div></div>
+  </div>
+</body>
+</html>

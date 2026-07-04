@@ -1,0 +1,58 @@
+<!-- @dsCard group="Colors" viewport="700x210" name="The affective spine" subtitle="Three colors, three fixed jobs — never crossed" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-screen); padding: var(--space-6); }
+  .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-3); }
+  .spine {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+    background: var(--bg-card);
+  }
+  .chip { height: 56px; display: flex; align-items: flex-end; padding: var(--space-2) var(--space-3); }
+  .chip .glyph { font-size: 20px; line-height: 1; }
+  .meta { padding: var(--space-3); }
+  .job { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 2px; letter-spacing: 0.02em; }
+  .desc { font-family: var(--font-ui); font-size: 11px; line-height: 15px; color: var(--text-secondary); margin-top: var(--space-2); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="spine">
+      <div class="chip" style="background: var(--signal-cyan); color: var(--text-on-accent);">
+        <span class="glyph">◉</span>
+      </div>
+      <div class="meta">
+        <div class="job">Interactive</div>
+        <div class="hex">#29B6D8 · signal-cyan</div>
+        <div class="desc">Focus, selection, active nav, the primary <b>safe</b> action. Not green.</div>
+      </div>
+    </div>
+    <div class="spine">
+      <div class="chip" style="background: var(--halt-gold); color: #2E1D0B;">
+        <span class="glyph">▮▮</span>
+      </div>
+      <div class="meta">
+        <div class="job">Safely stopped</div>
+        <div class="hex">#F2842B · halt-gold</div>
+        <div class="desc">The <b>system</b> is stopped &amp; working. Calm, reassuring. Not red.</div>
+      </div>
+    </div>
+    <div class="spine">
+      <div class="chip" style="background: var(--danger-red); color: #2C1210;">
+        <span class="glyph">⚠</span>
+      </div>
+      <div class="meta">
+        <div class="job">Your destructive finger</div>
+        <div class="hex">#E5594E · danger-red</div>
+        <div class="desc">An irreversible op <b>you</b> trigger. Always behind friction.</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

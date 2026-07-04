@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x196" name="Rationed state colors" subtitle="Appear only on state — never as decoration" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-screen); padding: var(--space-6); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+  .s { border: 1px solid var(--border-default); border-radius: var(--radius-panel); overflow: hidden; background: var(--bg-card); }
+  .bar { height: 8px; }
+  .in { padding: var(--space-3); }
+  .g { font-size: 15px; }
+  .nm { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: var(--space-1); }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+  .job { font-family: var(--font-ui); font-size: 11px; line-height: 15px; color: var(--text-secondary); margin-top: var(--space-2); }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="s"><div class="bar" style="background: var(--state-green);"></div><div class="in"><span class="g" style="color: var(--state-green);">✔</span><div class="nm">healthy-green</div><div class="hex">#46B98A</div><div class="job">Healthy · verified by an external check.</div></div></div>
+    <div class="s"><div class="bar" style="background: var(--state-amber);"></div><div class="in"><span class="g" style="color: var(--state-amber);">◐</span><div class="nm">attention-amber</div><div class="hex">#E8B84B</div><div class="job">Attention · pending · single-source.</div></div></div>
+    <div class="s"><div class="bar" style="background: var(--state-violet);"></div><div class="in"><span class="g" style="color: var(--state-violet);">⇉</span><div class="nm">draining-violet</div><div class="hex">#A98CE8</div><div class="job">Draining · past the last reversible point.</div></div></div>
+  </div>
+</body>
+</html>

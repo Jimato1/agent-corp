@@ -1,0 +1,27 @@
+<!-- @dsCard group="Type" viewport="700x310" name="UI type scale" subtitle="Tight & instrument-dense — size / line-height" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-screen); padding: var(--space-6); }
+  .rows { display: flex; flex-direction: column; }
+  .r { display: grid; grid-template-columns: 92px 1fr; align-items: baseline; gap: var(--space-4); padding: 5px 0; border-bottom: 1px solid var(--border-default); }
+  .r:last-child { border-bottom: 0; }
+  .spec { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+  .sample { color: var(--text-primary); }
+</style>
+</head>
+<body>
+  <div class="rows">
+    <div class="r"><div class="spec">11 / 15</div><div class="sample" style="font-size:11px;line-height:15px;color:var(--text-muted)">Dense metadata · age stamps, counts</div></div>
+    <div class="r"><div class="spec">12 / 16</div><div class="sample" style="font-size:12px;line-height:16px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted)">Label &amp; nav eyebrow</div></div>
+    <div class="r"><div class="spec">13 / 20</div><div class="sample" style="font-size:13px;line-height:20px;">Body &amp; dialog copy — the reading register of the shell.</div></div>
+    <div class="r"><div class="spec">14 / 20</div><div class="sample" style="font-size:14px;line-height:20px;font-weight:500;">Inputs &amp; primary controls</div></div>
+    <div class="r"><div class="spec">16 / 22</div><div class="sample" style="font-size:16px;line-height:22px;font-weight:600;">Panel title</div></div>
+    <div class="r"><div class="spec">20 / 26</div><div class="sample" style="font-size:20px;line-height:26px;font-weight:600;">Screen title</div></div>
+    <div class="r"><div class="spec">26 / 32</div><div class="sample" style="font-size:26px;line-height:32px;font-weight:600;">Big engaged headline</div></div>
+  </div>
+</body>
+</html>

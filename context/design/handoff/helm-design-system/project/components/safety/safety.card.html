@@ -1,0 +1,84 @@
+<!-- @dsCard group="Components" viewport="920x760" name="Safety grammar" subtitle="HaltBand · StopActuator · HonestState · DangerAction · ConfirmFriction · PrintedAbsence · ReviewChip · FreshnessStamp" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-screen); }
+  .pad { padding: var(--space-6); display: flex; flex-direction: column; gap: 20px; }
+  .sec { display: flex; flex-direction: column; gap: 10px; }
+  .lbl { font-family: var(--font-ui); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const {
+    HaltBand, StopActuator, HonestState, DangerAction, PrintedAbsence, ReviewChip, FreshnessStamp
+  } = window.HelmDesignSystem_f4cb26;
+
+  function Demo() {
+    const [engaged, setEngaged] = React.useState(false);
+    return (
+      <div>
+        <HaltBand
+          mode="kill"
+          confirmed={12} pending={2} draining={1}
+          pendingCountdown="1:48" drainingDetail="host-04 · T-000123"
+          reviewHref="#" readOnly />
+        <div className="pad">
+          <div className="sec">
+            <span className="lbl">Stop actuator — press &amp; hold (gold, never red)</span>
+            <div className="row">
+              <StopActuator level="G1" engaged={engaged} onEngage={() => setEngaged(true)} />
+              <StopActuator level="G2" />
+              {engaged ? <span style={{fontFamily:'var(--font-mono)',fontSize:12,color:'var(--halt-gold-ink)'}}>engaged →</span> : null}
+            </div>
+          </div>
+          <div className="sec">
+            <span className="lbl">Honest-stop triad — never "all stopped" while pending/draining &gt; 0</span>
+            <HonestState confirmed={12} pending={2} draining={1} pendingCountdown="1:48" drainingDetail="host-04 · T-000123" />
+          </div>
+          <div className="sec">
+            <span className="lbl">Destructive action + printed absence</span>
+            <div className="row">
+              <DangerAction
+                label="Lift stop…" glyph="⛔"
+                title="Lift the suite-wide stop"
+                consequence={<>This <strong>lifts the kill-switch</strong> and lets agents resume executing approved plans.</>}
+                direction="more" irreversible blastRadius="4 agents"
+                honest={{ confirmed: 12, pending: 2, draining: 1, pendingCountdown: '1:48' }}
+                typedIntent="LIFT STOP" stepUp
+                auditNote="Writes a tamper-evident audit row bound to this decision." />
+              <DangerAction label="Purge" variant="solid" glyph="⚠"
+                title="Purge 3 files" consequence="Permanently deletes the selected files." direction="more"
+                irreversible typedIntent="PURGE" />
+            </div>
+            <PrintedAbsence why="Approval always requires a different principal." tag="by construction">
+              <strong>An agent can never approve its own work.</strong>
+            </PrintedAbsence>
+          </div>
+          <div className="sec">
+            <span className="lbl">Review escalation &amp; freshness</span>
+            <div className="row">
+              <ReviewChip reason="board_escalation" href="#" />
+              <ReviewChip state="escalated" reason="break_glass" href="#" />
+              <FreshnessStamp age="0.4s ago" />
+              <FreshnessStamp state="stale" age="41s ago" reading="may be behind" />
+              <FreshnessStamp state="halt" reading="safety signal degraded" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

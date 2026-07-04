@@ -1,0 +1,53 @@
+<!-- @dsCard group="Components" viewport="920x460" name="Shell" subtitle="AppHeader · NavRail · SuiteSwitcher · KillMirror" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-app); }
+  .frame { height: 460px; display: flex; flex-direction: column; }
+  .below { flex: 1; display: flex; min-height: 0; }
+  .content { flex: 1; background: var(--bg-screen); padding: var(--space-6); }
+  .content h4 { font-family: var(--font-ui); font-size: 20px; font-weight: 600; color: var(--text-primary); margin: 0 0 6px; }
+  .content p { font-family: var(--font-ui); font-size: 13px; line-height: 20px; color: var(--text-muted); max-width: 46ch; margin: 0; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { AppHeader, KillMirror, NavRail, FreshnessStamp } = window.HelmDesignSystem_f4cb26;
+  function Demo() {
+    const [collapsed, setCollapsed] = React.useState(false);
+    const items = [
+      { group: 'Cockpit' },
+      { key: 'overview', label: 'Overview', icon: '▤', active: true },
+      { key: 'review', label: 'Review queue', icon: '◈', badge: 7, href: '#' },
+      { key: 'agents', label: 'Agents', icon: '⬡', href: '#' },
+      { key: 'audit', label: 'Audit log', icon: '⛓', href: '#' },
+    ];
+    return (
+      <div className="frame">
+        <AppHeader appName="Mission Control" identity="the operator's cockpit"
+          systemState={<><FreshnessStamp age="0.4s ago" /><span style={{fontFamily:'var(--font-mono)',fontSize:12,color:'var(--text-secondary)'}}>18 agents live</span></>}>
+          <KillMirror engaged href="#" />
+        </AppHeader>
+        <div className="below">
+          <NavRail current="mission-control" posture="kill" items={items}
+            collapsed={collapsed} onToggle={setCollapsed} postureHref="#" />
+          <div className="content">
+            <h4>The shell is identical everywhere</h4>
+            <p>Rail + header + content. The suite posture shows once (bottom of the rail). Toggle the rail — it collapses to a 56px glyph rail and keeps the gold posture ring.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>
