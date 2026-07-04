@@ -1,0 +1,87 @@
+"""Error model + verbatim wire semantics (auth-apps-tokens-scopes.md §1 / auth PLAN §5.6).
+
+Every RS in the suite returns the SAME status semantics so a fresh agent bootstraps
+identically everywhere:
+
+* 401 — missing/invalid credential → re-mint (``WWW-Authenticate: Bearer`` +, on a
+  protected-resource probe, RFC 9728 metadata pointer).
+* 403 — authenticated but insufficient scope / refused at the door.
+* 409 — ``in_progress`` idempotency conflict.
+* 429 — budget / rate limit, with ``Retry-After``.
+* 503 — a fail-closed dependency outage.
+
+Business failures on the MCP surface do NOT use these — they return a structured
+``isError`` tool result (PLAN §4), matching the Board convention. These map only the
+HTTP API + transport-level auth failures.
+"""
+from __future__ import annotations
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+
+class AppError(Exception):
+    """A wire-mapped application error. ``code`` is a stable machine reason."""
+
+    status: int = 400
+    code: str = "bad_request"
+
+    def __init__(self, message: str, *, code: str | None = None, status: int | None = None,
+                 headers: dict[str, str] | None = None) -> None:
+        super().__init__(message)
+        self.message = message
+        if code is not None:
+            self.code = code
+        if status is not None:
+            self.status = status
+        self.headers = headers or {}
+
+
+class Unauthenticated(AppError):
+    status = 401
+    code = "unauthenticated"
+
+    def __init__(self, message: str = "Authentication required.", **kw) -> None:
+        headers = {"WWW-Authenticate": 'Bearer resource_metadata="/.well-known/oauth-protected-resource"'}
+        headers.update(kw.pop("headers", {}))
+        super().__init__(message, headers=headers, **kw)
+
+
+class Forbidden(AppError):
+    status = 403
+    code = "insufficient_scope"
+
+
+class Conflict(AppError):
+    status = 409
+    code = "in_progress"
+
+
+class RateLimited(AppError):
+    status = 429
+    code = "rate_limited"
+
+    def __init__(self, message: str = "Rate limit exceeded.", *, retry_after: int = 30, **kw) -> None:
+        headers = {"Retry-After": str(retry_after)}
+        headers.update(kw.pop("headers", {}))
+        super().__init__(message, headers=headers, **kw)
+
+
+class Unavailable(AppError):
+    status = 503
+    code = "unavailable"
+
+
+class ValidationFailed(AppError):
+    status = 400
+    code = "invalid"
+
+
+def _payload(err: AppError) -> dict:
+    return {"error": {"code": err.code, "message": err.message, "status": err.status}}
+
+
+def install_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(AppError)
+    async def _app_error(_: Request, exc: AppError) -> JSONResponse:  # noqa: ANN202
+        return JSONResponse(_payload(exc), status_code=exc.status, headers=exc.headers)

@@ -1,0 +1,49 @@
+/* ============================================================
+   Helm — Spacing, Sizing, Radii
+   4px spacing base. Steps: 4 · 8 · 12 · 16 · 24 · 32 · 48.
+   Density is a feature: tabular truth over whitespace.
+   ============================================================ */
+
+:root {
+  /* -- SPACE SCALE ------------------------------------------------------- */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-12:  48px;
+
+  /* -- CONTROL HEIGHTS --------------------------------------------------- */
+  --control-compact:   28px; /* dense toolbars, table controls            */
+  --control-default:   32px; /* the standard control height               */
+  --control-primary:   40px; /* primary / touch                           */
+  --hit-min:           44px; /* mobile: expand hit-area to >= 44px         */
+
+  /* -- RADII · small; elegance is in precision, not soft corners --------- */
+  --radius-control:    4px;  /* buttons, inputs, chips                     */
+  --radius-panel:      6px;  /* panels, cards, dialogs                     */
+  --radius-pill:       999px;/* status pills only                         */
+
+  /* -- BORDER WIDTHS ----------------------------------------------------- */
+  --hairline:          1px;  /* the standard separator                    */
+  --band-edge:         2px;  /* the lit safety band's edge striping        */
+
+  /* -- LAYOUT · the nav shell (identical in every app) ------------------- */
+  --rail-open:         224px; /* side rail, open                          */
+  --rail-collapsed:    56px;  /* side rail, glyph-only                    */
+  --header-height:     52px;  /* global header                           */
+  --band-height:       auto;
+
+  /* -- CONTENT MEASURES -------------------------------------------------- */
+  --measure-read:      68ch;  /* Workshop reading column max width        */
+  --measure-prose:     72ch;  /* dialog / consequence-block copy          */
+
+  /* -- Z-INDEX · the stop always renders above the scrim ----------------- */
+  --z-base:            0;
+  --z-raised:          10;
+  --z-sticky:          100;
+  --z-scrim:           1000;
+  --z-dialog:          1010;
+  --z-halt:            1100;
+}

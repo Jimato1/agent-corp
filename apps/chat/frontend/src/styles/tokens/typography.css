@@ -1,0 +1,151 @@
+/* ============================================================
+   Helm — Typography
+   Inter          → all UI chrome
+   JetBrains Mono → all machine truth (tabular by nature)
+   Source Serif 4 → long-form reading in a Workshop pane ONLY
+
+   Tabular figures are MANDATORY anywhere a number ticks (counts, ages in
+   ms, TTL countdowns, budget headroom) so widths don't jitter.
+   All cross-app IDs render in mono, middle-truncated, never wrapped.
+   ============================================================ */
+
+:root {
+  /* -- FAMILIES ---------------------------------------------------------- */
+  --font-ui:      'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', 'Menlo', monospace;
+  --font-serif:   'Source Serif 4', 'Iowan Old Style', Georgia, serif;
+
+  /* -- WEIGHTS ----------------------------------------------------------- */
+  --weight-body:     400; /* body copy                */
+  --weight-medium:   500; /* labels & controls        */
+  --weight-semibold: 600; /* headings & status word   */
+
+  /* -- FEATURE SETTINGS -------------------------------------------------- */
+  /* lining tabular figures */
+  --figures-tabular: 'tnum' 1, 'cv01' 1;
+
+  /* -- TYPE SCALE · tight and instrument-dense --------------------------
+     Named by role. Each is size / line-height.                            */
+
+  /* dense metadata — 11/15 */
+  --type-meta-size:        11px;
+  --type-meta-line:        15px;
+
+  /* labels & nav — 12/16 · uppercase eyebrows carry +0.04em */
+  --type-label-size:       12px;
+  --type-label-line:       16px;
+  --type-label-tracking:   0.04em;
+
+  /* body & dialog copy — 13/20 */
+  --type-body-size:        13px;
+  --type-body-line:        20px;
+
+  /* mono data rows — 13/18 */
+  --type-data-size:        13px;
+  --type-data-line:        18px;
+
+  /* inputs & primary controls — 14/20 */
+  --type-control-size:     14px;
+  --type-control-line:     20px;
+
+  /* panel titles — 16/22 */
+  --type-panel-size:       16px;
+  --type-panel-line:       22px;
+
+  /* screen titles — 20/26 */
+  --type-screen-size:      20px;
+  --type-screen-line:      26px;
+
+  /* big empty / engaged headlines — 26/32 */
+  --type-headline-size:    26px;
+  --type-headline-line:    32px;
+
+  /* THE ALWAYS-LOUD STATUS WORD — 22/26 · the single loudest thing on screen
+     (the kill-level readout). */
+  --type-status-size:      22px;
+  --type-status-line:      26px;
+
+  /* Workshop reading body — 17/28 · serif · operator-zoomable */
+  --type-read-size:        17px;
+  --type-read-line:        28px;
+}
+
+/* ---- ROLE UTILITIES -----------------------------------------------------
+   Optional convenience classes; components mostly set these inline via the
+   tokens above, but specimen cards and prose use them directly. */
+
+.t-meta {
+  font-family: var(--font-ui);
+  font-size: var(--type-meta-size);
+  line-height: var(--type-meta-line);
+  font-weight: var(--weight-body);
+}
+
+.t-label {
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--type-label-tracking);
+  color: var(--text-muted);
+}
+
+.t-body {
+  font-family: var(--font-ui);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line);
+  font-weight: var(--weight-body);
+}
+
+.t-data {
+  font-family: var(--font-mono);
+  font-size: var(--type-data-size);
+  line-height: var(--type-data-line);
+  font-weight: var(--weight-body);
+  font-feature-settings: var(--figures-tabular);
+}
+
+.t-panel-title {
+  font-family: var(--font-ui);
+  font-size: var(--type-panel-size);
+  line-height: var(--type-panel-line);
+  font-weight: var(--weight-semibold);
+}
+
+.t-screen-title {
+  font-family: var(--font-ui);
+  font-size: var(--type-screen-size);
+  line-height: var(--type-screen-line);
+  font-weight: var(--weight-semibold);
+}
+
+.t-headline {
+  font-family: var(--font-ui);
+  font-size: var(--type-headline-size);
+  line-height: var(--type-headline-line);
+  font-weight: var(--weight-semibold);
+}
+
+/* The kill-level readout — loudest element on any screen. */
+.t-status {
+  font-family: var(--font-ui);
+  font-size: var(--type-status-size);
+  line-height: var(--type-status-line);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.01em;
+}
+
+/* Long-form reading — Workshop panes only. */
+.t-read {
+  font-family: var(--font-serif);
+  font-size: var(--type-read-size);
+  line-height: var(--type-read-line);
+  font-weight: var(--weight-body);
+}
+
+/* Tabular numerals — apply wherever a number ticks. */
+.tabular {
+  font-feature-settings: var(--figures-tabular);
+  font-variant-numeric: tabular-nums lining-nums;
+}
