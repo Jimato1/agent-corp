@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corpus search — library reference shelf</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §4.1 — Corpus Browser / Hybrid Search.  Endpoint: POST /api/search
+   (human twin of MCP library_search). Instrument results list + Workshop
+   reading pane. SCAFFOLD (structure real, rows mocked). */
+window.LIB_SHELL = {
+  level:'G0', freshness:{ms:0.4, src:'MC'},
+  operator:{sub:'operator:ada', scope:'library:read'}, activeNav:'search'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <div class="scaffold-note" role="note"><b>SCAFFOLD</b> — realizes UI_SPEC §4.1. Endpoint <code>POST /api/search</code>
+        (the <b>Core API is live + tested</b>; this screen maps to it — two views, one state). ScopeResolver, the trust-envelope
+        DataTable, and the Workshop reading pane are real markup; rows are mocked; live retrieval + <code>LiveStream</code> are
+        CANNOT-VERIFY-HERE (no backend in this sandbox).</div>
+
+      <div class="head">
+        <div>
+          <h1 class="screen">Corpus search</h1>
+          <p class="sublede">The corporate reference shelf. Every hit carries its full trust envelope inline — provenance tier,
+            version scope, evidence coverage, and the <b>curation-ingested</b> taint. <em>The Library never lies about how much it trusts a chunk.</em></p>
+        </div>
+        <div class="freshness"><span class="ok">⟳ index @corpus a9c… · 0.3s ago</span></div>
+      </div>
+
+      <!-- ScopeResolver §5: host_id XOR target_* + version_scope + include_unverified -->
+      <section class="panel scope" aria-label="Retrieval scope">
+        <div class="searchbar"><span class="ico" aria-hidden="true">⌕</span>
+          <input class="input" type="text" placeholder="how to extend an lvm volume…    /  focus" aria-label="Search query"></div>
+        <div class="radios">
+          <span class="eyebrow">scope</span>
+          <button class="opt on" type="button" aria-pressed="true">◉ host_id <span class="mono">[ host_9f2… ]</span></button>
+          <button class="opt" type="button" aria-pressed="false">○ target: os<span class="mono">[linux▾]</span> distro<span class="mono">[ubuntu▾]</span> ver<span class="mono">[24.04▾]</span> arch<span class="mono">[amd64▾]</span></button>
+          <span class="div">|</span>
+          <span>version_scope: <span class="chip chip--exact">✔ exact</span> <span class="freshness">(CMDB fresh 1.2s)</span></span>
+          <span>k <span class="mono">[ 8 ]</span></span>
+          <button class="toggle" type="button" aria-pressed="false">☐ include_unverified</button>
+        </div>
+        <p class="freshness" style="margin:0">host_id <b>XOR</b> target_* — supplying both is a typed <code>scope_conflict</code> (Pattern R, inline), never silent precedence.</p>
+      </section>
+
+      <div class="split" style="margin-top:12px">
+        <!-- results DataTable §6.2 — full trust envelope per row -->
+        <div>
+          <div class="tbl-wrap">
+            <table class="tbl" aria-label="Search results">
+              <thead><tr><th>Tier</th><th>Doc › heading</th><th>Ver</th><th>Cover</th><th>Taint</th></tr></thead>
+              <tbody>
+                <tr class="rowclick sel">
+                  <td><span class="tier tier--verified"><span class="g">✔</span> Sandbox-verified</span></td>
+                  <td><span class="doccell"><span class="h">lvextend › Growing a volume</span><span class="i">lib-01J1QZ</span></span></td>
+                  <td><span class="chip chip--exact">exact</span></td>
+                  <td><span class="chip chip--cov">▣ cov</span></td>
+                  <td><span class="tier tier--untrusted"><span class="g">⚠</span> curation-ingested</span></td>
+                </tr>
+                <tr class="rowclick">
+                  <td><span class="tier tier--corroborated"><span class="g">⧉</span> Cross-referenced</span></td>
+                  <td><span class="doccell"><span class="h">LVM2 guide › Resize</span><span class="i">lib-01H2AA</span></span></td>
+                  <td><span class="chip chip--exact">exact</span></td>
+                  <td><span class="chip chip--unc">▢ unc</span></td>
+                  <td><span class="tier tier--untrusted"><span class="g">⚠</span> curation-ingested</span></td>
+                </tr>
+                <tr class="rowclick">
+                  <td><span class="tier tier--single"><span class="g">◑</span> Single-source</span></td>
+                  <td><span class="doccell"><span class="h">blog › “just run lvextend”</span><span class="i">lib-01G3BB</span></span></td>
+                  <td><span class="chip chip--approx">~approx</span></td>
+                  <td><span class="chip chip--unc">▢ unc</span></td>
+                  <td><span class="tier tier--untrusted"><span class="g">⚠</span> curation-ingested</span></td>
+                </tr>
+                <tr class="rowclick">
+                  <td><span class="tier tier--single"><span class="g">◑</span> Agent-authored</span></td>
+                  <td><span class="doccell"><span class="h">note › derived resize</span><span class="i">lib-01F4CC</span></span></td>
+                  <td><span class="chip chip--unverified">unverified</span></td>
+                  <td><span class="chip chip--unc">▢ unc</span></td>
+                  <td><span class="tier tier--untrusted"><span class="g">⚠</span> curation-ingested</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="tbl-foot">
+            <span>… RRF-fused — tier is a <b>badge, NOT a sort key</b> (reordering by tier would let a poisoner infer the gate) …</span>
+          </div>
+          <div class="tbl-foot">
+            <span>retrieval_mode: hybrid · RRF-fused · tier is a badge NOT a sort key</span>
+            <span>source: index @corpus a9c… 0.3s</span>
+          </div>
+          <p class="freshness" style="margin-top:8px"><b>Empty (zero hits):</b> “No admitted docs match this scope. Try <code>include_unverified</code>
+            to see quarantined material (flagged), or widen the version target.” — names the one action, never a shrug.
+            <b>Pattern D</b> degraded modes (runtime-down → lexical-only, CMDB-down → version filter off/flagged, index-invalid → serving
+            suspended) surface as <em>gold</em> reduced modes, never red errors (see Index status).</p>
+        </div>
+
+        <!-- Workshop reading pane §5 (DocReadingPane) — paper, covered spans shaded -->
+        <div class="reading-pane">
+          <article>
+            <div class="kicker">linux / ubuntu 24.04 · 22.04 · amd64 — version_scope: exact</div>
+            <h1>lvextend — LVM2 2.03</h1>
+            <div class="chunk cov">
+              <h2>Growing a volume</h2>
+              <p>Use <code>lvextend</code> to grow a logical volume, then grow the filesystem. Verify with <code>lvdisplay</code>.</p>
+            </div>
+            <div class="chunk cov">
+              <h2>lvextend flags</h2>
+              <p>The <code>-r</code> flag resizes the filesystem in the same step on supported types.</p>
+            </div>
+            <div class="chunk unc">
+              <h2>Also works on…</h2>
+              <p>This section claims lvextend also works on thin pools without caveat.</p>
+              <div class="gutter">▢ not execution-covered — uncovered prose inside a sandbox-verified doc reads as uncovered (anti-tier-riding).</div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="shell.js"></script>
+</body>
+</html>

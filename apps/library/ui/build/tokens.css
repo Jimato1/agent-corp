@@ -1,0 +1,233 @@
+/* ============================================================================
+   library — Reference Shelf · DESIGN TOKENS (Helm master token sheet, vendored)
+   Realizes apps/library/ui/UI_SPEC.md §2 by consuming context/DESIGN_SYSTEM.md
+   token VALUES under their FROZEN Helm-MASTER names (colors + typography +
+   spacing). This sheet adds nothing new to the token language — it vendors the
+   handoff values (context/design/handoff/helm-design-system/project/tokens/*)
+   so the static build is self-contained (no node, no build step).
+
+   Helm's spine (colors.css): Signal-cyan = interactive · Halt-gold = safely
+   stopped · Danger-red = the operator's destructive finger. Colour is NEVER the
+   only signal — every state also carries a glyph + a text label.
+
+   THE LIBRARY IS NOT IN THE KILL CHAIN. It renders HaltBand READ-ONLY and holds
+   no kill/freeze/approval-record authority (UI_SPEC §3, PLAN §13). No ⛔ STOP
+   glyph is ever used here; a "cannot-by-construction" fact is a calm 🔒 lock
+   (PrintedAbsence), never a disabled control.
+
+   CANNOT-VERIFY-HERE: pixel contrast, font rendering, and reflow need a real
+   browser — none in this sandbox. Values are the frozen spec's; see MANIFEST.md.
+   ========================================================================== */
+
+/* Self-contained web fonts (Instrument UI + mono machine-truth + Workshop serif).
+   If the network is unavailable the system-ui / monospace / serif fallbacks in
+   --font-* below keep every screen legible. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap');
+
+:root {
+  /* == SURFACES · cool near-black · the Instrument base ==================== */
+  --surface-backdrop:      #0A0C10;
+  --surface-screen:        #0E1116;
+  --surface-panel:         #12161C;
+  --surface-raised:        #171C24;
+  --surface-inset:         #1E242E;
+  --surface-control:       #262E39;
+  --border-hairline:       #323C49;
+  --border-strong:         #45525F;
+
+  /* == INK RAMP · text on the dark base =================================== */
+  --ink-primary:           #EEF2F6;
+  --ink-secondary:         #C2CBD5;
+  --ink-muted:             #94A1AE;  /* minimum for anything that must be read */
+  --ink-disabled:          #66727F;
+
+  /* == WORKSHOP · warm-paper reading surface (DocReadingPane ONLY) ========= */
+  --paper-page:            #F5F3ED;
+  --paper-ink:             #1C1E22;
+  --paper-inset:           #EAE7DE;
+  --paper-hairline:        #D8D4C8;
+  --paper-ink-muted:       #6A6A62;
+
+  /* == THE AFFECTIVE SPINE — three colors, fixed jobs, never crossed ====== */
+  /* Signal-cyan = INTERACTIVE (focus, selection, active nav, the safe action) */
+  --signal-cyan:           #29B6D8;
+  --signal-cyan-hover:     #45C4E2;
+  --signal-cyan-press:     #1F9CBB;
+  --signal-cyan-wash:      #0C2630;
+  --signal-cyan-ink:       #A6E4F2;
+
+  /* Halt-gold = the SYSTEM is safely stopped / failed-closed. Calm, NOT red. */
+  --halt-gold:             #F2842B;
+  --halt-gold-ink:         #FFD8A8;
+  --halt-gold-wash:        #2E1D0B;
+  --halt-gold-edge:        #6E4A1E;
+
+  /* Danger-red = the OPERATOR's own destructive finger. Behind confirm friction. */
+  --danger-red:            #E5594E;
+  --danger-red-hover:      #EE6D62;
+  --danger-red-press:      #C8483F;
+  --danger-red-ink:        #F6B7B1;
+  --danger-red-wash:       #2C1210;
+
+  /* == RATIONED STATE COLORS — appear only on state, never decoration ===== */
+  --state-green:           #46B98A;  /* healthy / verified (external check)   */
+  --state-green-ink:       #A6E4CC;
+  --state-green-wash:      #0E2620;
+  --state-amber:           #E8B84B;  /* attention / single-source / pending   */
+  --state-amber-ink:       #F5D98C;
+  --state-amber-wash:      #2A2210;
+  --state-violet:          #A98CE8;  /* draining / superseded                 */
+  --state-violet-ink:      #D3C3F5;
+  --state-violet-wash:     #1E1730;
+
+  /* == PROVENANCE / TRUST TIERS (the TierBadge families) ================== */
+  --tier-verified:         var(--state-green);   /* ✔ sandbox-verified        */
+  --tier-corroborated:     var(--signal-cyan);   /* ⧉ cross-referenced        */
+  --tier-single:           var(--state-amber);   /* ◑ single / agent-authored */
+  --tier-untrusted:        var(--state-amber);   /* ⚠ curation-ingested taint */
+
+  /* == SEMANTIC ALIASES — reference these in components, not raw hues ====== */
+  --text-primary:          var(--ink-primary);
+  --text-secondary:        var(--ink-secondary);
+  --text-muted:            var(--ink-muted);
+  --text-disabled:         var(--ink-disabled);
+  --text-link:             var(--signal-cyan);
+  --text-on-accent:        #08171C;
+
+  --bg-app:                var(--surface-backdrop);
+  --bg-screen:             var(--surface-screen);
+  --bg-card:               var(--surface-panel);
+  --bg-raised:             var(--surface-raised);
+  --bg-well:               var(--surface-inset);
+  --bg-control:            var(--surface-control);
+
+  --border-default:        var(--border-hairline);
+  --border-emphasis:       var(--border-strong);
+  --border-focus:          var(--signal-cyan);
+
+  --interactive:           var(--signal-cyan);
+  --interactive-hover:     var(--signal-cyan-hover);
+  --interactive-press:     var(--signal-cyan-press);
+  --focus-ring:            var(--signal-cyan);
+  --selection-bg:          var(--signal-cyan-wash);
+
+  --halt:                  var(--halt-gold);
+  --halt-text:             var(--halt-gold-ink);
+  --halt-bg:               var(--halt-gold-wash);
+  --danger:                var(--danger-red);
+  --danger-text:           var(--danger-red-ink);
+  --danger-bg:             var(--danger-red-wash);
+
+  --live-healthy:          var(--state-green);
+  --live-stale:            var(--state-amber);    /* ▲ STALE, never green      */
+  --live-down:             var(--halt-gold);      /* safety signal degrades     */
+
+  /* == TYPOGRAPHY ========================================================= */
+  --font-ui:      'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', 'Menlo', Consolas, monospace;
+  --font-serif:   'Source Serif 4', 'Iowan Old Style', Georgia, serif;
+
+  --weight-body:     400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+
+  --figures-tabular: 'tnum' 1, 'cv01' 1;
+
+  --type-meta-size:      11px;  --type-meta-line:      15px;
+  --type-label-size:     12px;  --type-label-line:     16px;  --type-label-tracking: 0.04em;
+  --type-body-size:      13px;  --type-body-line:      20px;
+  --type-data-size:      13px;  --type-data-line:      18px;
+  --type-control-size:   14px;  --type-control-line:   20px;
+  --type-panel-size:     16px;  --type-panel-line:     22px;
+  --type-screen-size:    20px;  --type-screen-line:    26px;
+  --type-headline-size:  26px;  --type-headline-line:  32px;
+  --type-status-size:    22px;  --type-status-line:    26px;
+  --type-read-size:      17px;  --type-read-line:      28px;  /* Workshop reading body */
+
+  /* == SPACING · 4px base ================================================= */
+  --space-1:  4px;  --space-2:  8px;  --space-3: 12px;  --space-4: 16px;
+  --space-6: 24px;  --space-8: 32px;  --space-12: 48px;
+
+  /* == CONTROL HEIGHTS ==================================================== */
+  --control-compact: 28px;  --control-default: 32px;  --control-primary: 40px;
+  --hit-min: 44px;
+
+  /* == RADII ============================================================== */
+  --radius-control: 4px;  --radius-panel: 6px;  --radius-pill: 999px;
+
+  /* == BORDER WIDTHS ====================================================== */
+  --hairline: 1px;  --band-edge: 2px;
+
+  /* == LAYOUT · the nav shell (identical in every app) ==================== */
+  --rail-open: 224px;  --rail-collapsed: 56px;  --header-height: 52px;
+
+  /* == CONTENT MEASURES =================================================== */
+  --measure-read: 68ch;  --measure-prose: 72ch;
+
+  /* == Z-INDEX (Library note: --z-halt is a READ-ONLY band, no actuator) == */
+  --z-base: 0;  --z-raised: 10;  --z-sticky: 100;  --z-scrim: 1000;
+  --z-dialog: 1010;  --z-halt: 1100;
+
+  /* == MOTION ============================================================= */
+  --mo-fast: 120ms;  --mo-base: 180ms;  --mo-slow: 240ms;
+  --ease-out: cubic-bezier(.2,.7,.3,1);
+  --ease-inout: cubic-bezier(.4,0,.2,1);
+
+  --elev-modal: 0 16px 48px rgba(4,6,10,.6);
+  --scrim: rgba(6,8,12,.66);
+}
+
+/* ---- Base reset & typography ------------------------------------------- */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg-screen); color:var(--text-primary);
+  font-family:var(--font-ui); font-size:var(--type-body-size); line-height:var(--type-body-line);
+  font-feature-settings:"tnum" 1,"lnum" 1;   /* tabular figures mandatory */
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{margin:0;font-weight:var(--weight-semibold);color:var(--text-primary)}
+h1{font-size:var(--type-screen-size);line-height:var(--type-screen-line)}
+h2{font-size:var(--type-panel-size);line-height:var(--type-panel-line)}
+h3{font-size:var(--type-body-size);line-height:var(--type-body-line)}
+p{margin:0 0 var(--space-3)}
+a{color:var(--signal-cyan-ink);text-decoration:none}
+a:hover{color:var(--signal-cyan);text-decoration:underline}
+::selection{background:var(--selection-bg)}
+
+/* mono truth: identifiers, digests, run/harness ids, ages, dims (tabular) */
+.mono,code,.data{font-family:var(--font-mono);font-variant-numeric:tabular-nums lining-nums;
+  font-feature-settings:var(--figures-tabular)}
+.eyebrow{font-size:var(--type-label-size);line-height:var(--type-label-line);text-transform:uppercase;
+  letter-spacing:var(--type-label-tracking);color:var(--text-muted);font-weight:var(--weight-semibold)}
+.muted{color:var(--text-muted)} .faint{color:var(--text-disabled)}
+.num,.tabular{font-variant-numeric:tabular-nums lining-nums;font-feature-settings:var(--figures-tabular)}
+
+/* ---- Workshop reading surface — the ONLY place content reads as paper ---
+   (UI_SPEC §2 archetype discipline: shell/tables/safety chips stay dark). */
+.workshop-surface{
+  background:var(--paper-page); color:var(--paper-ink);
+  font-family:var(--font-serif);
+}
+.workshop-surface .w-eyebrow{font-family:var(--font-ui);font-size:var(--type-meta-size);
+  text-transform:uppercase;letter-spacing:.06em;color:var(--paper-ink-muted)}
+.workshop-surface h1{font-family:var(--font-serif);font-size:var(--type-headline-size);
+  line-height:34px;color:var(--paper-ink);font-weight:var(--weight-semibold)}
+.workshop-surface h2{font-family:var(--font-serif);font-size:18px;line-height:24px;
+  color:var(--paper-ink);font-weight:var(--weight-semibold)}
+.workshop-surface p{font-family:var(--font-serif);font-size:16px;line-height:25px;color:var(--paper-ink)}
+.workshop-surface .w-hair{border:0;border-top:1px solid var(--paper-hairline)}
+.workshop-surface .w-muted{color:var(--paper-ink-muted)}
+
+/* ---- Focus ring — state, not motion; always renders ------------------- */
+:focus-visible{
+  outline:2px solid var(--focus-ring); outline-offset:2px;
+  box-shadow:0 0 0 6px rgba(41,182,216,.35); border-radius:var(--radius-control);
+}
+/* inside a gold band a 1px spacer keeps the ring >=3:1 */
+.halt-band :focus-visible{outline-offset:1px;box-shadow:0 0 0 1px var(--surface-backdrop),0 0 0 6px rgba(41,182,216,.35)}
+
+/* ---- prefers-reduced-motion: transitions -> 0ms; no pulse/spin/shimmer -- */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0ms!important;animation-iteration-count:1!important;transition-duration:0ms!important}
+}

@@ -1,0 +1,347 @@
+/* ============================================================================
+   library — Reference Shelf · GLOBAL SHELL + COMPONENT VOCABULARY
+   Realizes apps/library/ui/UI_SPEC.md §6.1 (AppShell) + §4/§5 safety grammar.
+   Injected by shell.js into <div id="global-shell"> so every screen shares ONE
+   partial (dependency-free, no build step). Component classes below are the
+   Helm vocabulary the six screens cite by name (TierBadge, StatePill,
+   DataTable, DangerAction/ConfirmFriction, PrintedAbsence, HaltBand, Freshness).
+
+   LIBRARY IS NOT IN THE KILL CHAIN (UI_SPEC §3 / §4.6): the HaltBand renders
+   READ-ONLY (no engage actuator, no ⛔ STOP glyph). Paper appears ONLY inside a
+   .reading-pane / .workshop-surface (§2 archetype discipline).
+   ========================================================================== */
+
+.app{min-height:100vh;display:flex;flex-direction:column}
+
+/* ---- §6.1 Global header — present on EVERY screen ---------------------- */
+.gs-header{position:sticky;top:0;z-index:var(--z-sticky);background:var(--bg-raised);
+  border-bottom:1px solid var(--border-hairline);
+  display:grid;grid-template-columns:1.3fr 1.6fr auto;gap:var(--space-4);
+  padding:var(--space-3) var(--space-4);align-items:center}
+.gs-zone{min-width:0}
+.gs-brand{display:flex;align-items:center;gap:var(--space-2);
+  font-size:var(--type-label-size);letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted)}
+.gs-brand b{color:var(--text-primary);font-weight:var(--weight-semibold)}
+.gs-brand .hex{color:var(--signal-cyan)}
+.gs-sub{display:block;margin-top:2px;font-size:var(--type-meta-size);color:var(--text-muted);text-transform:none;letter-spacing:0}
+
+/* SYSTEM STATE line — read-only suite posture mirror (Library shows, never enforces) */
+.gs-state{display:flex;flex-direction:column;gap:2px}
+.gs-state .eyebrow{margin-bottom:2px}
+.gs-state .line{display:inline-flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;
+  font-size:var(--type-label-size)}
+.gs-state .g0{color:var(--state-green)}
+.gs-state .lvl{color:var(--halt-gold-ink)}
+.gs-op{justify-self:end;text-align:right;font-size:var(--type-meta-size);color:var(--text-muted)}
+.gs-op .who{color:var(--text-secondary);font-weight:var(--weight-medium)}
+.gs-op .scope{display:block;margin-top:2px;font-family:var(--font-mono);color:var(--text-muted)}
+
+/* ---- Body: fixed left rail + content ---------------------------------- */
+.body{flex:1;display:flex;min-height:0}
+.rail{width:var(--rail-open);flex:0 0 var(--rail-open);background:var(--bg-raised);
+  border-right:1px solid var(--border-hairline);padding:var(--space-3) 0;
+  display:flex;flex-direction:column;gap:2px}
+.rail a{display:flex;gap:var(--space-3);align-items:center;padding:var(--space-2) var(--space-4);
+  color:var(--text-secondary);font-size:var(--type-label-size);border-left:3px solid transparent}
+.rail a:hover{background:var(--surface-inset);text-decoration:none}
+.rail a.active{border-left-color:var(--signal-cyan);background:var(--signal-cyan-wash);color:var(--text-primary)}
+.rail a .glyph{width:16px;text-align:center;flex:0 0 auto}
+.rail .grp{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-disabled);
+  padding:var(--space-1) var(--space-4);margin-top:var(--space-2)}
+.rail .sep{height:1px;background:var(--border-hairline);margin:var(--space-2) var(--space-4)}
+.rail .stopnote{margin:var(--space-2) var(--space-3) 0;padding:var(--space-2);border-radius:var(--radius-control);
+  border:1px dashed var(--border-strong);background:var(--surface-inset);
+  font-size:var(--type-meta-size);color:var(--text-muted)}
+.rail .stopnote a{color:var(--signal-cyan-ink)}
+.rail .stopnote:focus-visible{outline:2px solid var(--focus-ring)}
+
+.content{flex:1;min-width:0;padding:var(--space-6) var(--space-8);max-width:1240px}
+.content .head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap}
+.content .crumb{font-family:var(--font-mono);font-size:var(--type-meta-size);color:var(--text-muted)}
+.content h1.screen{font-size:var(--type-screen-size);line-height:var(--type-screen-line);margin:2px 0 0}
+.content .sublede{color:var(--text-muted);font-size:var(--type-body-size);margin:4px 0 0;max-width:84ch}
+
+/* ---- SCAFFOLD honesty note (two-views-one-state; Core API live at /api/*) */
+.scaffold-note{background:var(--signal-cyan-wash);border:1px solid var(--signal-cyan-press);
+  border-radius:var(--radius-control);padding:var(--space-3);font-size:var(--type-label-size);
+  color:var(--text-secondary);margin-bottom:var(--space-4);line-height:var(--type-body-line)}
+.scaffold-note code{color:var(--signal-cyan-ink)}
+
+/* ============================================================================
+   §4.6 HaltBand — READ-ONLY suite-posture mirror (Library is NOT an enforcer).
+   Gold, calm interlock/shield iconography, never a red error, never a ⛔ STOP
+   glyph or an actuator. Deep-links to MC where a stop is actually visible.
+   ========================================================================== */
+.halt-band{position:relative;width:100%;
+  background:linear-gradient(var(--halt-gold-wash),var(--halt-gold-wash)),var(--bg-raised);
+  color:var(--halt-gold-ink);border-bottom:1px solid var(--halt-gold);
+  box-shadow:inset 0 -1px 0 rgba(242,132,43,.4);padding:var(--space-3) var(--space-4);
+  display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;
+  animation:band-in var(--mo-base) var(--ease-out)}
+.halt-band__edge{position:absolute;top:0;right:0;bottom:0;width:6px;
+  background:repeating-linear-gradient(45deg,var(--halt-gold-edge) 0 6px,transparent 6px 12px)}
+.halt-band__word{font-size:var(--type-status-size);line-height:var(--type-status-line);
+  font-weight:var(--weight-semibold);color:var(--halt-gold)}
+.halt-band__word .ico{margin-right:var(--space-2)}
+.halt-band .ro{font-size:var(--type-label-size);color:var(--halt-gold-ink);
+  border:1px solid var(--halt-gold-edge);border-radius:var(--radius-pill);padding:1px var(--space-2)}
+.halt-band a{color:var(--halt-gold-ink);text-decoration:underline}
+@keyframes band-in{from{transform:translateY(-100%);opacity:.2}to{transform:none;opacity:1}}
+
+/* ============================================================================
+   Panels / layout wells
+   ========================================================================== */
+.panel{background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-panel);padding:var(--space-4)}
+.panel--raised{background:var(--bg-raised)}
+.panel-title{font-size:var(--type-panel-size);line-height:var(--type-panel-line);
+  font-weight:var(--weight-semibold);margin-bottom:var(--space-3)}
+.well{background:var(--surface-inset);border-radius:var(--radius-control)}
+.hair{border:0;border-top:1px solid var(--border-hairline);margin:var(--space-4) 0}
+.grid{display:grid;gap:var(--space-4)}
+.row{display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap}
+.stack>*+*{margin-top:var(--space-3)}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);flex-wrap:wrap}
+.split{display:grid;gap:var(--space-3);grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+
+/* ============================================================================
+   Buttons + Fields (§6.3)
+   ========================================================================== */
+.btn{font-family:var(--font-ui);font-size:var(--type-control-size);font-weight:var(--weight-medium);
+  min-height:var(--control-default);padding:var(--space-2) var(--space-3);border-radius:var(--radius-control);
+  border:1px solid var(--border-strong);background:var(--bg-control);color:var(--text-primary);
+  cursor:pointer;transition:background var(--mo-fast) var(--ease-out),border-color var(--mo-fast)}
+.btn:hover{background:var(--surface-raised)}
+.btn--primary{background:var(--signal-cyan);border-color:var(--signal-cyan);color:var(--text-on-accent)}
+.btn--primary:hover{background:var(--signal-cyan-hover);border-color:var(--signal-cyan-hover)}
+.btn--ghost{background:transparent;border-color:transparent;color:var(--signal-cyan-ink)}
+.btn--ghost:hover{background:var(--surface-inset)}
+.btn--compact{min-height:var(--control-compact);padding:var(--space-1) var(--space-2);font-size:var(--type-label-size)}
+.btn:disabled{background:var(--surface-panel);border-color:var(--border-hairline);color:var(--text-disabled);cursor:not-allowed}
+@media (max-width:640px){.btn{min-height:var(--hit-min)}}
+
+.field{display:block;margin-bottom:var(--space-3)}
+.field>label{display:block;font-size:var(--type-label-size);color:var(--text-secondary);margin-bottom:var(--space-1)}
+.input{font-family:var(--font-mono);font-size:var(--type-control-size);min-height:var(--control-default);
+  padding:var(--space-2) var(--space-3);border-radius:var(--radius-control);
+  border:1px solid var(--border-strong);background:var(--surface-backdrop);color:var(--text-primary);width:100%}
+.input--danger{border-color:var(--danger-red)}
+.input::placeholder{color:var(--text-disabled)}
+.searchbar{display:flex;align-items:center;gap:var(--space-2);border:1px solid var(--border-strong);
+  background:var(--surface-backdrop);border-radius:var(--radius-control);padding:0 var(--space-3)}
+.searchbar .ico{color:var(--text-muted)}
+.searchbar .input{border:0;background:transparent;padding-left:0}
+
+/* ============================================================================
+   §4.3 TierBadge — the four provenance tiers + the curation-ingested taint.
+   Colour + glyph + label ALWAYS (never colour-only). Tier is a BADGE, not a
+   sort key (the results table must not reorder by it).
+   ========================================================================== */
+.tier{display:inline-flex;align-items:center;gap:var(--space-1);white-space:nowrap;
+  font-size:var(--type-label-size);line-height:var(--type-label-line);font-weight:var(--weight-medium);
+  padding:2px var(--space-2);border-radius:var(--radius-pill);border:1px solid var(--border-strong);color:var(--text-secondary)}
+.tier .g{font-family:var(--font-mono)}
+.tier--verified{border-color:var(--tier-verified);color:var(--state-green-ink)}
+.tier--corroborated{border-color:var(--tier-corroborated);color:var(--signal-cyan-ink)}
+.tier--single{border-color:var(--tier-single);color:var(--state-amber-ink)}
+/* UNTRUSTED taint — striped amber, ⚠, always reads "curation-ingested UNTRUSTED" */
+.tier--untrusted{border-color:var(--tier-untrusted);color:var(--state-amber-ink);
+  background:repeating-linear-gradient(45deg,var(--state-amber-wash) 0 6px,transparent 6px 12px)}
+.tier--untrusted::after{content:" UNTRUSTED";font-size:var(--type-meta-size);letter-spacing:.03em;color:var(--state-amber)}
+
+/* ============================================================================
+   §4.5 StatePill (StatusPill) — [glyph] LABEL, tabular, one per state family.
+   ========================================================================== */
+.pill{display:inline-flex;align-items:center;gap:var(--space-1);white-space:nowrap;
+  font-size:var(--type-label-size);line-height:var(--type-label-line);font-weight:var(--weight-medium);
+  padding:2px var(--space-2);border-radius:var(--radius-pill);border:1px solid var(--border-strong);color:var(--text-secondary)}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-disabled)}
+.pill--ok{border-color:var(--state-green);color:var(--state-green-ink)} .pill--ok .dot{background:var(--state-green)}
+.pill--attn{border-color:var(--state-amber);color:var(--state-amber-ink)} .pill--attn .dot{background:var(--state-amber)}
+.pill--danger{border-color:var(--danger-red);color:var(--danger-red-ink)} .pill--danger .dot{background:var(--danger-red)}
+.pill--drain{border-color:var(--state-violet);color:var(--state-violet-ink)} .pill--drain .dot{background:var(--state-violet)}
+.pill--halt{border-color:var(--halt-gold);color:var(--halt-gold-ink);background:var(--halt-gold-wash)}
+.pill--neutral{border-color:var(--border-strong);color:var(--text-secondary)}
+
+/* Ticket/Doc/Principal reference chips — opaque mono, copy-on-click affordance */
+.ref{display:inline-flex;align-items:center;gap:var(--space-1);font-family:var(--font-mono);
+  font-size:var(--type-meta-size);color:var(--text-secondary);
+  border:1px solid var(--border-hairline);border-radius:var(--radius-control);padding:1px var(--space-2)}
+.ref--ticket{color:var(--signal-cyan-ink);border-color:var(--border-strong);cursor:pointer}
+.ref--doc{color:var(--text-muted)}
+.ref .knd{color:var(--text-disabled)}
+.princ{display:inline-flex;align-items:center;gap:var(--space-1);font-family:var(--font-mono);
+  font-size:var(--type-meta-size);color:var(--text-secondary)}
+.princ .k{color:var(--text-disabled)}
+
+/* Small honest chips: version_scope, evidence_covered, ~heuristic */
+.chip{font-family:var(--font-mono);font-size:var(--type-meta-size);color:var(--text-secondary)}
+.chip--exact{color:var(--text-secondary)}
+.chip--approx{color:var(--state-amber-ink)}
+.chip--unverified{color:var(--halt-gold-ink)}
+.chip--cov{color:var(--state-green)}
+.chip--unc{color:var(--state-amber-ink)}
+.heur{font-family:var(--font-mono);font-size:var(--type-meta-size);color:var(--text-muted)}
+.heur b{color:var(--state-amber-ink);font-weight:var(--weight-medium)}
+
+/* ============================================================================
+   §4.9 Freshness — live/mirrored figures; STALE is amber, never a false green.
+   ========================================================================== */
+.freshness{font-family:var(--font-mono);font-size:var(--type-meta-size);color:var(--text-muted)}
+.freshness .ok{color:var(--state-green)} .freshness .stale{color:var(--state-amber)} .freshness .halt{color:var(--halt-gold)}
+.freshness .spin{display:inline-block;animation:spin 2s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============================================================================
+   §6.2 DataTable — dense rows, zebra, sticky sortable header, mono id column.
+   ========================================================================== */
+.tbl{width:100%;border-collapse:collapse;font-size:var(--type-data-size)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border-hairline);border-radius:var(--radius-panel)}
+.tbl th{position:sticky;top:0;z-index:1;background:var(--bg-raised);text-align:left;
+  font-family:var(--font-ui);font-size:var(--type-label-size);text-transform:uppercase;letter-spacing:.04em;
+  color:var(--text-muted);font-weight:var(--weight-semibold);
+  padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--border-hairline)}
+.tbl td{padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--surface-inset);vertical-align:top}
+.tbl tbody tr:nth-child(even){background:var(--surface-inset)}
+.tbl tbody tr:hover{background:var(--signal-cyan-wash)}
+.tbl tbody tr.sel{background:var(--signal-cyan-wash);box-shadow:inset 3px 0 0 var(--signal-cyan)}
+.tbl tbody tr.rowclick{cursor:pointer}
+.tbl .id{font-family:var(--font-mono)} .tbl .rt{text-align:right;font-variant-numeric:tabular-nums}
+.tbl .doccell{display:flex;flex-direction:column;gap:2px}
+.tbl .doccell .h{font-family:var(--font-ui);color:var(--text-primary)}
+.tbl .doccell .i{font-family:var(--font-mono);font-size:10px;color:var(--text-disabled)}
+/* skeleton loading rows — never a spinner (§5.4) */
+.tbl .sk td>span{display:inline-block;height:10px;border-radius:3px;background:var(--surface-control);width:70%}
+
+/* uncovered-heavy audit row cue (§4.4) — prominent, amber, glyph+label */
+.tbl tr.uncovered-heavy{box-shadow:inset 3px 0 0 var(--state-amber)}
+
+/* ============================================================================
+   §4.7 DangerAction + §5.1 ConfirmFriction — the operator's destructive finger.
+   Red primary, behind a confirm ceremony (typed-intent for full friction).
+   ========================================================================== */
+.actuator{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);
+  min-height:var(--control-default);padding:var(--space-2) var(--space-3);
+  border-radius:var(--radius-control);border:1px solid var(--danger-red);
+  background:transparent;color:var(--danger-red-ink);font-family:var(--font-ui);
+  font-size:var(--type-control-size);font-weight:var(--weight-medium);cursor:pointer;user-select:none}
+.actuator--danger{border-color:var(--danger-red)}
+.actuator--solid{background:var(--danger-red);border-color:var(--danger-red);color:#170707}
+.actuator--solid:hover{background:var(--danger-red-hover)}
+.actuator--outline:hover{background:var(--danger-red-wash)}
+.actuator:disabled{opacity:.5;cursor:not-allowed;border-color:var(--border-strong);color:var(--text-disabled);background:transparent}
+.actuator__why{display:block;font-size:var(--type-meta-size);color:var(--text-muted);margin-top:2px;text-align:right}
+
+/* Modal + scrim (§6.4, role=alertdialog). Library HaltBand is a read-only band
+   with no actuator, so there is no halt-above-scrim exemption to draw here. */
+.modal-scrim{position:fixed;inset:0;background:var(--scrim);z-index:var(--z-scrim);
+  display:flex;align-items:center;justify-content:center;padding:var(--space-4)}
+.modal{background:var(--bg-card);border:1px solid var(--border-hairline);border-radius:var(--radius-panel);
+  box-shadow:var(--elev-modal);max-width:560px;width:100%;padding:var(--space-6);z-index:var(--z-dialog)}
+.modal__head{font-size:var(--type-panel-size);font-weight:var(--weight-semibold);margin-bottom:var(--space-3)}
+.modal--danger .modal__head{color:var(--danger-red)}
+.consequence{background:var(--danger-red-wash);border-left:3px solid var(--danger-red);
+  border-radius:var(--radius-control);padding:var(--space-3);margin-bottom:var(--space-4);
+  font-size:var(--type-body-size);color:var(--text-primary)}
+.consequence code{color:var(--danger-red-ink)}
+.modal__intent{margin-bottom:var(--space-4)}
+.modal__actions{display:flex;justify-content:flex-end;gap:var(--space-3)}
+
+/* ============================================================================
+   PrintedAbsence (§4.7 destructive-absence) — "cannot-by-construction" is a
+   printed fact with a 🔒 LOCK glyph and NO interactive affordance. Never a
+   disabled button, never a ⛔ STOP glyph (Library has no stop button at all).
+   ========================================================================== */
+.absence{background:var(--surface-inset);border:1px dashed var(--border-strong);border-radius:var(--radius-control);
+  padding:var(--space-3);color:var(--text-secondary);font-size:var(--type-body-size)}
+.absence__line{display:flex;gap:var(--space-2);align-items:flex-start;margin:var(--space-1) 0}
+.absence__lock{color:var(--halt-gold-ink);flex:0 0 auto}      /* LOCK glyph, not STOP */
+.absence__tag{font-family:var(--font-mono);font-size:var(--type-meta-size);color:var(--text-muted);
+  border:1px solid var(--border-hairline);border-radius:var(--radius-control);padding:0 var(--space-1)}
+
+/* ============================================================================
+   Pattern R (§5.4) — recoverable, local, RED error. Never the gold band.
+   ========================================================================== */
+.err{background:var(--danger-red-wash);border-left:3px solid var(--danger-red);border-radius:var(--radius-control);
+  padding:var(--space-3);color:var(--text-primary);font-size:var(--type-body-size)}
+.err .lead{color:var(--danger-red);font-weight:var(--weight-semibold)}
+.err code{color:var(--danger-red-ink)}
+
+/* ============================================================================
+   Pattern D (§5.4 / §4.9) — a DEPENDENCY is degraded: GOLD reduced-mode banner,
+   with an explicit "what's still true" line. NEVER rendered as a red error.
+   ========================================================================== */
+.degraded{background:linear-gradient(var(--halt-gold-wash),var(--halt-gold-wash)),var(--bg-card);
+  border:1px solid var(--halt-gold);border-left:3px solid var(--halt-gold);border-radius:var(--radius-control);
+  padding:var(--space-3);color:var(--halt-gold-ink);font-size:var(--type-body-size)}
+.degraded .lead{color:var(--halt-gold);font-weight:var(--weight-semibold);display:flex;align-items:center;gap:var(--space-2)}
+.degraded .still-true{color:var(--halt-gold-ink);font-size:var(--type-label-size);margin-top:var(--space-1)}
+.degraded.invalid{border-left-width:4px}   /* index-invalid: heavier, still gold, never red */
+
+/* ============================================================================
+   §5 App-specific: DocReadingPane (Workshop paper w/ coverage shading),
+   ScopeResolver, AdmissionDiff. Paper lives ONLY inside these.
+   ========================================================================== */
+.reading-pane{flex:1;min-width:0;overflow:auto;background:var(--paper-page);border-radius:var(--radius-panel)}
+.reading-pane article{max-width:var(--measure-read);margin:0 auto;padding:var(--space-8) 36px 60px;color:var(--paper-ink)}
+.reading-pane .kicker{font-family:var(--font-ui);font-size:var(--type-meta-size);text-transform:uppercase;
+  letter-spacing:.06em;color:var(--paper-ink-muted);margin-bottom:var(--space-2)}
+.reading-pane h1{font-family:var(--font-serif);font-size:var(--type-headline-size);line-height:34px;
+  font-weight:var(--weight-semibold);color:var(--paper-ink);margin:0 0 20px}
+.reading-pane .chunk{margin-bottom:18px;position:relative;padding-left:16px}
+.reading-pane .chunk h2{font-family:var(--font-serif);font-size:18px;font-weight:var(--weight-semibold);
+  color:var(--paper-ink);margin:0 0 6px}
+.reading-pane .chunk p{font-family:var(--font-serif);font-size:16px;line-height:25px;color:var(--paper-ink);margin:0}
+/* covered spans are shaded (--paper-inset); uncovered prose bears a ▢ gutter mark */
+.reading-pane .chunk.cov p{background:var(--paper-inset);padding:4px 8px;border-radius:4px}
+.reading-pane .chunk.unc::before{content:"▢";position:absolute;left:0;top:4px;color:#B58900;font-family:var(--font-mono);font-size:12px}
+.reading-pane .chunk .gutter{font-family:var(--font-ui);font-size:var(--type-meta-size);color:#8a5a00;margin-top:3px}
+.reading-pane .empty{display:flex;align-items:center;justify-content:center;height:100%;min-height:220px;
+  color:var(--paper-ink-muted);font-family:var(--font-ui);font-size:var(--type-body-size)}
+
+/* ScopeResolver (§5) — host_id XOR target_* + honest version_scope + include_unverified */
+.scope{display:flex;flex-direction:column;gap:var(--space-3)}
+.scope .radios{display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap;
+  font-family:var(--font-mono);font-size:var(--type-label-size);color:var(--text-secondary)}
+.scope .opt{display:inline-flex;align-items:center;gap:5px;cursor:pointer;background:transparent;border:0;
+  color:var(--text-muted);font-family:var(--font-mono);font-size:var(--type-label-size)}
+.scope .opt.on{color:var(--signal-cyan-ink)}
+.scope .div{color:var(--text-disabled)}
+.scope .toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;background:transparent;border:0;
+  color:var(--text-muted);font-family:var(--font-mono);font-size:var(--type-label-size)}
+.scope .toggle.on{color:var(--signal-cyan-ink)}
+
+/* AdmissionDiff (§5) — quarantine body vs source markdown + frontmatter delta (paper) */
+.admdiff{background:var(--paper-page);border-radius:var(--radius-panel);padding:var(--space-4);
+  font-family:var(--font-mono);font-size:var(--type-data-size);line-height:19px;color:var(--paper-ink)}
+.admdiff .cap{font-family:var(--font-ui);font-size:var(--type-label-size);font-weight:var(--weight-semibold);
+  color:var(--paper-ink-muted);margin-bottom:var(--space-2)}
+.admdiff .add{background:#DDF0E0;color:#1E5B32;padding:1px 6px;border-radius:3px}
+.admdiff .del{background:#F3DADA;color:#7A2420;padding:1px 6px;border-radius:3px;margin-top:3px;text-decoration:line-through}
+.admdiff .note{color:#8a5a00;margin-top:var(--space-2)}
+
+/* footer line under a results table (retrieval mode etc.) */
+.tbl-foot{font-family:var(--font-mono);font-size:var(--type-meta-size);color:var(--text-muted);
+  margin-top:var(--space-2);display:flex;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap}
+
+/* empty-state invitation (§5.4 honest defaults) */
+.empty-state{border:1px dashed var(--border-strong);border-radius:var(--radius-panel);
+  padding:var(--space-6);color:var(--text-muted);font-size:var(--type-body-size);text-align:center}
+.empty-state .cta{margin-top:var(--space-3)}
+
+/* ---- Responsive — down to ~375px, no horizontal scroll ---------------- */
+@media (max-width:1200px){
+  .rail{width:var(--rail-collapsed);flex-basis:var(--rail-collapsed)}
+  .rail a .lab,.rail .grp,.rail .stopnote{display:none}
+  .rail a{justify-content:center;padding:var(--space-3) 0}
+}
+@media (max-width:900px){
+  .gs-header{grid-template-columns:1fr;gap:var(--space-2)}
+  .gs-op{justify-self:start;text-align:left}
+}
+@media (max-width:768px){
+  .body{flex-direction:column}
+  .rail{width:100%;flex-basis:auto;flex-direction:row;overflow-x:auto}
+  .rail a .lab{display:inline} .rail .sep,.rail .grp{display:none}
+  .content{padding:var(--space-4)}
+}
+@media (max-width:640px){.content{padding:var(--space-3)}}

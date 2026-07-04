@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "library"
+version = "0.1.0"
+description = "The Reference Library — curated RAG corpus (Stage-4 build)"
+requires-python = ">=3.12"
+# Runtime third-party deps live in ../requirements.txt (installed in the image).
+# The security-critical core (admission gate, RS token validation logic, corpus
+# single-writer, hybrid fusion, MCP router) is exercised by the test suite with
+# NO third-party package installed — see ../requirements.txt for what each optional
+# dep activates (sqlite-vec vectors, PyYAML frontmatter, cryptography asym verify).
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["library*"]
+
+[tool.pytest.ini_options]
+testpaths = ["library/tests"]

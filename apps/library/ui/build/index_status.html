@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Index status — library reference shelf</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §4.6 — Index Status · health, degraded modes, rebuild.  Endpoints:
+   GET /api/admin/index-status (+LiveStream)  ·  POST /api/admin/reindex.
+   No MCP sibling. library:admin. The named home of the Library's degraded modes
+   — Pattern D (GOLD), never red. Corpus↔index consistency uses the false-green
+   rule. SCAFFOLD (structure real, readout mocked). */
+window.LIB_SHELL = {
+  level:'G0', freshness:{ms:0.4, src:'MC'},
+  operator:{sub:'operator:ada', scope:'library:admin'}, activeNav:'index'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <div class="scaffold-note" role="note"><b>SCAFFOLD</b> — realizes UI_SPEC §4.6. Endpoints <code>GET /api/admin/index-status</code> +
+        <code>POST /api/admin/reindex</code> (<b>Core API live + tested</b>; two views, one state). The machine-truth readout, the
+        <b>Pattern-D gold</b> degraded banners, and the full-friction reindex are real markup; values mocked; LiveStream + rebuild CANNOT-VERIFY-HERE.</div>
+
+      <div class="head">
+        <div>
+          <div class="crumb">library:admin</div>
+          <h1 class="screen">Index status</h1>
+          <p class="sublede">The rebuildable-index health readout. <b>Degraded modes are named honestly in gold (Pattern D), never as red
+            errors.</b> Corpus↔index consistency uses the false-green rule — an index that leads corpus shows serving-suspended in gold, never a green OK.</p>
+        </div>
+        <span class="pill pill--neutral"><span class="dot"></span>◐ library:admin</span>
+      </div>
+
+      <!-- machine-truth readout -->
+      <section class="panel" style="margin-bottom:14px">
+        <div class="mono" style="font-size:12px;color:var(--text-secondary);line-height:20px">
+          <div>model_id: <b>qwen3-emb-0.6b</b> · digest 9c1f… · dim <b>1024</b> <span class="chip--approx">(config PENDING-SIZING — labeled config, not a constant)</span> · chunker_config_id: cc-2a7…</div>
+          <div>corpus HEAD a9c… <span style="color:var(--state-green)">✔</span> · index_meta.corpus_commit a9c… <span style="color:var(--state-green)">✔ (ancestor-or-equal)</span> · built_at 2s ago <span class="freshness"><span class="spin" aria-hidden="true">⟳</span></span></div>
+        </div>
+      </section>
+
+      <!-- health / degraded modes (Freshness §4.9 · Pattern D §5.4) — all GOLD -->
+      <section class="panel" style="margin-bottom:14px">
+        <div class="eyebrow" style="margin-bottom:10px">Health / degraded modes <span class="muted">(Pattern D — gold, safe reduced modes; not errors)</span></div>
+        <div class="stack">
+          <div class="degraded"><div class="lead">⛊ SEMANTIC RETRIEVAL DEGRADED</div>
+            <div>agent-runtime unreachable · serving <b>lexical-only</b> (<code>retrieval_mode: lexical_only</code>).</div>
+            <div class="still-true"><b>Still true:</b> exact / FTS matches valid; only vector recall is unavailable.</div></div>
+
+          <div class="degraded"><div class="lead">⛊ DURABILITY DEGRADED</div>
+            <div>corpus push <b>12 min behind</b> · retrying · admissions record locally (<b>canonical</b>).</div>
+            <div class="still-true"><b>Still true:</b> the local commit is the source of truth; past 30 min this escalates (PLAN §1.1). Not blocked, not red.</div></div>
+
+          <div class="degraded"><div class="lead">⛊ pending_embed: 3 docs</div>
+            <div>served from the FTS half, vectors queued (<code>retrieval_mode: partial</code>).</div>
+            <div class="still-true"><b>Still true:</b> recently-admitted docs are retrievable now via text; their vectors are catching up.</div></div>
+
+          <div class="degraded invalid"><div class="lead">⚠ INDEX INVALID — serving suspended</div>
+            <div>if <code>index_meta.corpus_commit</code> is not ancestor-or-equal of HEAD (index leads corpus, PLAN §1.5) → serving is
+              <b>suspended until rebuild</b>, <b>not stale-served</b>. The false-green rule: no fabricated results, never a green “OK.”</div>
+            <div class="still-true"><b>Currently:</b> corpus↔index consistent — this banner is shown to document the suspended-state behavior.</div></div>
+
+          <div class="mono" style="font-size:12px;color:var(--state-green)">✔ corpus↔index consistent · nightly integrity sweep: last 03:00 ✔</div>
+        </div>
+      </section>
+
+      <!-- rebuild -->
+      <section class="panel spread">
+        <div><span class="eyebrow">Rebuild</span>
+          <p class="freshness" style="margin:4px 0 0">Full reindex proves the §10 rebuildable-index invariant: destroy the vector+FTS index and re-embed from the markdown corpus.</p></div>
+        <button class="actuator actuator--solid" type="button" data-danger data-confirm="#confirm-reindex"
+          data-intent="REINDEX" data-toast="Full reindex started — serving suspended (SCAFFOLD — no backend write).">⚠ Full reindex (destroy + rebuild from corpus)</button>
+      </section>
+
+      <p class="freshness" style="margin-top:14px"><b>States:</b> Loaded / Loading (skeleton readout) · <b>Empty never applies</b> (there is always an index or an honest
+        “no index — rebuild required” gold state) · <b>Pattern R</b> a malformed reindex request → red (the only red here — a genuine operator error) ·
+        <b>Pattern D</b> the gold degraded banners above (the normal home of the Library's degraded modes) · <b>Stop-engaged</b> HaltBand read-only;
+        reindex is internal state and continues under a kill, but the band is shown. On completion a Toast reports the two-part rebuild verdict
+        (byte-identical manifest ✔ + recall@8 / Spearman ≥ 0.95).</p>
+    </main>
+  </div>
+</div>
+
+<template id="confirm-reindex"><div class="modal modal--danger" role="alertdialog" aria-modal="true" aria-labelledby="ci-h">
+  <div class="modal__head" id="ci-h">Full reindex — destroy + rebuild from corpus</div>
+  <div class="consequence"><b>Suspends vector + FTS serving until the rebuild completes.</b> During rebuild, stale results are <b>withheld, not served</b>.
+    Re-embeds from the markdown corpus (the canonical store) — proves the rebuildable-index invariant (§10).</div>
+  <div class="field modal__intent"><label>Type <b>REINDEX</b> to confirm (case-sensitive)</label><input class="input" data-intent-input placeholder="REINDEX"></div>
+  <div class="modal__actions"><button class="btn btn--ghost" data-cancel>Cancel</button>
+    <button class="btn btn--danger" style="background:var(--danger-red);border-color:var(--danger-red);color:#170707" data-confirm-go>Reindex</button></div>
+</div></template>
+
+<script src="shell.js"></script>
+</body>
+</html>

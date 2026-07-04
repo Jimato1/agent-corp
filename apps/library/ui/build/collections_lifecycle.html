@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collections · lifecycle — library reference shelf</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §4.5 — Collections & Lifecycle.  Endpoints:
+   GET/POST /api/collections  ·  POST /api/docs/{doc_id}/retire|supersede.
+   No MCP sibling. library:admin. Retire/Supersede preserve evidence history —
+   never a body edit, never a delete. SCAFFOLD (structure real, rows mocked). */
+window.LIB_SHELL = {
+  level:'G0', freshness:{ms:0.4, src:'MC'},
+  operator:{sub:'operator:ada', scope:'library:admin'}, activeNav:'collections'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <div class="scaffold-note" role="note"><b>SCAFFOLD</b> — realizes UI_SPEC §4.5. Endpoints <code>GET/POST /api/collections</code> +
+        <code>POST /api/docs/{doc_id}/retire|supersede</code> (<b>Core API live + tested</b>; two views, one state). Collection chips and
+        the lifecycle table are real markup; rows mocked; lifecycle writes CANNOT-VERIFY-HERE.</div>
+
+      <div class="head">
+        <div>
+          <div class="crumb">library:admin</div>
+          <h1 class="screen">Collections &amp; lifecycle</h1>
+          <p class="sublede">Operator management of collections and the doc lifecycle. <b>Retirement is operator-decided, never automatic
+            deletion.</b> Retire/Supersede preserve evidence history — never a body edit, never a delete.</p>
+        </div>
+        <span class="pill pill--neutral"><span class="dot"></span>◐ library:admin · operator only</span>
+      </div>
+
+      <div class="row" style="margin-bottom:14px">
+        <span class="pill pill--neutral">cli-reference</span>
+        <span class="pill pill--neutral">distro-guides</span>
+        <span class="pill pill--neutral">advisories</span>
+        <button class="btn btn--compact" type="button">+ New collection</button>
+      </div>
+
+      <!-- retirement / supersession queue (staleness surfaces here, DataTable §6.2) -->
+      <div class="tbl-wrap">
+        <table class="tbl" aria-label="Lifecycle queue">
+          <thead><tr><th>Doc</th><th>Status</th><th>applies_to</th><th>last_verified</th><th>Flag</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="id">lib-01Q0II</td>
+              <td><span class="pill pill--ok"><span class="dot"></span>● current</span></td>
+              <td class="id">ubuntu 22.04 amd64</td>
+              <td class="id muted">2025-11-02</td>
+              <td><span class="heur"><b>▲ past valid_until</b></span></td>
+              <td><button class="actuator actuator--outline btn--compact" type="button" data-danger data-confirm="#confirm-retire"
+                data-intent="RETIRE" data-toast="Retired lib-01Q0II (SCAFFOLD — no backend write).">⚠ Retire</button></td>
+            </tr>
+            <tr>
+              <td class="id">lib-01R1JJ</td>
+              <td><span class="pill pill--ok"><span class="dot"></span>● current</span></td>
+              <td class="id">ubuntu 20.04 amd64</td>
+              <td class="id muted">2025-08-14</td>
+              <td><span class="heur"><b>▲ distro EOL (CMDB)</b></span></td>
+              <td><button class="actuator actuator--outline btn--compact" type="button" data-danger data-confirm="#confirm-supersede"
+                data-intent="SUPERSEDE" data-toast="Superseded lib-01R1JJ → new lineage doc (SCAFFOLD).">⚠ Supersede</button></td>
+            </tr>
+            <tr>
+              <td class="id">lib-01S2KK</td>
+              <td><span class="pill pill--drain"><span class="dot"></span>⇉ superseded</span></td>
+              <td class="id">ubuntu 24.04 amd64</td>
+              <td class="id muted">2026-06-30</td>
+              <td><span class="mono muted">superseded_by lib-01T…</span></td>
+              <td><span class="muted">(history)</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl-foot"><span>Retire/Supersede <b>preserve evidence history</b> — never a body edit, never a delete (§1.1). Staleness (past
+        <code>valid_until</code>, distro-EOL from CMDB <code>eol_date</code>) surfaces for a decision; retirement is never automatic.</span></div>
+
+      <!-- PrintedAbsence: no delete capability exists -->
+      <div class="absence" style="margin-top:14px">
+        <div class="absence__line"><span class="absence__lock">🔒</span>
+          <span><b>There is no delete affordance anywhere.</b> Deletion is not a capability — supersession mints/links a new lineage doc
+            and preserves the old bytes + evidence history. Printed fact, <b>no interactive affordance</b>, never a ⛔ STOP glyph.
+            <span class="absence__tag">not a capability</span></span></div>
+      </div>
+
+      <p class="freshness" style="margin-top:14px"><b>States:</b> Loaded / Loading (skeleton) · <b>Empty:</b> “No collections yet — create one to group reference docs”;
+        lifecycle queue empty → “Nothing stale. Docs past <code>valid_until</code> or on EOL distros surface here for retirement.” ·
+        <b>Pattern R</b> a lifecycle write conflict (op_id replay / already superseded) — red, recoverable ·
+        <b>Pattern D</b> push-backlog degraded banner (gold) — lifecycle still records locally · <b>Stop-engaged</b> HaltBand read-only.</p>
+    </main>
+  </div>
+</div>
+
+<template id="confirm-retire"><div class="modal modal--danger" role="alertdialog" aria-modal="true" aria-labelledby="cr-h">
+  <div class="modal__head" id="cr-h">Retire lib-01Q0II</div>
+  <div class="consequence">Removes this doc from retrieval (irreversible for the current lineage). <b>Preserves evidence history; mints/links a new
+    lineage doc, never edits bytes.</b> No delete capability exists.</div>
+  <div class="field modal__intent"><label>Type <b>RETIRE</b> to confirm (case-sensitive)</label><input class="input" data-intent-input placeholder="RETIRE"></div>
+  <div class="modal__actions"><button class="btn btn--ghost" data-cancel>Cancel</button>
+    <button class="btn btn--danger" style="background:var(--danger-red);border-color:var(--danger-red);color:#170707" data-confirm-go>Retire</button></div>
+</div></template>
+
+<template id="confirm-supersede"><div class="modal modal--danger" role="alertdialog" aria-modal="true" aria-labelledby="cs-h">
+  <div class="modal__head" id="cs-h">Supersede lib-01R1JJ</div>
+  <div class="consequence">Removes this doc from retrieval and links a newer lineage doc as its successor. <b>Preserves evidence history; never edits
+    bytes, never deletes.</b></div>
+  <div class="field modal__intent"><label>Type <b>SUPERSEDE</b> to confirm (case-sensitive)</label><input class="input" data-intent-input placeholder="SUPERSEDE"></div>
+  <div class="modal__actions"><button class="btn btn--ghost" data-cancel>Cancel</button>
+    <button class="btn btn--danger" style="background:var(--danger-red);border-color:var(--danger-red);color:#170707" data-confirm-go>Supersede</button></div>
+</div></template>
+
+<script src="shell.js"></script>
+</body>
+</html>

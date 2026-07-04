@@ -1,0 +1,7 @@
+# library — DEV/TEST-only dependencies (NOT in the production runtime image).
+#
+# The test suite is stdlib `unittest` (no third-party runner needed):
+#   python -m unittest discover -s library/tests
+# pytest is provided only for parity with the suite's `test` image convention; the
+# tests do not depend on it.
+pytest>=8,<9
