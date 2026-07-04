@@ -1,0 +1,11 @@
+node_modules
+dist
+test
+.env
+.env.*
+!.env.example
+*.log
+verification
+research
+planning
+ui/UI_SPEC.md

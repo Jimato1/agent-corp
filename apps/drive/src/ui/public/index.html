@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Helm — Drive</title>
+  <!-- The one Helm global stylesheet (tokens via @import); assets copied at build. -->
+  <link rel="stylesheet" href="/ui-assets/styles.css" />
+  <style>
+    html, body { margin: 0; height: 100%; background: var(--bg-app); }
+    #root { height: 100vh; }
+  </style>
+  <!-- React + Babel pinned exactly as the Helm Drive kit (index.html) wires them. -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+  <!-- The compiled Helm design-system bundle: window.HelmDesignSystem_f4cb26 (plain script, NOT babel). -->
+  <script src="/ui-assets/_ds_bundle.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <!-- Live-data layer + reproduced Drive parts/screens + shell. Loaded in order. -->
+  <script type="text/babel" src="/app/dr-api.jsx"></script>
+  <script type="text/babel" src="/app/dr-parts.jsx"></script>
+  <script type="text/babel" src="/app/dr-screens.jsx"></script>
+  <script type="text/babel" src="/app/app.jsx"></script>
+</body>
+</html>

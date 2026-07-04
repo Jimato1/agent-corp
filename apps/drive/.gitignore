@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+# Real env files are gitignored suite-wide; only .env.example is committed.
+.env
+.env.*
+!.env.example
+# Local data volume artifacts, if ever created outside the container.
+/data/
