@@ -224,6 +224,7 @@ The single component for every trust/provenance signal in the suite. **Shape = s
 - **Taint is display-of-truth, never editable in the UI.** No control anywhere lets an operator "clear taint." Provenance is raised-only and server-owned.
 - **Heuristic labels render as heuristic.** Library's origin-cluster / distinctness labels carry a `~ heuristic` micro-tag; they must never be drawn to look like a verified tier.
 - Do **not** put trust tiers on the halt-gold ramp — gold is reserved for §4.5 stop states only. Untrusted uses striped amber.
+- **"Tier" is an overloaded word — keep the two meanings visually distinct** *(additive amendment, ratified 2026-07-03)*. `TierBadge` renders *provenance / trust* tiers only. A host-**criticality** tier (CMDB `tier0–tier3`/unpolicied) carries no provenance or verification-independence semantics and uses a **separate `CriticalityTier` chip — never `TierBadge`**. See `DESIGN_REVIEW.md` §4-A.
 
 ### 4.4 `FenceState` — fencing token / lease / mutex state
 
@@ -354,7 +355,7 @@ The engage/quiesce mechanic reconciling "fast" with "not accidental," used for *
 
 - The **header halt affordance is exempt from every scrim.** Any confirm/lift/edit dialog is modal, **but the halt control renders above the scrim and stays interactive** — an operator who sees an agent going rogue mid-dialog can STOP without first finding Cancel.
 - **`Shift+Esc` is the global escape hatch:** from inside *any non-STOP* modal it **force-dismisses to a safe cancel AND focuses the header ENGAGE-FREEZE**, overriding the `alertdialog` focus-trap by design. It **focuses, never fires** (focusing, not actuating, keeps it panic-safe). The only modal it does not dismiss is a Halt Control panel that already contains a live actuator.
-- **`Shift+Esc` is APPROVED as the Build default but NOT yet validated** (auth SETTLED #11) — Chromium may capture it. Every app's build **must implement a documented fallback chord that is not browser-captured**, selectable if the Stage-7 physical test fails. This is a suite-wide obligation, not auth-only.
+- **`Shift+Esc` is APPROVED as the Build default but NOT yet validated** (auth SETTLED #11) — Chromium may capture it. Every app's build **must implement a documented fallback chord that is not browser-captured**, selectable if the Stage-7 physical test fails. **Recommended fallback chord: `Alt+Shift+H`** ("Halt") *(ratified 2026-07-03; focus-not-fire like `Shift+Esc`; Alt-based to avoid Chromium capture; confirm in Stage 7)*. This is a suite-wide obligation, not auth-only.
 - **Where a stop is even visible:** apps that are not in the kill chain (Chat, pdf) show no halt actuator; apps that can *see* system posture (MC, auth, board, gateway, vault, cmdb, notes, library, drive) render the read-only `HaltBand` and, if they surface the trigger at all, deep-link to MC/auth. Only **MC** (global) and **auth** (identity-layer L1) host live actuators.
 
 ### 5.4 Loading / empty / error (three honest defaults)
@@ -466,3 +467,5 @@ The **consistency sweep** (`context/DESIGN_REVIEW.md`) checks every app against 
 ## 10. Freeze summary
 
 Frozen: §3 tokens, §4 safety grammar (9 canonical components), §5 interaction grammar, §6 shared chrome, §7 three cross-app patterns (`ReviewQueue`/`AuditInspector`/`LiveAgentView`), §8 consumption contract. Additive-only change rule (top of file). Component index: `context/DESIGN_SYSTEM_COMPONENTS.md`. Consistency sweep + consumer matrix: `context/DESIGN_REVIEW.md`.
+
+**Additive amendments (ratified 2026-07-03, operator delegated to recommendation):** §4.3 — "tier"-word disambiguation (`TierBadge` provenance-tier ≠ `CriticalityTier` host-criticality); §5.3 — recommended `Alt+Shift+H` fallback halt chord. Both additive (new clarifying text; no token or rule value changed). Full decision ledger: `DESIGN_REVIEW.md` §5.

@@ -101,6 +101,26 @@ None blocks the design freeze; these are decisions/ratifications the specs surfa
 7. **auth shell app-switcher (§3):** the one auth-touching follow-up — additive, non-blocking; do it when auth's console is next opened.
 8. **pdf reconciliation deferred:** `apps/pdf/ui/UI_SPEC.md` records the out-of-suite status + the bounded later-scope (adopt `AppShell` + token sheet; no §4 safety grammar). No action now.
 
+### §5.1 — RESOLUTIONS (ratified 2026-07-03; operator: suite name APPROVED, all other items delegated to recommendation)
+
+These close the §5 sweep items **and** the 11 GAP flags raised in the Claude Design brief (`context/design/CLAUDE_DESIGN_BRIEF.md`). Encoded where a home exists (DESIGN_SYSTEM additive amendments, per-app specs at Stage-4/Build); otherwise recorded here as the ratified posture.
+
+- **Suite name → `Helm` (APPROVED).** Recorded in the brief Part 1A. Renameable later without design impact.
+- **Sweep #1 / tier-word (§4-A) → ACCEPTED, encoded.** `DESIGN_SYSTEM.md` §4.3 now disambiguates provenance-`TierBadge` from host-criticality `CriticalityTier` (additive).
+- **Sweep #2 / MC global-kill hold-to-fire (§4-C) → ACCEPTED.** Press-and-hold `HoldToActuate` is the global-kill default (parity with auth L1). Dwell ~600ms G1 / ~1000ms G2 remain **tunable, Stage-7-validated** — not locked.
+- **Sweep #3 / MC `HaltNotConfirmed` gold-not-red (§4-D) → ACCEPTED.** A failed global-kill *actuation* renders halt-gold (unknown-treat-as-unsafe), never red — honesty-core consistent.
+- **`Shift+Esc` fallback chord → `Alt+Shift+H`** ("Halt"), focus-not-fire, Alt-based to dodge Chromium capture; encoded in `DESIGN_SYSTEM.md` §5.3; confirm in Stage 7.
+- **MC pre-sizing guardrail numbers → keep UNSET.** Build the explicit `⚠ PRE-SIZING DEFAULT / UNSET` state; no fabricated numbers — they arrive from the gap-1.2 sizing measurement.
+- **Notes taint-downgrade correction → API-only; NOT surfaced on the note UI.** Preserves §4.3 "taint is display-only in the UI." If ever surfaced, only in a **separate admin console** as a full `DangerAction` (typed-intent + step-up + tamper-evident row). No note-surface control built now.
+- **Sweep #4 / cross-app operator-session `mc:read` → RECOMMEND GRANT** (ask to the Board/MC/auth scope session). Design ships the honest deep-link-out fallback until granted (degraded, never wrong).
+- **Drive `verified_absent` deep-link → resolve in-app (Artifact Detail) until Chat ships**, then repoint to Chat. No action now.
+- **Sweep #5 / Drive `GET /api/tickets` index → ADD IT (design assuming it exists).** A cheap rebuildable projection serving both surfaces (two-views-one-state) beats restricting the browser to deep-link entry. Stage-4 API item.
+- **Agent-runtime `EngineHeadroom` gauge → horizontal segmented bar**, neutral→amber approaching capacity, a tick marking the "knee C" threshold, numeric value alongside (not radial — radial reads as the hold-actuator).
+- **Agent-runtime fleet rows → DO NOT render them; deep-link to MC's `LiveAgentView`** (one fleet, not two). Only engine-room physical status (headroom, TPM-seal, drain compliance) lives on agent-runtime.
+- **Sweep #6 / Board A-VR / A-RR → interim rule stands** (operator cancel + re-file); design the drawer to it now, revisit if/when the amendments ratify.
+- **Sweep #7 / auth shell app-switcher → deferred, additive, non-blocking** (unchanged).
+- **Sweep #8 / pdf → remain deferred**; fold into the suite shell (shell + tokens only, no §4 grammar) post-Stage-4 if the operator chooses.
+
 ---
 
 ## 6. Per-app spec inventory (weight, archetype, size)
@@ -121,4 +141,4 @@ None blocks the design freeze; these are decisions/ratifications the specs surfa
 | proxy | NONE | — | `platform/proxy/ui/UI_SPEC.md` | 17 | N/A by construction |
 | auth | BUILT | Instrument | `platform/auth/ui/UI_SPEC.md` | 1135 | origin of the system; §3 reconciliation |
 
-**Sweep verdict: the suite reads as one product.** Every app renders every shared entity through the frozen §4 grammar; the only divergences are deliberate protections of the design system's own invariants (the halt-gold reservation, the `TierBadge` provenance semantics, the false-green rule). Eight open items are parked for the operator (§5); none blocks the freeze.
+**Sweep verdict: the suite reads as one product.** Every app renders every shared entity through the frozen §4 grammar; the only divergences are deliberate protections of the design system's own invariants (the halt-gold reservation, the `TierBadge` provenance semantics, the false-green rule). All §5 open items are **RESOLVED** (§5.1, ratified 2026-07-03) — suite name `Helm` approved; the rest delegated to recommendation and encoded (two additive `DESIGN_SYSTEM.md` amendments; the remainder recorded as ratified posture / Stage-4 items). Nothing blocks the freeze.

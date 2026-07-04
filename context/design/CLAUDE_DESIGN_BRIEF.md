@@ -8,11 +8,23 @@
 
 ---
 
+## 0 · Ratified resolutions (2026-07-03) — read before building
+
+The GAP flags scattered through this package are **resolved**; build to these decisions (operator approved the name and delegated the rest to recommendation). Full ledger: `context/DESIGN_REVIEW.md` §5.1.
+
+- **Suite name = `Helm`** (approved). **Kill-switch dwell** ~600ms G1 / ~1000ms G2 — tunable defaults, not locked. **`Shift+Esc` fallback chord = `Alt+Shift+H`** ("Halt", focus-not-fire), used if a Stage-7 test shows Chromium captures `Shift+Esc`.
+- **MC pre-sizing numbers stay UNSET** — build the explicit `⚠ PRE-SIZING DEFAULT / UNSET` state, never fabricate a number.
+- **"Tier" is two different things:** the provenance **`TierBadge`** (verified/cross-referenced/single-source/UNTRUSTED) is **not** CMDB's host-**criticality** tier — CMDB uses a separate `CriticalityTier` chip. Never merge them. (Likewise CMDB's maintenance-window "FREEZE" is **amber**, never halt-gold — gold is the kill switch only.)
+- **Notes taint-downgrade** is not a note-UI control (taint is display-only); if built at all it's an admin-console `DangerAction`. **Notes/Drive cross-app gate decoration** deep-links out until the relevant read scope / Chat exist — an honest degraded state, not a bug.
+- **Drive recent-view** is designed as if a ticket index exists. **Agent Runtime** shows engine-room status only (segmented headroom bars with a "knee" tick; **no** fleet rows — those live in Mission Control). **pdf** stays deferred.
+
+---
+
 # PART 1 — THE MASTER BRIEF
 
 *Paste this whole part into Claude Design first. It is written to stand completely alone as the seed for the entire visual system.*
 
-## 1A · Suite name & blurb  `[PROPOSED — operator may rename]`
+## 1A · Suite name & blurb  `[APPROVED — ratified 2026-07-03; renameable without design impact]`
 
 `DESIGN_SYSTEM.md` does not name the product (it calls it "the suite"); the repository working name is **agent-corp**. Proposed product name:
 
