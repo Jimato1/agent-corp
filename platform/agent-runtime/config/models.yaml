@@ -1,0 +1,48 @@
+# config/models.yaml — role -> pinned, signed model (PLAN §6.2; read by the
+# fail-closed provenance gate). A change is a REVIEWED COMMIT, never a runtime
+# mutation. The per-role matrix + final pins + quant are PENDING-SIZING (RESEARCH
+# §6, gap-1.2); the digests/sha256/sig_ref below are STRUCTURAL PLACEHOLDERS.
+#
+# HONESTY: with no real hash/Sigstore verifier wired (sandbox), the gate FAILS
+# CLOSED on every role — provenance_verified=false, the model is NOT admitted, and
+# the UI renders `⚠ CANNOT CONFIRM PROVENANCE` (never a fabricated green). Wiring
+# the real verifiers + real artifacts (the Hub) is the deployment step that flips
+# these to VERIFIED — an INTEGRATION / CANNOT-VERIFY-IN-SANDBOX item.
+
+models:
+  adversarial-reviewer:
+    # RESEARCH §6 A2: strongest available reasoning model — do NOT under-quantize;
+    # a weakened red-teamer defeats the deliberation defense from below.
+    model_id: "PENDING-SIZING/adversarial-reviewer"
+    commit_digest: "0000000000000000000000000000000000000000000000000000000000000000"
+    quant: "Q6_K"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    sig_ref: "sigstore:PENDING"
+    format: "safetensors"
+
+  scrum-master:
+    model_id: "PENDING-SIZING/scrum-master"
+    commit_digest: "1111111111111111111111111111111111111111111111111111111111111111"
+    quant: "Q5_K_M"
+    sha256: "1111111111111111111111111111111111111111111111111111111111111111"
+    sig_ref: "sigstore:PENDING"
+    format: "safetensors"
+
+  hands-pool:
+    model_id: "PENDING-SIZING/hands-pool"
+    commit_digest: "2222222222222222222222222222222222222222222222222222222222222222"
+    quant: "Q4_K_M"
+    sha256: "2222222222222222222222222222222222222222222222222222222222222222"
+    sig_ref: "sigstore:PENDING"
+    format: "safetensors"
+
+  library-embedder:
+    # RESEARCH §5.4 / §6 A2: Qwen3-Embedding-0.6B is a verified candidate (1024-dim
+    # Matryoshka). Served via TEI behind this same facade; the SAME provenance gate
+    # covers the embedder (poisoning it poisons Library retrieval + recon grounding).
+    model_id: "Qwen/Qwen3-Embedding-0.6B"
+    commit_digest: "3333333333333333333333333333333333333333333333333333333333333333"
+    quant: "FP16"
+    sha256: "3333333333333333333333333333333333333333333333333333333333333333"
+    sig_ref: "sigstore:PENDING"
+    format: "safetensors"

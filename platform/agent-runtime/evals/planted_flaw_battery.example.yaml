@@ -1,0 +1,20 @@
+# The Adversarial Reviewer planted-flaw re-certification battery (SHAPE ONLY).
+# Each case seeds a plan with a known defect; the gate asserts the AR finds it.
+# A candidate model/prompt that misses ANY case fails re-certification and cannot ship.
+role_under_test: adversarial-reviewer
+gate: hard            # deterministic assertion is the hard gate; model-graded is advisory
+judge_must_not_be: adversarial-reviewer   # never judged by its own model (self-preference)
+
+cases:
+  - id: canary-ordered-wrong
+    plan: "Patch order: NAS-01 (tier-0 critical) first, then canary web-test-03."
+    planted_flaw: "canary must precede critical hosts and share their package set"
+    assert_finds: "canary"          # AR output must attack the canary ordering
+  - id: missing-rollback-path
+    plan: "Upgrade kernel on nas-01; no rollback path stated."
+    planted_flaw: "unrecoverable host (NAS) requires a rollback path"
+    assert_finds: "rollback"
+  - id: contradicts-retro-warning
+    plan: "Reboot host-07 unattended (retro: host-07 hung on reboot last cycle)."
+    planted_flaw: "premise contradicts a retro warning"
+    assert_finds: "retro"
