@@ -1,0 +1,103 @@
+# Vault — Critical-infra. DEPLOYMENT §1/§2/§3a:
+#   vault (wrapper)  : joins edge (UI/MCP) + creds (redeem ONLY, mTLS) + data_vault; internal 8080; no host ports.
+#   vault_openbao    : the OpenBao 2.5.x engine — data_vault ONLY; mTLS listener bound to that interface;
+#                      edge-unreachable (build-failing invariant, PLAN §2.2); 8200; no host ports.
+#   vault_unsealer   : minimal second OpenBao for Transit auto-unseal (D-16c) — data_vault ONLY; 8200.
+# The off-box WORM sink (D-16b) is NOT a compose service — it is a hardened log host reached via
+# VAULT_WORM_SINK_URL. `creds` + `edge` are suite-level (external); `data_vault` is vault-private (here).
+services:
+  vault:
+    build:
+      context: ../..
+      dockerfile: apps/vault/Dockerfile
+    image: agent-corp/vault:0.1.0
+    container_name: vault
+    restart: unless-stopped
+    depends_on: [vault_openbao]
+    networks: [edge, creds, data_vault]
+    volumes:
+      - vault_data:/data
+      - ${VAULT_CERT_DIR:-./secrets/vault}:/certs:ro   # operator-provisioned suite-internal-CA client/server certs
+    environment:
+      - NODE_ENV=production
+      - VAULT_PORT=8080
+      - VAULT_DB_PATH=/data/vault.db
+      - VAULT_BACKUP_DIR=/data/backups
+      # creds mTLS listener (Gateway-only) — a SPECIFIC creds-interface address, never 0.0.0.0 (MI-8).
+      - VAULT_REDEEM_BIND=${VAULT_REDEEM_BIND}
+      - VAULT_REDEEM_PORT=8443
+      - VAULT_CREDS_CA_FILE=/certs/suite-ca.pem
+      - VAULT_CREDS_SERVER_CERT_FILE=/certs/vault-creds.pem
+      - VAULT_CREDS_SERVER_KEY_FILE=/certs/vault-creds-key.pem
+      - VAULT_GATEWAY_CLIENT_CN=svc:gateway
+      # auth RS baseline (auth at auth:8089 — the ONE correct verify port, DEPLOYMENT §4).
+      - VAULT_AUTH_ISSUER=${VAULT_AUTH_ISSUER}
+      - VAULT_AUTH_JWKS_URL=http://auth:8089/.well-known/jwks.json
+      - VAULT_AUTH_INTROSPECT_URL=http://auth:8089/introspect
+      - VAULT_AUTH_REVOCATIONS_URL=http://auth:8089/revocations
+      - VAULT_AUTH_BUDGET_URL=http://auth:8089/budget/admission
+      # svc:vault D-4 Board facts re-verification.
+      - VAULT_BOARD_FACTS_URL=http://board:8080
+      - VAULT_CHAT_URL=http://chat:8080
+      # OpenBao engine + unsealer (data_vault aliases; mTLS client material provisioned into /certs).
+      - VAULT_OPENBAO_ADDR=https://vault_openbao:8200
+      - VAULT_UNSEALER_ADDR=https://vault_unsealer:8200
+      - VAULT_ENGINE_CA_FILE=/certs/suite-ca.pem
+      - VAULT_ENGINE_CLIENT_CERT_FILE=/certs/vault-engine-client.pem
+      - VAULT_ENGINE_CLIENT_KEY_FILE=/certs/vault-engine-client-key.pem
+      # off-box WORM sink (hardened log host, D-16b) + off-box raft-snapshot destination (§7.3).
+      - VAULT_WORM_SINK_URL=${VAULT_WORM_SINK_URL}
+      - VAULT_WORM_CERT_FILE=/certs/vault-worm.pem
+      - VAULT_WORM_KEY_FILE=/certs/vault-worm-key.pem
+      - VAULT_SNAPSHOT_DEST=${VAULT_SNAPSHOT_DEST}
+      - VAULT_SSH_CERT_TTL=${VAULT_SSH_CERT_TTL:-10m}
+    expose:
+      - "8080"
+
+  vault_openbao:
+    image: openbao/openbao:2.5.5   # D-14: pinned 2.5.x (>=2.5.5); NEVER the 2.6.0 beta.
+    container_name: vault_openbao
+    restart: unless-stopped
+    command: ["server", "-config=/openbao/config/openbao.hcl"]
+    cap_add: [IPC_LOCK]
+    networks: [data_vault]          # data_vault ONLY — never edge, never creds (PLAN §2.2 / §3.5 caveat 5)
+    volumes:
+      - vault_openbao_data:/openbao/data
+      - vault_openbao_audit:/openbao/audit
+      - ./openbao/config:/openbao/config:ro
+      - ./openbao/policies:/openbao/policies:ro
+      - ${VAULT_CERT_DIR:-./secrets/vault}:/openbao/tls:ro
+    environment:
+      - VAULT_TRANSIT_SEAL_ADDRESS=https://vault_unsealer:8200
+      - VAULT_TRANSIT_SEAL_TOKEN=${VAULT_TRANSIT_SEAL_TOKEN}
+      - VAULT_WORM_SINK_URL=${VAULT_WORM_SINK_URL}
+    expose:
+      - "8200"
+
+  vault_unsealer:
+    image: openbao/openbao:2.5.5
+    container_name: vault_unsealer
+    restart: unless-stopped
+    command: ["server", "-config=/openbao/config/unsealer.hcl"]
+    cap_add: [IPC_LOCK]
+    networks: [data_vault]
+    volumes:
+      - vault_unsealer_data:/openbao/data
+      - ./openbao/config:/openbao/config:ro
+      - ${VAULT_CERT_DIR:-./secrets/vault}:/openbao/tls:ro
+    expose:
+      - "8200"
+
+networks:
+  edge:
+    external: true
+  creds:
+    external: true
+  data_vault:
+    internal: true   # vault-private; the engine listener is unreachable from edge (build-failing invariant)
+
+volumes:
+  vault_data:
+  vault_openbao_data:
+  vault_openbao_audit:
+  vault_unsealer_data:
