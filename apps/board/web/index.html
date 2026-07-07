@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Board — coordination spine</title>
+<!--
+  CLASSIC-SCRIPT load order, before the module entry:
+    1. Helm styles (tokens + reset)  → CSS custom properties every component reads
+    2. React UMD  → window.React     → the ONE React instance in the page
+    3. ReactDOM UMD → window.ReactDOM
+    4. _ds_bundle.js → window.HelmDesignSystem_f4cb26  (requires React/ReactDOM as globals)
+  Vendored into /public/helm (committed) by scripts/vendor-helm.mjs.
+-->
+<link rel="stylesheet" href="/helm/styles.css">
+<style>
+  html, body { margin: 0; height: 100%; background: var(--bg-app, #0d1117); }
+  #root { height: 100vh; }
+</style>
+<script src="/helm/react.production.min.js"></script>
+<script src="/helm/react-dom.production.min.js"></script>
+<script src="/helm/_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

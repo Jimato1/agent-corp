@@ -1,0 +1,40 @@
+# Board — the coordination spine. DEPLOYMENT §1/§2: `edge` network only, no host ports, volume
+# board_data, service/DNS/audience `board` on internal 8080, auth at auth:8089.
+services:
+  board:
+    build:
+      context: ../..
+      dockerfile: apps/board/Dockerfile
+    image: agent-corp/board:0.1.0
+    container_name: board
+    restart: unless-stopped
+    networks: [edge]
+    volumes:
+      - board_data:/data
+    environment:
+      - NODE_ENV=production
+      - BOARD_PORT=8080
+      - BOARD_DB_PATH=/data/board.db
+      - BOARD_BACKUP_DIR=/data/backups
+      - BOARD_AUTH_ISSUER=${BOARD_AUTH_ISSUER}
+      - BOARD_AUTH_JWKS_URL=http://auth:8089/.well-known/jwks.json
+      - BOARD_AUTH_BUDGET_URL=http://auth:8089/budget/admission
+      - BOARD_AUTH_REVOCATIONS_URL=http://auth:8089/revocations
+      - BOARD_MC_ORIGIN=${BOARD_MC_ORIGIN}
+      - BOARD_NOTES_URL=http://notes:8080
+      - BOARD_CMDB_URL=http://cmdb:8080
+      - BOARD_CHAT_URL=http://chat:8080
+      - BOARD_WAZUH_HMAC_SECRET=${BOARD_WAZUH_HMAC_SECRET}
+      - BOARD_BACKUP_TARGET=${BOARD_BACKUP_TARGET}
+      - BOARD_FLEET_SIZE=${BOARD_FLEET_SIZE:-20}
+      - BOARD_TIER_APPROVER_ENABLED=${BOARD_TIER_APPROVER_ENABLED:-false}
+    # No host ports — only the proxy publishes ports (DEPLOYMENT §1).
+    expose:
+      - "8080"
+
+networks:
+  edge:
+    external: true
+
+volumes:
+  board_data:
