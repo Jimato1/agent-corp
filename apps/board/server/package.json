@@ -1,0 +1,25 @@
+{
+  "name": "@agent-corp/board-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Board — the org's coordination spine. The approval-record + fencing-token + ticket-state authority the whole SoD chain binds to. Hand-built claim engine on SQLite (WAL, BEGIN IMMEDIATE, status-guarded CAS — D-14). Stage-4 build.",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test",
+    "backup": "node src/scripts/backup.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.19.1",
+    "better-sqlite3": "^11.10.0",
+    "express": "^4.21.2",
+    "jose": "^5.9.6",
+    "node-cron": "^3.0.3",
+    "ulid": "^2.3.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {}
+}
