@@ -1,0 +1,27 @@
+# config/runtime.yaml — operator-owned, git-tracked tunables (PLAN §7).
+#
+# EVERY value below is a PENDING-SIZING / PENDING-SPIKE placeholder with a
+# documented default. NONE is a measured value. The gap-1.2 sizing session and
+# the gap-1.3 feasibility spike replace these; until then the runtime runs on
+# these defaults and the status UI marks the concurrency 'knee C' as an estimate.
+# (Ratified D-17 disposition — see PLAN.md gating-honesty note.)
+
+worker_slots: 4              # PENDING-SIZING  (= measured knee C)
+hb_process_sec: 10.0         # PENDING-SIZING  (process_alive heartbeat cadence)
+drain_grace_sec: 45.0        # PENDING-SIZING  (p95/p99 of ONE supervised step)
+max_steps: 24                # PENDING-SIZING  (per-role hard iteration cap)
+progress_budget_sec: 300.0   # PENDING-SIZING  (no-progress detector budget)
+knee_c_estimate: 14          # PENDING-SIZING  (display only; marked estimate in UI)
+
+# Deployment endpoints (overridable by env; DEPLOYMENT.md §2).
+inference_base_url: "http://localhost:8000/v1"   # OpenAI-compatible seam (vLLM/TEI/…)
+board_mcp_url: "http://board:8080/mcp"            # MCP Streamable HTTP 2025-11-25
+notes_mcp_url: "http://notes:8080/mcp"
+mc_url: "http://mc:8080"
+auth_url: "http://auth:8089"                      # AUTH_VERIFY_PORT=8089 (DEPLOYMENT §4)
+runtime_instance_id: "rt-local"
+
+# Auth-outage degraded-mode tuning (§4.4) — PENDING operator risk call.
+remint_backoff_base_sec: 1.0
+remint_backoff_cap_sec: 60.0
+breaker_fail_threshold: 5

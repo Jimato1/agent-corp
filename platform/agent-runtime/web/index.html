@@ -1,0 +1,28 @@
+<!-- Helm — Agent Runtime · the engine room (one screen), wired to live /api/runtime/*.
+     Design imported VERBATIM from the Helm design system (context/design/handoff):
+     _ds_bundle.js exposes window.HelmDesignSystem_f4cb26; styles.css + tokens are the
+     vendored Helm tokens. No invented styling. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Helm — Agent Runtime</title>
+<link rel="stylesheet" href="/web/vendor/helm/styles.css">
+<style>
+  html, body { margin: 0; height: 100%; background: var(--bg-app, #0E1116); }
+  #root { height: 100vh; }
+</style>
+<!-- React + Babel + the Helm bundle are ALL vendored locally (local-first, no runtime
+     CDN, CSP-safe) — a Critical-infra engine-room UI must never fetch code from a
+     third-party host at load. Refresh the pinned versions with web/vendor/fetch-vendor.sh. -->
+<script src="/web/vendor/js/react.production.min.js"></script>
+<script src="/web/vendor/js/react-dom.production.min.js"></script>
+<script src="/web/vendor/js/babel.min.js"></script>
+<script src="/web/vendor/helm/_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="/web/ar-app.jsx"></script>
+</body>
+</html>
