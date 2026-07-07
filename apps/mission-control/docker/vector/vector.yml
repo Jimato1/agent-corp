@@ -1,0 +1,30 @@
+# mc_logship (Vector) — container-stdout collector → mc_logstore.
+#
+# A9 (BINDING, PLAN §8a): READ-ONLY log access ONLY. This source reads the host
+# container-log directory read-only (mounted :ro). It has NO access to the Docker socket —
+# docker.sock is host-root-equivalent reach over every container (incl. gateway/vault) and would
+# silently void the SoD invariant from inside a Standard-class sidecar. Vector here can READ logs
+# and nothing else.
+sources:
+  container_logs:
+    type: file
+    include:
+      - /var/lib/docker/containers/*/*-json.log
+    read_from: beginning
+
+transforms:
+  parse:
+    type: remap
+    inputs: [container_logs]
+    source: |
+      . = parse_json(.message) ?? { "raw": .message }
+
+sinks:
+  to_logstore:
+    type: loki
+    inputs: [parse]
+    endpoint: http://mc_logstore:3100
+    encoding:
+      codec: json
+    labels:
+      source: container

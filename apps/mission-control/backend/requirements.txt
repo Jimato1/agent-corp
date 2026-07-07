@@ -1,0 +1,10 @@
+# mission-control (mc) — the operator cockpit BFF. Python/FastAPI, matching the
+# house stack (apps/chat). No third-party JWT library — JWS is hand-rolled over
+# `cryptography`, the value inherited from platform/auth.
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.9.0
+pydantic-settings>=2.6.0
+cryptography>=42,<45      # asymmetric JWS verification (EdDSA/ES256)
+httpx>=0.27,<0.29         # composition reads + relays to auth/Board/Gateway (async client)
+redis>=5.0,<6             # the DEDICATED mc budget/WIP store — NEVER auth's private Redis

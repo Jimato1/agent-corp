@@ -1,0 +1,12 @@
+# mc_prometheus — scrapes ONLY the proxy's internal :9100 observability listener
+# (OBSERVABILITY.md §1/§4: :9100 is edge-internal, no host port). MC queries this TSDB for the
+# Edge panel; the R10-correct series (caddy_http_request_duration_seconds_count{code}) live here.
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+
+scrape_configs:
+  - job_name: proxy_edge
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['proxy:9100']

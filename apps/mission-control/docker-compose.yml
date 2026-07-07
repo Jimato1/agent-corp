@@ -1,0 +1,135 @@
+# mission-control (mc) — the operator cockpit + its 4 owned sidecars (D-10) + the DEDICATED
+# budget/WIP store (mc_redis). All app containers publish NO host ports (reached only via the
+# proxy over `edge`, DEPLOYMENT §1). Sidecars are `<owner>_<function>` (DEPLOYMENT §3a).
+#
+# Networks:
+#   edge     — external shared proxy network (mc + edge-facing sidecars).
+#   data_mc  — mc-private: mc + mc_redis ONLY. The dedicated budget store lives HERE, never on
+#              data_auth. MC never touches auth's private Redis (SoD invariant, DEPLOYMENT §3).
+#
+# A9 (binding): mc_logship gets READ-ONLY log access and nothing more — a read-only bind-mount of
+# the host container-log dir. Mounting the raw Docker socket is FORBIDDEN (host-root-equivalent
+# reach would void SoD from inside a Standard-class sidecar). This compose contains NO docker.sock.
+
+services:
+  mc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mc:latest
+    restart: unless-stopped
+    networks: [edge, data_mc]
+    environment:
+      - SUITE_DOMAIN=${SUITE_DOMAIN:-suite.local}
+      - AUTH_VERIFY_PORT=8089
+      - MC_AUTH_ISSUER=${MC_AUTH_ISSUER:-https://auth.${SUITE_DOMAIN:-suite.local}/}
+      - MC_AUTH_JWKS_URL=${MC_AUTH_JWKS_URL:-http://auth:8089/jwks}
+      - MC_AUTH_AUDIENCE=mc
+      - MC_AUTH_BASE_URL=http://auth:8089
+      - MC_BOARD_BASE_URL=http://board:8080
+      - MC_DB_PATH=/app/data/mc.sqlite3
+      - MC_BACKUP_DIR=/app/data/backups
+      # The DEDICATED mc budget/WIP store — data_mc, NEVER auth's Redis (data_auth).
+      - MC_BUDGET_REDIS_URL=redis://mc_redis:6379/0
+      - MC_PROMETHEUS_URL=http://mc_prometheus:9090
+      - MC_BLACKBOX_URL=http://mc_blackbox:9115
+      - MC_LOGSTORE_URL=http://mc_logstore:3100
+      # Heartbeat ingest: MC consumes the runtime's telemetry SSE producer (one per instance).
+      - MC_RUNTIME_SSE_URL=${MC_RUNTIME_SSE_URL:-}
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    volumes:
+      - mc_data:/app/data            # CANONICAL audit_anchor + mc_audit + durable state (disk-backed)
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    depends_on:
+      - mc_redis
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512m }
+        reservations: { memory: 128m }
+
+  # The DEDICATED budget/WIP store MC owns — data_mc ONLY, separate from auth's private Redis.
+  mc_redis:
+    image: redis:7-alpine        # VERIFY-AT-BUILD: pin the current release + digest
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    restart: unless-stopped
+    networks: [data_mc]          # NOT on edge, NOT on data_auth — mc-private
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mc_prometheus:
+    image: prom/prometheus:v2.55.1   # VERIFY-AT-BUILD: pin digest
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=15d"]
+    restart: unless-stopped
+    networks: [edge]                 # scrapes proxy:9100 over edge
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - mc_prom_data:/prometheus
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+
+  mc_blackbox:
+    image: prom/blackbox-exporter:v0.25.0   # VERIFY-AT-BUILD: pin digest
+    command: ["--config.file=/etc/blackbox/blackbox.yml"]
+    restart: unless-stopped
+    networks: [edge]
+    volumes:
+      - ./docker/blackbox/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+
+  # Log store the BFF tails (Loki-class single binary).
+  mc_logstore:
+    image: grafana/loki:3.2.1        # VERIFY-AT-BUILD: pin digest
+    command: ["-config.file=/etc/loki/loki.yml"]
+    restart: unless-stopped
+    networks: [edge]
+    volumes:
+      - ./docker/loki/loki.yml:/etc/loki/loki.yml:ro
+      - mc_logstore_data:/loki
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+
+  # Container-stdout collector. A9: READ-ONLY log-dir mount ONLY — the raw Docker socket is
+  # FORBIDDEN. Vector reads the host container-log directory read-only and ships to mc_logstore.
+  mc_logship:
+    image: timberio/vector:0.42.0-debian   # VERIFY-AT-BUILD: pin digest
+    restart: unless-stopped
+    networks: [edge]
+    volumes:
+      - ./docker/vector/vector.yml:/etc/vector/vector.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro   # READ-ONLY log dir — NOT docker.sock
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - mc_logstore
+
+volumes:
+  mc_data:
+  mc_prom_data:
+  mc_logstore_data:
+
+networks:
+  edge:
+    external: true          # the shared proxy network (DEPLOYMENT §1)
+  data_mc:
+    driver: bridge          # mc-private: mc + mc_redis ONLY (never auth's data_auth)

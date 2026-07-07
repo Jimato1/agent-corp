@@ -1,0 +1,14 @@
+# mc_blackbox — TLS/cert-expiry probe for the Edge panel (probe_ssl_earliest_cert_expiry).
+# The documented cert-expiry gap in OBSERVABILITY.md §7 is filled by this sidecar (D-10).
+modules:
+  tls_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      tls: true
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_status_codes: []
+      preferred_ip_protocol: ip4
