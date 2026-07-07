@@ -1,0 +1,20 @@
+# library — production Python dependencies (Stage-4 / Standard risk class).
+#
+# The security-critical CORE — the content-bound admission gate, RS token validation
+# logic (HS256 test-signer path), corpus single-writer + frontmatter, deterministic
+# chunker, hybrid RRF fusion, the portable vector backend, and the WHOLE test suite —
+# runs GREEN with NO package below installed (stdlib only). These deps activate the
+# production substitutes for CANNOT-VERIFY-HERE items, exactly like auth's pattern.
+
+# --- ASYMMETRIC token + X-Auth-Identity verification (CANNOT-VERIFY-HERE) ------
+# Activates library.crypto_verify (EdDSA/ES256/RS256 JWKS verification). Without it
+# the asymmetric verify path raises LOUDLY — it NEVER accepts a token unverified. The
+# stdlib HS256 test-signer needs nothing. Set LIBRARY_SIGNER_ALG=EdDSA in production.
+cryptography>=42,<44
+
+# --- OPTIONAL vector accelerator (production KNN) ------------------------------
+# sqlite-vec is the production drop-in for the portable float32-BLOB brute-force
+# vector backend (identical brute-force semantics — sqlite-vec has no ANN index).
+# The app runs correctly WITHOUT it (the portable backend is the default); install to
+# accelerate KNN at corpus scale. Uncomment to enable:
+# sqlite-vec>=0.1.6

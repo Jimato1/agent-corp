@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doc · provenance — library reference shelf</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §4.2 — Doc / Provenance Inspector.  Endpoint: GET /api/docs/{doc_id}
+   (+ GET /api/docs/{doc_id}/chunks). Human twin of MCP library_get_doc.
+   AuditInspector §7.2 provenance mode + Workshop body. Read-only, always.
+   SCAFFOLD (structure real, data mocked). */
+window.LIB_SHELL = {
+  level:'G0', freshness:{ms:0.4, src:'MC'},
+  operator:{sub:'operator:ada', scope:'library:read'}, activeNav:'inspector'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <div class="scaffold-note" role="note"><b>SCAFFOLD</b> — realizes UI_SPEC §4.2. Endpoint <code>GET /api/docs/{doc_id}</code>
+        (<b>Core API live + tested</b>; two views, one state). The append-only evidence ledger, chunk/coverage map, and Workshop body
+        are real markup; ledger rows are mocked. Read-only — the inspector never edits history; corrections are new lineage docs.</div>
+
+      <a class="btn btn--ghost" href="corpus_search.html">‹ Search</a>
+
+      <!-- doc header: TierBadge + StatePill ADMITTED + ⚠ curation-ingested -->
+      <div class="row" style="margin-top:12px">
+        <span class="ref ref--doc">lib-01J1QZ ⧉ copy</span>
+        <span style="font-size:17px;font-weight:600;color:var(--text-primary)">“lvextend — LVM2 2.03”</span>
+        <span class="pill pill--ok"><span class="dot"></span>● ADMITTED</span>
+        <span class="tier tier--verified"><span class="g">✔</span> Sandbox-verified</span>
+        <span class="tier tier--untrusted"><span class="g">⚠</span> curation-ingested</span>
+      </div>
+      <div class="row freshness" style="margin-top:6px">
+        <span>proposed_by <span class="princ"><span class="k">⬡ agent:</span>curator-03</span></span>
+        <span>admitted_by <span class="princ"><span class="k">◐ operator:</span>ada</span></span>
+        <span class="ref ref--ticket">T-000123 ▸ /review</span>
+        <span class="mono">status: current · applies_to: linux/ubuntu 24.04·22.04 amd64 · last_verified 2026-07-01</span>
+      </div>
+
+      <!-- EVIDENCE LEDGER (AuditInspector §7.2, append-only) -->
+      <section class="panel" style="margin-top:16px">
+        <div class="eyebrow" style="margin-bottom:8px">Evidence ledger · append-only</div>
+        <div class="tbl-wrap">
+          <table class="tbl" aria-label="Evidence ledger">
+            <thead><tr><th>When</th><th>Kind</th><th>Attestation</th><th>Run / sources</th><th>Content-bound</th><th>Outcome</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="id">07-02 14:10</td><td class="id">sandbox</td>
+                <td><span class="pill pill--ok"><span class="dot"></span>✔ gateway_delivered</span></td>
+                <td class="id">R-00A9… · hv-3f2c9a…</td>
+                <td><span class="chip chip--cov">✔ sha match</span></td>
+                <td><span style="color:var(--state-green-ink)">✔ satisfies gate</span></td>
+              </tr>
+              <tr>
+                <td class="id">07-01 09:22</td><td class="id">crossref</td>
+                <td><span class="pill pill--attn"><span class="dot"></span>◑ agent_asserted</span>
+                  <span class="absence__lock" title="cannot-by-construction">🔒</span>
+                  <span class="heur">✕ never satisfies the gate</span></td>
+                <td class="id">3 origins <span class="heur"><b>~heur</b></span></td>
+                <td class="faint">—</td>
+                <td class="muted">✕ never gates</td>
+              </tr>
+              <tr>
+                <td class="id">06-30 —</td><td class="id">operator</td>
+                <td><span class="pill pill--neutral"><span class="dot"></span>◐ operator_review</span></td>
+                <td class="faint">—</td>
+                <td class="faint">—</td>
+                <td><span style="color:var(--text-secondary)">✔ admitted</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="freshness" style="margin-top:8px">chain-verify:
+          <span class="pill pill--ok"><span class="dot"></span>✔ Gateway audit chain confirmed</span>
+          <span class="faint">(stale ⇒ <span class="halt">⚠ CANNOT CONFIRM CHAIN</span>, gold — <b>never green</b>; detected break ⇒
+          <span style="color:var(--danger-red)">✕ CHAIN BROKEN</span>, red)</span></div>
+        <div class="absence" style="margin-top:12px">
+          <div class="absence__line"><span class="absence__lock">🔒</span>
+            <span><b>agent_asserted evidence cannot admit — by construction.</b> It is printed here as an explained absence, with
+            <b>no interactive affordance</b> — never a greyed “admit anyway” toggle, never a ⛔ STOP glyph.
+            <span class="absence__tag">content-bound gate</span></span></div>
+        </div>
+      </section>
+
+      <div class="split" style="margin-top:16px">
+        <!-- CHUNK / COVERAGE MAP -->
+        <section class="panel">
+          <div class="eyebrow" style="margin-bottom:8px">Chunk / coverage map</div>
+          <div class="stack" style="font-family:var(--font-mono);font-size:12px">
+            <div class="row"><span class="chip chip--cov">▣ covered</span><span class="muted">#0 Growing a volume</span><span class="faint">R-00A9…</span></div>
+            <div class="row"><span class="chip chip--cov">▣ covered</span><span class="muted">#1 lvextend flags</span><span class="faint">R-00A9…</span></div>
+            <div class="row"><span class="chip chip--unc">▢ UNCOVERED</span><span class="muted">#2 “also works on…”</span></div>
+          </div>
+          <div class="freshness" style="margin-top:8px">sources: gnu.org <span class="heur">(~heuristic origin-cluster)</span> · <a href="#">git history ▸</a>
+            (opens AuditInspector git view)</div>
+        </section>
+
+        <!-- Workshop reading pane §5 -->
+        <div class="reading-pane">
+          <article>
+            <div class="kicker">applies_to linux/ubuntu 24.04 · 22.04 · amd64</div>
+            <h1>lvextend — LVM2 2.03</h1>
+            <div class="chunk cov"><h2>Growing a volume</h2><p>Use <code>lvextend</code> to grow a logical volume, then grow the filesystem. Verify with <code>lvdisplay</code>.</p></div>
+            <div class="chunk cov"><h2>lvextend flags</h2><p>The <code>-r</code> flag resizes the filesystem in the same step on supported types.</p></div>
+            <div class="chunk unc"><h2>Also works on…</h2><p>This section claims lvextend also works on thin pools without caveat.</p>
+              <div class="gutter">▢ not execution-covered</div></div>
+          </article>
+        </div>
+      </div>
+
+      <p class="freshness" style="margin-top:12px"><b>States:</b> Loaded / Loading (skeleton ledger + paper skeleton) · <b>Empty never applies</b>
+        (a doc always has ≥1 source + frontmatter) · <b>Pattern R</b> missing body → <code>✕ body unavailable</code>, or malformed doc_id → “not a valid doc reference” ·
+        <b>Pattern D</b> git-history link degraded when the remote push backlog is loud (gold banner → Index status) · <b>Stop-engaged</b> header HaltBand read-only.</p>
+    </main>
+  </div>
+</div>
+<script src="shell.js"></script>
+</body>
+</html>

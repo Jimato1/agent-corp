@@ -1,0 +1,9 @@
+# Stage-4 build artifacts / runtime state — never committed.
+__pycache__/
+*.pyc
+.pytest_cache/
+# runtime state volume (corpus git repo + index.db + ops.db live in the container volume)
+data/
+*.db
+*.db-wal
+*.db-shm

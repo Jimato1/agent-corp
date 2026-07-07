@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ingestion review — library reference shelf</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §4.3 — Ingestion Review Queue · Library's OWN admission gate.
+   Endpoints: GET /api/review-queue  ·  POST /api/review-queue/{doc_id}/decision
+   No MCP sibling — there is no MCP path to `admitted` (PLAN §7). Gated to
+   library:admin, human-principal-kind only. DISTINCT gate: reuses MC's
+   ReviewQueue ANATOMY but is a separate queue + authority, and does NOT live in
+   MC. SCAFFOLD (structure real, rows mocked). */
+window.LIB_SHELL = {
+  level:'G0', freshness:{ms:0.5, src:'MC'},
+  operator:{sub:'operator:ada', scope:'library:admin'}, activeNav:'ingestion'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <div class="scaffold-note" role="note"><b>SCAFFOLD</b> — realizes UI_SPEC §4.3. Endpoints <code>GET /api/review-queue</code> +
+        <code>POST /api/review-queue/{doc_id}/decision</code> (<b>Core API live + tested</b>; two views, one state). This is a
+        <b>DISTINCT gate</b> Library owns — item identity is a <code>doc_id</code>, not a Board <code>ticket_id</code>; ticket-level
+        gates deep-link OUT to MC <code>/review/&lt;ticket_id&gt;</code>. Rows mocked; decision writes CANNOT-VERIFY-HERE.</div>
+
+      <div class="head">
+        <div>
+          <div class="crumb">library:admin</div>
+          <h1 class="screen">Ingestion review · tier-2 admission gate</h1>
+          <p class="sublede">Library's own admission gate — a distinct queue with distinct authority. <b>agent_asserted evidence is never
+            auto-admit-eligible</b>; the operator sees the diff; the bulk-approve cap is a designed-in friction. <em>An honest human gate, not a rubber stamp.</em></p>
+        </div>
+        <span class="pill pill--neutral"><span class="dot"></span>◐ library:admin · operator only</span>
+      </div>
+
+      <div class="row" style="margin-bottom:12px">
+        <span class="pill pill--neutral"><span class="dot"></span>switching: NORMAL</span>
+        <span class="mono muted">batch cap 10</span>
+        <span class="mono muted">[ select ≤10 ]</span>
+        <span style="flex:1"></span>
+        <button class="actuator actuator--outline" type="button" data-danger data-confirm="#confirm-admit-bulk"
+          data-intent="ADMIT" data-toast="Admitted 2 docs to cross-referenced (SCAFFOLD — no backend write).">⚠ Admit selected</button>
+        <button class="actuator actuator--outline" type="button" data-danger data-confirm="#confirm-reject-bulk"
+          data-toast="Rejected selected proposals (SCAFFOLD — no backend write).">⚠ Reject selected</button>
+      </div>
+
+      <!-- ReviewQueue §7.1 anatomy — batched DataTable §6.2, doc_id items -->
+      <div class="tbl-wrap">
+        <table class="tbl" aria-label="Ingestion review queue">
+          <thead><tr><th>☐</th><th>Tier</th><th>Doc</th><th>Proposed by</th><th>Ticket</th><th>Distinctness</th><th class="rt">Age</th><th>Diff</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox" aria-label="select lib-01K5DD"></td>
+              <td><span class="tier tier--corroborated"><span class="g">⧉</span> Cross-referenced</span></td>
+              <td class="id">lib-01K5DD</td>
+              <td><span class="princ"><span class="k">⬡ agent:</span>curator-03</span></td>
+              <td><span class="ref ref--ticket">T-000341 ▸</span></td>
+              <td><span class="heur">3 origins <b>~heur</b> ⚠</span></td>
+              <td class="rt"><span class="freshness">2h</span></td>
+              <td><button class="btn btn--ghost btn--compact" type="button">view ▸</button></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" aria-label="select lib-01L6EE"></td>
+              <td><span class="tier tier--corroborated"><span class="g">⧉</span> Cross-referenced</span></td>
+              <td class="id">lib-01L6EE</td>
+              <td><span class="princ"><span class="k">⬡ agent:</span>curator-07</span></td>
+              <td><span class="ref ref--ticket">T-000341 ▸</span></td>
+              <td><span class="heur">3 origins <b>~heur</b> ⚠</span></td>
+              <td class="rt"><span class="freshness">2h</span></td>
+              <td><button class="btn btn--ghost btn--compact" type="button">view ▸</button></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" disabled aria-label="lib-01M7FF not admit-eligible"></td>
+              <td><span class="tier tier--single"><span class="g">◑</span> Single-source</span></td>
+              <td class="id">lib-01M7FF</td>
+              <td><span class="princ"><span class="k">⬡ agent:</span>curator-03</span></td>
+              <td><span class="ref ref--ticket">T-000355 ▸</span></td>
+              <td><span class="heur">1 origin <b>(agent-picked ⚠)</b></span></td>
+              <td class="rt"><span class="freshness">4h</span></td>
+              <td><button class="btn btn--ghost btn--compact" type="button">view ▸</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- content-bound absence: agent-asserted evidence is NOT admit-eligible -->
+      <div class="absence" style="margin-top:12px">
+        <div class="absence__line"><span class="absence__lock">🔒</span>
+          <span>ⓘ agent-asserted sandbox evidence present on <span class="mono">lib-01M7FF</span> →
+            <b>✕ NOT admit-eligible — content-bound gate.</b> There is no UI path — and no MCP path (PLAN §7) — to <code>admitted</code>
+            that bypasses this gate. Printed fact, <b>no affordance</b>, never a disabled “admit anyway.”
+            <span class="absence__tag">content-bound gate</span></span></div>
+      </div>
+
+      <!-- per-doc DIFF sub-pane (AdmissionDiff §5, Workshop) -->
+      <section class="panel" style="margin-top:16px">
+        <div class="eyebrow" style="margin-bottom:8px">AdmissionDiff · lib-01K5DD (opens on [view])</div>
+        <div class="admdiff">
+          <div class="cap">lib-01K5DD · gnu.org vs quarantine body — +added / −removed markdown, frontmatter delta</div>
+          <div class="add">+ lvextend -r resizes the fs in one step</div>
+          <div class="del">− also works on thin pools without caveat</div>
+          <div class="note">sources: 3 clusters (~heuristic distinctness — NOT a verified-independence badge). <b>Heuristic; the operator gate is the control.</b></div>
+        </div>
+        <div class="row" style="justify-content:flex-end;margin-top:12px">
+          <button class="actuator actuator--outline" type="button" data-danger data-confirm="#confirm-reject-one"
+            data-toast="Rejected lib-01K5DD (SCAFFOLD — no backend write).">⚠ Reject</button>
+          <button class="actuator actuator--solid" type="button" data-danger data-confirm="#confirm-admit-one"
+            data-intent="lib-01K5DD" data-toast="Admitted lib-01K5DD → cross-referenced (SCAFFOLD — no backend write).">⚠ Admit → cross-referenced</button>
+        </div>
+      </section>
+
+      <p class="freshness" style="margin-top:14px"><b>States:</b> Loaded / Loading (skeleton) · <b>Empty:</b> “No docs awaiting admission. Cross-referenced
+        proposals land here for batched review; sandbox-verified docs auto-admit and appear in the Spot-Audit Stream.” ·
+        <b>Pattern R</b> a decision failing to persist (op_id replay / already-decided) re-syncs via LiveStream <code>event: reset</code> ·
+        <b>Pattern D</b> git push backlog → <em>gold</em> “DURABILITY DEGRADED · admissions still record locally (canonical), retrying” — <b>not blocked, not red</b> ·
+        <b>Stop-engaged</b> HaltBand read-only; admission is internal Standard-class state and continues (if auth is unreachable, the gate fails closed).</p>
+    </main>
+  </div>
+</div>
+
+<!-- ConfirmFriction §5.1 templates (full friction = typed-intent for admit) -->
+<template id="confirm-admit-bulk"><div class="modal modal--danger" role="alertdialog" aria-modal="true" aria-labelledby="cab-h">
+  <div class="modal__head" id="cab-h">Admit 2 docs → cross-referenced</div>
+  <div class="consequence"><b>You are adding trusted content to the shelf every agent reads.</b> Bulk-approve is capped at
+    <b>10</b>; this batch is 2 (<code>lib-01K5DD</code>, <code>lib-01L6EE</code>). Distinctness raises priority, never confers trust.</div>
+  <div class="field modal__intent"><label>Type <b>ADMIT</b> to confirm (case-sensitive)</label><input class="input" data-intent-input placeholder="ADMIT"></div>
+  <div class="modal__actions"><button class="btn btn--ghost" data-cancel>Cancel</button>
+    <button class="btn btn--danger" style="background:var(--danger-red);border-color:var(--danger-red);color:#170707" data-confirm-go>Admit</button></div>
+</div></template>
+
+<template id="confirm-reject-bulk"><div class="modal modal--danger" role="alertdialog" aria-modal="true" aria-labelledby="crb-h">
+  <div class="modal__head" id="crb-h">Reject selected proposals</div>
+  <div class="consequence">Rejects the selected proposals. They return to quarantine; retrievable only behind <code>include_unverified</code>.</div>
+  <div class="modal__actions"><button class="btn btn--ghost" data-cancel>Cancel</button>
+    <button class="btn btn--danger" style="background:var(--danger-red);border-color:var(--danger-red);color:#170707" data-confirm-go>Reject</button></div>
+</div></template>
+
+<template id="confirm-admit-one"><div class="modal modal--danger" role="alertdialog" aria-modal="true" aria-labelledby="cao-h">
+  <div class="modal__head" id="cao-h">Admit lib-01K5DD → cross-referenced</div>
+  <div class="consequence">Admits to the cross-referenced tier — <b>trusted content the whole fleet reads</b>. Distinctness raises priority, never confers trust.</div>
+  <div class="field modal__intent"><label>Type <b>lib-01K5DD</b> to confirm (case-sensitive)</label><input class="input" data-intent-input placeholder="lib-01K5DD"></div>
+  <div class="modal__actions"><button class="btn btn--ghost" data-cancel>Cancel</button>
+    <button class="btn btn--danger" style="background:var(--danger-red);border-color:var(--danger-red);color:#170707" data-confirm-go>Admit</button></div>
+</div></template>
+
+<template id="confirm-reject-one"><div class="modal modal--danger" role="alertdialog" aria-modal="true" aria-labelledby="cro-h">
+  <div class="modal__head" id="cro-h">Reject lib-01K5DD</div>
+  <div class="consequence">Rejects this proposal.</div>
+  <div class="modal__actions"><button class="btn btn--ghost" data-cancel>Cancel</button>
+    <button class="btn btn--danger" style="background:var(--danger-red);border-color:var(--danger-red);color:#170707" data-confirm-go>Reject</button></div>
+</div></template>
+
+<script src="shell.js"></script>
+</body>
+</html>

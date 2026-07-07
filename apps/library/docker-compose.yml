@@ -1,0 +1,112 @@
+# library — the Reference Library stack (Stage-4). CANNOT-FULLY-RUN-HERE.
+#
+# DEPLOYMENT.md §2/§4 bindings encoded (verified against the spec, not this file):
+#   * service/DNS name = `library`, internal port 8080, `edge` network ONLY
+#   * volume `library_data` (corpus git repo + index.db + ops.db)
+#   * env prefix LIBRARY_*, auth resolved at auth:8089, aud == library
+#   * publishes NO host ports (only the proxy publishes :443/:80)
+#
+# Cross-app dependencies (agent-runtime embed facade, CMDB host-facts, Gateway sandbox
+# evidence) are OTHER containers not built yet. The Library DEGRADES LOUDLY without
+# them and boots regardless (D-13: agent-runtime is a hard dep of INDEXING, not of
+# query serving; CMDB/Gateway absence is honest-flagged):
+#   * embed facade down  → FTS-only retrieval (retrieval_mode=lexical_only)
+#   * CMDB down/unset    → version filter disabled, results flagged version_scope=unverified
+#   * Gateway            → only used by the auto-admit lane, which is DISABLED pre-D7
+# Wire LIBRARY_EMBED_URL / LIBRARY_CMDB_URL / LIBRARY_GATEWAY_URL when those exist.
+
+x-library-build: &library_build
+  build:
+    context: .
+    dockerfile: Dockerfile
+    target: runtime
+  image: agent-corp/library:stage4
+
+x-library-env: &library_env
+  SUITE_DOMAIN: ${SUITE_DOMAIN:-suite.local}
+  LIBRARY_PORT: "8080"
+  LIBRARY_DATA_DIR: /data
+  LIBRARY_AUDIENCE: library
+  AUTH_ISSUER: ${AUTH_ISSUER:-https://auth.suite.local}
+  LIBRARY_AUTH_BASE: ${LIBRARY_AUTH_BASE:-http://auth:8089}
+  LIBRARY_SIGNER_ALG: ${LIBRARY_SIGNER_ALG:-EdDSA}      # prod asymmetric JWKS verify
+  # cross-app seams (empty ⇒ that capability degrades loudly, never silently wrong):
+  LIBRARY_EMBED_URL: ${LIBRARY_EMBED_URL:-}             # agent-runtime TEI facade (D-13)
+  LIBRARY_CMDB_URL: ${LIBRARY_CMDB_URL:-}               # resolve_host_facts
+  LIBRARY_GATEWAY_URL: ${LIBRARY_GATEWAY_URL:-}         # get_sandbox_evidence
+  LIBRARY_BUDGET_API: ${LIBRARY_BUDGET_API:-}           # auth budget-check API (F14)
+  # THE AUTO-ADMIT LANE KILL-KNOB — DISABLED until D-7 go-live (operator flips on):
+  LIBRARY_AUTO_ADMIT_ENABLED: ${LIBRARY_AUTO_ADMIT_ENABLED:-0}
+  # corpus git remote is MANDATORY in production (ARCHITECTURE §10):
+  LIBRARY_CORPUS_REMOTE: ${LIBRARY_CORPUS_REMOTE:-}
+
+services:
+  # ── library-migrate: ONE-SHOT — init corpus repo + ops.db + index.db, build index ──
+  library-migrate:
+    <<: *library_build
+    command: ["python", "-m", "library.migrate"]
+    restart: "no"
+    environment:
+      <<: *library_env
+    networks: [edge]
+    volumes:
+      - library_data:/data
+
+  # ── library: the Core service + MCP + static UI over ONE state ──
+  library:
+    <<: *library_build
+    command: ["python", "-m", "library.server"]
+    restart: unless-stopped
+    environment:
+      <<: *library_env
+    networks: [edge]              # edge ONLY — never joins creds / data_vault
+    volumes:
+      - library_data:/data
+    expose:
+      - "8080"                    # in-cluster only; the proxy publishes the edge
+    depends_on:
+      library-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/healthz').status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── library-test: the Dockerfile `test` target (profile `test`; never on plain up) ──
+  library-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    image: agent-corp/library:test
+    profiles: ["test"]
+    environment:
+      <<: *library_env
+    restart: "no"
+
+networks:
+  edge:
+    external: true
+    name: ${EDGE_NETWORK:-agent-corp_edge}
+
+volumes:
+  library_data:
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CANNOT-RUN-HERE — operator/CI commands:
+#
+#   # unit + contract + admission-gate + rebuild + auto-admit-disabled suite (stdlib):
+#   docker compose -f apps/library/docker-compose.yml --profile test run --rm \
+#     library-test python -m unittest discover -s /app/src/library/tests -v
+#
+#   # boot the app (edge network must exist — created by the root/proxy compose):
+#   docker compose -f apps/library/docker-compose.yml up -d --build
+#   curl -fsS http://localhost:8080/healthz            # from inside the edge network
+#
+#   # rebuildable-index proof (destroy + rebuild from the markdown corpus):
+#   docker compose -f apps/library/docker-compose.yml exec library \
+#     python -c "from library.server import LibraryApp; a=LibraryApp(build_index=False); print(a.svc.reindex(mode='full'))"
+# ─────────────────────────────────────────────────────────────────────────────

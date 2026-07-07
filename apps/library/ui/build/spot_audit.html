@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tier-1 spot-audit — library reference shelf</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shell.css">
+<script>
+/* UI_SPEC §4.4 — Tier-1 Spot-Audit Stream · auto-admissions oversight.
+   Endpoint: GET /api/review-queue (tier-1 stream, +LiveStream)  ·
+   POST /api/review-queue/{doc_id}/decision (reject + cluster-quarantine confirm).
+   No MCP sibling. The item is ALREADY admitted — the operator audits, not gates.
+   PRE-D7: this stream is EMPTY by construction (no auto-admit lane exists yet).
+   SCAFFOLD (structure real; the mock shows the POST-D7 populated shape AND the
+   pre-D7 empty state below it). */
+window.LIB_SHELL = {
+  level:'G0', freshness:{ms:0.3, src:'MC'},
+  operator:{sub:'operator:ada', scope:'library:admin'}, activeNav:'spotaudit'
+};
+</script>
+</head>
+<body>
+<div class="app">
+  <div id="global-shell"></div>
+  <div class="body">
+    <nav class="rail" id="nav-rail" aria-label="Primary"></nav>
+    <main class="content">
+      <div class="scaffold-note" role="note"><b>SCAFFOLD</b> — realizes UI_SPEC §4.4. Endpoint <code>GET /api/review-queue</code>
+        (tier-1 stream; <b>Core API live + tested</b>, two views one state). The sampled DataTable and switching indicator are real markup.
+        <b>The sandbox-verified auto-admit lane is structurally DISABLED until D-7 go-live</b> — pre-D7 this stream is empty by construction
+        (see the empty state at the foot). The populated rows below illustrate the post-D7 shape only. Rows mocked; LiveStream CANNOT-VERIFY-HERE.</div>
+
+      <div class="head">
+        <div>
+          <div class="crumb">library:admin</div>
+          <h1 class="screen">Tier-1 spot-audit · auto-admissions</h1>
+          <p class="sublede">Sampled <b>sandbox-verified</b> auto-admissions for operator oversight. Auditing already-admitted docs, not gating.
+            Uncovered-heavy rows surface prominently — the anti-tier-riding cue.</p>
+        </div>
+        <span class="pill pill--attn"><span class="dot"></span>▲ TIGHTENED · 100%</span>
+      </div>
+
+      <div class="row" style="margin-bottom:12px">
+        <span class="freshness">sample rate: <span class="stale">100% (young)</span> — steady 5% · ANSI-Z1.4 switching · reason: <b>harness_version change</b></span>
+        <span style="flex:1"></span>
+        <span class="freshness"><span class="spin" aria-hidden="true">⟳</span> live 0.3s</span>
+      </div>
+      <p class="freshness" style="margin-top:0;margin-bottom:12px"><b>Switching is NEVER green</b> — <span class="stale">▲ TIGHTENED</span> is an audit posture, not a health signal.
+        The machine reason (<code>harness_version change</code> / <code>confirmed poison</code>) is shown verbatim.</p>
+
+      <!-- sampled rows (DataTable §6.2); item is already admitted -->
+      <div class="tbl-wrap">
+        <table class="tbl" aria-label="Spot-audit stream">
+          <thead><tr><th>Tier</th><th>Doc</th><th>Run / harness</th><th>Covered</th><th>Admitted by</th><th>Audit</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="tier tier--verified"><span class="g">✔</span> Sandbox-verified</span></td>
+              <td class="id">lib-01N8GG</td>
+              <td class="id">R-00B2… hv-3f2c9a…</td>
+              <td><span class="chip chip--cov">▣ 4/5</span></td>
+              <td><span class="princ"><span class="k">⚙ svc:</span>sandbox-auto</span></td>
+              <td class="row" style="gap:6px">
+                <button class="btn btn--ghost btn--compact" type="button" data-toast="Audit passed — lib-01N8GG.">Confirm ok</button>
+                <button class="actuator actuator--outline btn--compact" type="button" data-danger data-confirm="#confirm-reject-audit"
+                  data-intent="lib-01N8GG" data-toast="Rejected lib-01N8GG — synchronous index removal (SCAFFOLD).">⚠ Reject</button>
+              </td>
+            </tr>
+            <tr class="uncovered-heavy">
+              <td><span class="tier tier--verified"><span class="g">✔</span> Sandbox-verified</span></td>
+              <td class="id">lib-01P9HH</td>
+              <td class="id">R-00B4… hv-3f2c9a…</td>
+              <td><span class="chip chip--unc">▢ 2/6 ⚠</span></td>
+              <td><span class="princ"><span class="k">⚙ svc:</span>sandbox-auto</span></td>
+              <td class="row" style="gap:6px">
+                <span class="heur">uncovered-heavy → <a href="doc_inspector.html">inspect ▸</a></span>
+                <button class="actuator actuator--outline btn--compact" type="button" data-danger data-confirm="#confirm-reject-audit-cluster"
+                  data-intent="lib-01P9HH" data-toast="Rejected lib-01P9HH + cluster quarantine confirmed (SCAFFOLD).">⚠ Reject</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl-foot"><span>Reject → doc rejected (synchronous index removal §1.3) + <b>operator-confirmed</b> cluster quarantine — never automatic</span>
+        <span class="mono">Confirm ok = a light Toast (“Audit passed”), never gold</span></div>
+
+      <!-- pre-D7 EMPTY STATE (the honest current-world statement) -->
+      <div class="empty-state" style="margin-top:16px">
+        <div style="font-size:15px;color:var(--text-secondary);font-weight:600">No auto-admissions to audit.</div>
+        <p style="margin-top:8px">The sandbox-verified lane is <b>structurally disabled until the tier-0 sandbox seam freezes (D-7)</b>.
+          Until then <b>every doc reaches the trusted tier only through operator review</b> (see Ingestion review).</p>
+        <div class="cta"><a class="btn btn--ghost" href="ingestion_review.html">Go to Ingestion review ▸</a></div>
+      </div>
+
+      <p class="freshness" style="margin-top:14px"><b>States:</b> Loaded / Loading (skeleton) · <b>Empty</b> = the pre-D7 statement above ·
+        <b>Pattern R</b> a reject failing to persist re-syncs via LiveStream · <b>Pattern D</b> stream stalled past its bound → Freshness degrades to
+        <span class="stale">STALE</span> (gold), “audit feed stale — treat sampling as unconfirmed”, <b>never a frozen-green feed</b> · <b>Stop-engaged</b> HaltBand read-only.</p>
+    </main>
+  </div>
+</div>
+
+<template id="confirm-reject-audit"><div class="modal modal--danger" role="alertdialog" aria-modal="true" aria-labelledby="cra-h">
+  <div class="modal__head" id="cra-h">Reject lib-01N8GG</div>
+  <div class="consequence">Rejects an <b>already-admitted</b> doc (synchronous index removal, §1.3) and trips <b>tightened switching</b>.</div>
+  <div class="field modal__intent"><label>Type <b>lib-01N8GG</b> to confirm (case-sensitive)</label><input class="input" data-intent-input placeholder="lib-01N8GG"></div>
+  <div class="modal__actions"><button class="btn btn--ghost" data-cancel>Cancel</button>
+    <button class="btn btn--danger" style="background:var(--danger-red);border-color:var(--danger-red);color:#170707" data-confirm-go>Reject</button></div>
+</div></template>
+
+<template id="confirm-reject-audit-cluster"><div class="modal modal--danger" role="alertdialog" aria-modal="true" aria-labelledby="crc-h">
+  <div class="modal__head" id="crc-h">Reject lib-01P9HH · cluster quarantine</div>
+  <div class="consequence">Rejects the doc (synchronous index removal) and trips tightened switching. Its origin cluster contains <b>previously-admitted docs</b>,
+    so a <b>second, operator-confirmed</b> quarantine is required — cluster quarantine is <b>never automatic</b> (a mis-clustered poison must not become mass-suppression).</div>
+  <div class="field modal__intent"><label>Type <b>lib-01P9HH</b> to confirm reject + cluster quarantine (case-sensitive)</label><input class="input" data-intent-input placeholder="lib-01P9HH"></div>
+  <div class="modal__actions"><button class="btn btn--ghost" data-cancel>Cancel</button>
+    <button class="btn btn--danger" style="background:var(--danger-red);border-color:var(--danger-red);color:#170707" data-confirm-go>Reject + quarantine cluster</button></div>
+</div></template>
+
+<script src="shell.js"></script>
+</body>
+</html>
