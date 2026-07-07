@@ -1,0 +1,35 @@
+<!-- @dsCard group="Brand" viewport="700x210" name="The error split — R vs D" subtitle="A dependency outage is NEVER a red error" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-screen); padding: var(--space-6); display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+  .pat { border-radius: var(--radius-panel); border: 1px solid; padding: var(--space-4); }
+  .hd { display: flex; align-items: center; gap: var(--space-2); }
+  .tag { font-family: var(--font-mono); font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px; }
+  .word { font-family: var(--font-ui); font-size: 14px; font-weight: 600; }
+  .body { font-family: var(--font-ui); font-size: 12px; line-height: 17px; margin-top: var(--space-2); }
+  .who { font-family: var(--font-ui); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-top: var(--space-3); opacity: 0.7; }
+</style>
+</head>
+<body>
+  <div class="pat" style="background: var(--danger-red-wash); border-color: #5A2420;">
+    <div class="hd">
+      <span class="tag" style="background: var(--danger-red); color: #2C1210;">PATTERN R</span>
+      <span class="word" style="color: var(--danger-red-ink);">✕ Action didn't apply</span>
+    </div>
+    <div class="body" style="color: var(--danger-red-ink);">Local, recoverable — <b>your</b> problem. "Here's exactly how to fix it and retry."</div>
+    <div class="who" style="color: var(--danger-red-ink);">Red · the operator's error</div>
+  </div>
+  <div class="pat" style="background: var(--halt-gold-wash); border-color: var(--halt-gold-edge);">
+    <div class="hd">
+      <span class="tag" style="background: var(--halt-gold); color: #2E1D0B;">PATTERN D</span>
+      <span class="word" style="color: var(--halt-gold-ink);">▮▮ System safe-stopped</span>
+    </div>
+    <div class="body" style="color: var(--halt-gold-ink);">A dependency is down, so the system failed <b>closed</b>. "This is the safety system working, not an outage."</div>
+    <div class="who" style="color: var(--halt-gold-ink);">Gold · the safety system working</div>
+  </div>
+</body>
+</html>

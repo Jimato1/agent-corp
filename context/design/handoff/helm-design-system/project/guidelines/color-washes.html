@@ -1,0 +1,32 @@
+<!-- @dsCard group="Colors" viewport="700x180" name="Safety washes & tints" subtitle="Band fills and consequence-block backgrounds" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-screen); padding: var(--space-6); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+  .w { border-radius: var(--radius-panel); padding: var(--space-3) var(--space-4); border: 1px solid; min-height: 96px; display: flex; flex-direction: column; justify-content: space-between; }
+  .top { font-family: var(--font-ui); font-size: 13px; font-weight: 600; }
+  .g { font-size: 16px; margin-right: 6px; }
+  .hexes { font-family: var(--font-mono); font-size: 10px; line-height: 15px; opacity: 0.85; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="w" style="background: var(--halt-gold-wash); border-color: var(--halt-gold-edge); color: var(--halt-gold-ink);">
+      <div class="top"><span class="g">▮▮</span>Halt-gold</div>
+      <div class="hexes">accent #F2842B<br>text #FFD8A8<br>wash #2E1D0B</div>
+    </div>
+    <div class="w" style="background: var(--danger-red-wash); border-color: #5A2420; color: var(--danger-red-ink);">
+      <div class="top"><span class="g">⚠</span>Danger-red</div>
+      <div class="hexes">accent #E5594E<br>text #F6B7B1<br>wash #2C1210</div>
+    </div>
+    <div class="w" style="background: var(--signal-cyan-wash); border-color: #14424F; color: var(--signal-cyan-ink);">
+      <div class="top"><span class="g">◉</span>Signal-cyan</div>
+      <div class="hexes">accent #29B6D8<br>text #A6E4F2<br>wash #0C2630</div>
+    </div>
+  </div>
+</body>
+</html>

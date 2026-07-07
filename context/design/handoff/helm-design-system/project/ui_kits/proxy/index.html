@@ -1,0 +1,84 @@
+<!-- @dsCard group="Proxy" viewport="1280x720" name="Proxy" subtitle="No operator surface by construction — health shows through Mission Control" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Helm — Proxy</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  html, body { margin: 0; height: 100%; background: var(--bg-app); }
+  #root { height: 100vh; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const H = window.HelmDesignSystem_f4cb26;
+const { NavRail, AppHeader, KillMirror, PrincipalRef, PrintedAbsence, Button, StatusPill } = H;
+const mono = { fontFamily: 'var(--font-mono)', fontFeatureSettings: "'tnum' 1" };
+const eyebrow = { fontFamily: 'var(--font-ui)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', fontWeight: 600 };
+const panel = { background: 'var(--bg-card)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-panel)' };
+
+function App() {
+  const items = [{ group: 'Edge' }, { key: 'about', label: 'About', icon: '⇄', active: true, onClick: () => {} }];
+  const through = [
+    ['TLS edge health · cert expiry', 'Mission Control · Edge & Observability'],
+    ['forward-auth decision rate · 401/403 mix', 'Mission Control · Edge & Observability'],
+    ['upstream reachability · p99 latency', 'Mission Control · Edge & Observability'],
+    ['suite-wide safe-stop posture', 'the shell suite-posture line (every app)'],
+  ];
+  return (
+    <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-app)' }}>
+      <NavRail current="proxy" posture="nominal" items={items} collapsed={false} onToggle={() => {}} postureHref="#" />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <AppHeader appName="Proxy" identity="reverse-proxy · TLS edge · forward-auth front door"
+          systemState={<StatusPill tone="neutral" glyph="●" size="sm">G0 NOMINAL</StatusPill>}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}><PrincipalRef kind="operator" id="operator:ada" /><KillMirror engaged={false} href="#" /></span>
+        </AppHeader>
+        <main style={{ flex: 1, overflow: 'auto', padding: 24, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ maxWidth: 720, width: '100%', display: 'flex', flexDirection: 'column', gap: 20, marginTop: 24 }}>
+            <div>
+              <div style={eyebrow}>Platform · edge</div>
+              <h1 style={{ fontFamily: 'var(--font-ui)', fontSize: 26, lineHeight: '32px', fontWeight: 600, color: 'var(--text-primary)', margin: '6px 0 0' }}>No operator surface, by construction.</h1>
+              <p style={{ fontFamily: 'var(--font-ui)', fontSize: 13, lineHeight: '20px', color: 'var(--text-secondary)', margin: '10px 0 0', maxWidth: '64ch' }}>
+                The Proxy is the suite's reverse-proxy / TLS edge and forward-auth front door. It holds no
+                product state and has <strong>no human UI and no agent UI</strong>. This is not an unbuilt
+                screen — it is an intentional absence, drawn the way this system draws every absence.
+              </p>
+            </div>
+            <PrintedAbsence glyph="🔒" tag="no UI by construction">
+              <strong>The Proxy hosts no screen.</strong> There is nothing to configure, approve, or trigger
+              here — any edge behavior that matters is authored in CMDB policy and enforced at the Gateway,
+              not toggled at the edge.
+            </PrintedAbsence>
+            <div style={{ ...panel, padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={eyebrow}>Where its health shows instead</div>
+              {through.map(([what, where], i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'baseline', paddingBottom: 10, borderBottom: i < through.length - 1 ? '1px solid var(--border-default)' : 0 }}>
+                  <span style={{ ...mono, fontSize: 12, color: 'var(--text-secondary)', flex: 1 }}>{what}</span>
+                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: 12, color: 'var(--text-muted)', textAlign: 'right', flex: 1 }}>{where}</span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <Button tone="primary" size="compact">Mission Control · Edge ▸</Button>
+                <Button tone="secondary" size="compact">auth console ▸</Button>
+              </div>
+            </div>
+            <p style={{ ...mono, fontSize: 11, color: 'var(--text-disabled)', margin: 0 }}>
+              source: uploads/11-proxy.md — "no injection block; do not build one." Rendered as an explicit
+              constitutional-absence page rather than an invented UI.
+            </p>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

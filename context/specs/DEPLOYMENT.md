@@ -9,6 +9,7 @@
 | `edge` | proxy + every app container that serves a subdomain | proxy → app routing; auth verify subrequests. **Only the proxy publishes host ports** (`:443`, `:80` redirect). App containers publish **no host ports**. |
 | `creds` | **vault + gateway ONLY** | the credential-release hop. The Vault→Gateway plaintext handoff never traverses `edge`; mutual auth on this hop per ARCHITECTURE.md §11. No Standard-class container ever joins. |
 | `data_<app>` (optional, per app) | one app + its private store (e.g. auth + its Postgres/Redis) | keeps private backing stores off `edge`; never shared across apps |
+| `data_vault` | **vault wrapper + `vault_openbao` + `vault_unsealer` ONLY** (added at Vault Stage-2 / root REVIEW #2, 2026-07-03) | the OpenBao engine's mTLS listener binds this interface and is **unreachable from `edge`** (build-failing invariant, Vault PLAN §2.2); the wrapper joins `edge` (UI/MCP) + `creds` (redeem only) + `data_vault`; the engine + unsealer join `data_vault` only |
 
 Rules: subdomain label == auth audience segment == compose service name (proxy PLAN §10 hard constraint — host→audience is mechanical). The proxy's `:9100` observability listener stays internal to `edge` (proxy OBSERVABILITY.md).
 
@@ -34,6 +35,7 @@ Rules: subdomain label == auth audience segment == compose service name (proxy P
 - **auth graduates to its own Postgres + replicated Redis** at Stage 5 (auth settled decision #8). These are **auth-private** (`data_auth` network), not suite-shared infrastructure.
 - **INVARIANT EXCEPTION #1 (ratified D-8, 2026-07-02): the Gateway gets a gateway-private Postgres** on a `data_gateway` network — justified by its append-only hash-chained/Ed25519-signed audit table and session-level advisory-lock mutex, neither of which SQLite serves. It is gateway-private like `data_auth`; nothing else ever connects. This is the first and (so far) only exception to SQLite-per-app — recorded here deliberately so it reads as a ruling, not silent drift.
 - A suite-shared Postgres exists only if a future genuine shared-data need forces it (§9); it must be introduced by amending THIS spec, not by one app's compose file.
+- **Budget-middleware transport — RESOLVED (S5, root REVIEW #2, 2026-07-03):** auth's Redis (which also holds the sod-critical revocation denylist) stays **auth-private on `data_auth`**. Every RS's per-`sub` budget middleware (auth PLAN §6) reaches the shared budget dimensions via an **auth-exposed budget-check / admission API** (same surface as the MC budget read/clamp, auth §6.7) — **RSes never open auth's Redis, and there is NO shared-state budget network.** This preserves the load-bearing SoD invariant above (cross-app data moves over APIs only; no app opens another app's store) and keeps the denylist off every RS's reach. Each RS keeps the Redis-independent **in-process concurrency ceiling** (auth §1) as its always-available local bound; auth/budget-API unreachable ⇒ benign = allow-but-locally-bounded, sod/destructive = 503 fail-closed (auth §6, unchanged). auth owes the budget-check API shape as a Stage-5 deliverable. This resolves `auth-apps-tokens-scopes.md` §11.1 and every app's parked "one shared Redis vs auth-private" flag (Library F14, Notes/Chat/Drive, Vault, CMDB A11, Gateway O5).
 
 ## 3a. Sidecar convention (ratified D-10, 2026-07-02)
 
@@ -44,7 +46,8 @@ Stage-1 research legitimately introduced auxiliary containers. Rule: a **sidecar
 | `chat_ntfy` | chat | self-hosted push sink (Chat is its only publisher; never a second identity system) |
 | `mc_prometheus`, `mc_blackbox` | mc | edge-metrics query layer + TLS/cert-expiry probe (edge network) |
 | log shipper + log store | **mc** (assignment ratified — was unowned) | collects container stdout (proxy access logs etc.) into the store MC tails |
-| `vault_unsealer` | vault | minimal second OpenBao for Transit auto-unseal (D-16) |
+| `vault_openbao` | vault | the OpenBao 2.5.x engine (crypto/storage/leasing/audit); **`data_vault` ONLY**, mTLS listener bound to that interface, `edge`-unreachable (added Vault Stage-2 / root REVIEW #2, 2026-07-03; internal 8200, no host ports) |
+| `vault_unsealer` | vault | minimal second OpenBao for Transit auto-unseal (D-16); `data_vault` only, 8200 |
 | off-box WORM audit sink | vault (posture: hardened log host, D-16) | immutable copy of the redemption audit log — physically off the suite host |
 
 ## 4. Resolved divergence (the ONE correct values)

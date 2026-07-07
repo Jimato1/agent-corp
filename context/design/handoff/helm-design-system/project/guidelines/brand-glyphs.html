@@ -1,0 +1,37 @@
+<!-- @dsCard group="Brand" viewport="700x270" name="Reserved state glyphs" subtitle="Meaning-bearing marks — always paired with a text label" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-screen); padding: var(--space-6); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+  .g { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); border: 1px solid var(--border-default); border-radius: var(--radius-control); background: var(--surface-panel); }
+  .mk { font-size: 16px; width: 22px; text-align: center; flex: none; }
+  .t { display: flex; flex-direction: column; }
+  .l { font-family: var(--font-ui); font-size: 11px; font-weight: 600; color: var(--text-primary); }
+  .d { font-family: var(--font-ui); font-size: 9px; line-height: 12px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="g"><span class="mk" style="color:var(--halt-gold)">▮▮</span><span class="t"><span class="l">safe-stopped</span><span class="d">interlock</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--halt-gold)">⛊</span><span class="t"><span class="l">shield-check</span><span class="d">stop / locked</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--danger-red)">⛔</span><span class="t"><span class="l">STOP button</span><span class="d">clickable only</span></span></div>
+    <div class="g"><span class="mk">🔒</span><span class="t"><span class="l">locked fact</span><span class="d">not clickable</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--danger-red)">⚠</span><span class="t"><span class="l">danger</span><span class="d">untrusted/stale</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--state-amber)">◐</span><span class="t"><span class="l">pending</span><span class="d">+ countdown</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--state-violet)">⇉</span><span class="t"><span class="l">draining</span><span class="d">past reversible</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--state-green)">✔</span><span class="t"><span class="l">confirmed</span><span class="d">verified</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--signal-cyan)">⧉</span><span class="t"><span class="l">corroborated</span><span class="d">cross-ref'd</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--state-amber)">◑</span><span class="t"><span class="l">single-source</span><span class="d">agent-asserted</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--text-secondary)">⬡</span><span class="t"><span class="l">agent</span><span class="d">identity kind</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--text-secondary)">⚙</span><span class="t"><span class="l">service</span><span class="d">identity kind</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--state-amber)">◈</span><span class="t"><span class="l">needs review</span><span class="d">human gate</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--state-amber)">⚑</span><span class="t"><span class="l">escalated</span><span class="d">with reason</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--state-amber)">▲</span><span class="t"><span class="l">stale</span><span class="d">never green</span></span></div>
+    <div class="g"><span class="mk" style="color:var(--danger-red)">✕</span><span class="t"><span class="l">error</span><span class="d">Pattern R only</span></span></div>
+  </div>
+</body>
+</html>
