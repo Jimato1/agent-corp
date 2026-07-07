@@ -1,0 +1,88 @@
+/* ============================================================
+   Helm — Base element defaults
+   Dark control-room base applied to the document. Consumers link
+   styles.css and inherit this; the Workshop paper surface is opt-in
+   via a scoped container (see .workshop-surface below).
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line);
+  font-weight: var(--weight-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Selection uses the interactive cyan wash. */
+::selection {
+  background: var(--signal-cyan-wash);
+  color: var(--ink-primary);
+}
+
+/* Focus is ALWAYS visible — a cyan ring, never removed without replacement. */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+  border-radius: var(--radius-control);
+}
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+code, kbd, samp {
+  font-family: var(--font-mono);
+  font-feature-settings: var(--figures-tabular);
+}
+
+/* Instrument scrollbars — thin, quiet, machined. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* ---- THE WORKSHOP SURFACE -----------------------------------------------
+   A warm-paper reading/editing pane set INSIDE the dark Instrument shell.
+   Opt-in: wrap document content in an element carrying this class. The
+   safety grammar and shell NEVER adopt paper — only content substrate does. */
+.workshop-surface {
+  background: var(--paper-page);
+  color: var(--paper-ink);
+}
+.workshop-surface ::selection {
+  background: #D9E9EE; /* cyan wash, legible on paper */
+  color: var(--paper-ink);
+}
+.workshop-surface .t-read {
+  color: var(--paper-ink);
+}
+
+/* Utility: a middle-truncating mono ID (widths held by tabular figures). */
+.mono-id {
+  font-family: var(--font-mono);
+  font-feature-settings: var(--figures-tabular);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

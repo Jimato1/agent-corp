@@ -1,0 +1,12 @@
+/* ============================================================
+   Helm — Webfonts
+   Three families, three fixed jobs:
+     Inter            → all UI chrome, labels, tables, control-room body
+     JetBrains Mono   → all machine truth (IDs, tokens, epochs, TTLs, hashes, logs)
+     Source Serif 4   → long-form reading INSIDE a Workshop document pane only
+   All three are the real specified families (Google Fonts) — no substitutions.
+   Loaded from Google Fonts so consumers get the exact webfonts with no local
+   binaries to ship. The @import must precede all other rules in the closure.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap');

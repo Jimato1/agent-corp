@@ -1,0 +1,13 @@
+[project]
+name = "mission-control"
+version = "0.1.0"
+description = "Mission Control (mc) — the operator cockpit BFF over the whole suite."
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["app/tests"]
+addopts = "-q"
+asyncio_mode = "auto"
+
+[tool.setuptools]
+packages = ["app"]
