@@ -1,0 +1,21 @@
+/* ============================================================
+   CMDB (the policy brain) — Design System entry point
+   A manifest of @imports. Order: fonts (token slot) → tokens →
+   base → motion → app layout. The shared Helm components inject
+   their own scoped <style> at module load (see components/ds/*),
+   so there is no monolithic ds.css — the tokens + base + motion
+   below are all the shared components depend on.
+   Font @font-face rules are bundled via @fontsource imports in
+   main.tsx (self-hosted, no CDN — the container is CSP-strict).
+   CMDB is an Instrument (dark-only): no Source Serif 4, no paper.
+   ============================================================ */
+
+@import './tokens/fonts.css';
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/elevation.css';
+@import './tokens/motion.css';
+@import './tokens/base.css';
+
+@import './app.css';

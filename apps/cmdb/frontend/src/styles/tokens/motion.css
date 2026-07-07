@@ -1,0 +1,102 @@
+/* ============================================================
+   Helm — Motion layer
+   A small, restrained animation pass hooked onto the SHARED component classes,
+   so the whole suite gains one calm "instrument" motion vocabulary without any
+   kit forking it. Philosophy: fades and quick eases, NO bounce; attention and
+   honest states move honestly; the one warm light (the halt band) breathes.
+   Every decorative loop is removed under prefers-reduced-motion.
+
+   Cascade note: this file loads (via styles.css) BEFORE any component injects
+   its own <style>, and the properties set here (animation) are not otherwise
+   declared on these elements — so these rules apply cleanly everywhere the
+   shared component renders.
+   ============================================================ */
+
+/* ---- Keyframes ---------------------------------------------------------- */
+
+/* The signature: the gold band arrives lit, from just above, and settles. */
+@keyframes helm-halt-enter {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* ...then breathes — the one warm light source, slow and calm (never a blink). */
+@keyframes helm-halt-breathe {
+  0%, 100% { box-shadow: var(--shadow-halt); }
+  50%      { box-shadow: 0 1px 0 var(--halt-gold-edge), 0 10px 34px rgba(242,132,43,0.30); }
+}
+@keyframes helm-halt-breathe-g2 {
+  0%, 100% { box-shadow: var(--shadow-halt-g2); }
+  50%      { box-shadow: 0 2px 0 var(--halt-gold-edge), 0 12px 46px rgba(242,132,43,0.44); }
+}
+
+/* The confirm ceremony panel rises calmly (its scrim already fades). */
+@keyframes helm-dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Liveness reads as a slow heartbeat on the freshness dot. */
+@keyframes helm-live-beat {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(70,185,138,0.16); }
+  50%      { box-shadow: 0 0 0 3px rgba(70,185,138,0.30); }
+}
+
+/* STALE draws the eye honestly — a slow amber pulse, not a flash. */
+@keyframes helm-stale-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+/* Honest-stop motion: pending ◐ ticks; draining ⇉ keeps drifting (still finishing). */
+@keyframes helm-pending-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+@keyframes helm-drain-drift {
+  0%   { transform: translateX(0); }
+  50%  { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}
+
+/* A brief cyan wash when a live figure changes (opt-in). */
+@keyframes helm-flash-in {
+  from { background: var(--signal-cyan-wash); }
+  to   { background: transparent; }
+}
+
+/* ---- The signature: the halt band arrives lit, then breathes ------------ */
+.helm-halt {
+  animation: helm-halt-enter var(--dur-slow) var(--ease-standard),
+             helm-halt-breathe 3.6s var(--ease-standard) 0.5s infinite;
+}
+.helm-halt--g2 {
+  animation: helm-halt-enter var(--dur-slow) var(--ease-standard),
+             helm-halt-breathe-g2 2.8s var(--ease-standard) 0.4s infinite;
+}
+
+/* ---- The confirm ceremony panel rises into place ------------------------ */
+.helm-confirm { animation: helm-dialog-in var(--dur-base) var(--ease-standard); }
+
+/* ---- Freshness: live heartbeat · honest STALE pulse --------------------- */
+.helm-fresh--live .helm-fresh__dot { animation: helm-live-beat 2.4s var(--ease-standard) infinite; }
+.helm-fresh--stale .helm-fresh__glyph,
+.helm-fresh--stale .helm-fresh__reading { animation: helm-stale-pulse 1.8s var(--ease-standard) infinite; }
+
+/* ---- Honest-stop triad: only the NON-zero in-flight states move --------- */
+.helm-honest__seg--pending:not(.is-zero) .helm-honest__glyph { animation: helm-pending-pulse 1.6s var(--ease-standard) infinite; }
+.helm-honest__seg--draining:not(.is-zero) .helm-honest__glyph { animation: helm-drain-drift 1.4s var(--ease-standard) infinite; }
+
+/* ---- Utilities a kit can opt into --------------------------------------- */
+.helm-flash   { animation: helm-flash-in 900ms var(--ease-exit); }
+.helm-anim-in { animation: helm-dialog-in var(--dur-base) var(--ease-standard); }
+
+/* ---- Reduced motion removes every decorative loop & entrance ------------ */
+@media (prefers-reduced-motion: reduce) {
+  .helm-halt, .helm-halt--g2, .helm-confirm,
+  .helm-fresh--live .helm-fresh__dot,
+  .helm-fresh--stale .helm-fresh__glyph,
+  .helm-fresh--stale .helm-fresh__reading,
+  .helm-honest__seg--pending:not(.is-zero) .helm-honest__glyph,
+  .helm-honest__seg--draining:not(.is-zero) .helm-honest__glyph,
+  .helm-flash, .helm-anim-in { animation: none !important; }
+}
