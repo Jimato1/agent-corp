@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.vite/
+*.log
+
+# public/helm/ is deliberately COMMITTED here (not ignored like other apps):
+# this worktree has no npm install, so the vendored Helm bundle + React UMD must be
+# checked in for `vite build` / `vite dev` to work without a `npm run vendor` step.

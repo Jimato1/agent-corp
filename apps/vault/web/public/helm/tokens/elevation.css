@@ -1,0 +1,51 @@
+/* ============================================================
+   Helm — Elevation & Motion
+   Panels are FLAT and machined: separated by a one-step change in surface
+   value + a 1px hairline, NEVER by shadow. The ONLY things that cast a
+   shadow are a modal dialog and the lit safety band.
+   ============================================================ */
+
+:root {
+  /* -- SHADOWS · used in exactly two places ------------------------------ */
+
+  /* A modal dialog floating over its scrim. */
+  --shadow-dialog:
+    0 2px 8px rgba(0, 0, 0, 0.40),
+    0 16px 48px rgba(0, 0, 0, 0.55);
+
+  /* The lit safety band — a soft gold glow, the one "warm" light source. */
+  --shadow-halt:
+    0 1px 0 var(--halt-gold-edge),
+    0 8px 28px rgba(242, 132, 43, 0.20);
+
+  /* The intensified G2 full-quiesce band — heavier, edge-striped glow. */
+  --shadow-halt-g2:
+    0 2px 0 var(--halt-gold-edge),
+    0 10px 40px rgba(242, 132, 43, 0.32);
+
+  /* -- SCRIM ------------------------------------------------------------- */
+  --scrim: rgba(6, 8, 11, 0.66); /* modal backdrop over the dark shell     */
+
+  /* -- FOCUS RING · a cyan ring, never removed without replacement ------- */
+  --ring-focus: 0 0 0 2px var(--surface-screen), 0 0 0 4px var(--focus-ring);
+  --ring-focus-tight: 0 0 0 2px var(--focus-ring);
+
+  /* -- MOTION · restrained. Fades and quick eases; no bounce ------------- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);   /* @kind other */
+  --ease-exit:     cubic-bezier(0.4, 0, 1, 1);   /* @kind other */
+  --dur-fast:      120ms; /* @kind other */
+  --dur-base:      180ms; /* @kind other */
+  --dur-slow:      240ms; /* @kind other */
+
+  /* -- STOP ACTUATOR DWELL · deliberately-but-fast ----------------------- */
+  --dwell-g1:      600ms;  /* @kind other */
+  --dwell-g2:      1000ms; /* @kind other */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms; /* @kind other */
+    --dur-base: 0ms; /* @kind other */
+    --dur-slow: 0ms; /* @kind other */
+  }
+}

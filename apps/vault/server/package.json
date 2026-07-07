@@ -1,0 +1,23 @@
+{
+  "name": "@agent-corp/vault-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Vault — the thin wrapper over adopted OpenBao 2.5.x (ratified D-14). Owns the SoD inversion: agents hold a powerless handle, ONLY the Gateway redeems, and the wrapper re-verifies the Board approval itself (D-4). NOT a secrets store. Stage-4 build.",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.19.1",
+    "better-sqlite3": "^11.10.0",
+    "express": "^4.21.2",
+    "jose": "^5.9.6",
+    "ulid": "^2.3.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {}
+}

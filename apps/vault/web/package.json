@@ -1,0 +1,24 @@
+{
+  "name": "@agent-corp/vault-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Vault — human operator surface. Vite + a single global React (UMD) + vendored Helm design system. Instrument archetype (dark-only, compact). The console can CREATE and DESTROY authority but can NEVER read a secret back, and never false-greens seal/audit health. Two views, one state: this UI is a sibling of the near-empty MCP surface over the same wrapper store + engine (the extra power is scope: vault:manage).",
+  "scripts": {
+    "vendor": "node scripts/vendor-helm.mjs",
+    "predev": "node scripts/vendor-helm.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/vendor-helm.mjs",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "vite": "^5.4.10"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  }
+}

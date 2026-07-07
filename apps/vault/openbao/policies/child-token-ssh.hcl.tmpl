@@ -1,0 +1,22 @@
+# =============================================================================
+# child-token-ssh.hcl.tmpl — per-host SSH-sign child-token policy TEMPLATE
+# =============================================================================
+# Implements VERBATIM:  PLAN §2.1 (per-host num_uses=1 child token; ssh side),
+#               §3.3 (SSH-CA sign at redemption).
+#
+# The wrapper substitutes <HOST_ID> with the D-4-VERIFIED request host_id to
+# produce a named policy `child-ssh-<HOST_ID>`, instantiated via the change-
+# control path and referenced by the `redeem-child` token role's
+# allowed_policies_glob = "child-ssh-*" (see redeem-login.hcl / bootstrap.sh).
+#
+# GRANT: exactly ONE — update (sign) on THIS host's sign-role. NO other role,
+# NO ssh/roles write, NO wildcard host (host-A-cannot-touch-host-B invariant,
+# PLAN §2.1 / §3.5). The sign call itself passes the ephemeral per-run public
+# key + server-derived non-empty valid_principals; the role (signrole.example.hcl)
+# pins allowed_users / empty default_user / no wildcards / allow_empty_principals=false.
+# The single-use bound is num_uses=1 SET ON THE TOKEN at create time, NOT here.
+# =============================================================================
+
+path "ssh/sign/gateway-<HOST_ID>" {
+  capabilities = ["update"]
+}
