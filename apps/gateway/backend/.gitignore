@@ -1,0 +1,9 @@
+# runtime state (canonical stores live in the Postgres/sqlite volume, never in git)
+data/
+*.sqlite3
+*.sqlite3-*
+*.key
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
