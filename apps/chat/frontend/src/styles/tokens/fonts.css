@@ -1,0 +1,12 @@
+/* ============================================================
+   Helm — Webfonts (self-hosted variant)
+   Three families, three fixed jobs:
+     Inter            → all UI chrome, labels, tables, control-room body
+     JetBrains Mono   → all machine truth (IDs, tokens, epochs, TTLs, hashes)
+     Source Serif 4   → long-form reading INSIDE a Workshop document pane only
+
+   The Helm handoff loads these from Google Fonts via @import. This container is
+   offline / CSP-strict, so the @font-face rules are instead bundled by Vite via
+   @fontsource imports in src/main.tsx (no CDN, no external host). The family
+   names below (declared in typography.css) match the real specified families.
+   ============================================================ */

@@ -1,0 +1,13 @@
+[project]
+name = "agentcorp-chat"
+version = "0.1.0"
+description = "chat — the suite's doorbell: agent→operator notifications + operator→fleet broadcast."
+requires-python = ">=3.12"
+readme = "README.md"
+
+[tool.pytest.ini_options]
+testpaths = ["app/tests"]
+addopts = "-q"
+
+[tool.setuptools.packages.find]
+include = ["app*"]

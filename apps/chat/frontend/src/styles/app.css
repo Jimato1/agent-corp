@@ -1,0 +1,69 @@
+/* ============================================================
+   Chat — app shell layout
+   The shell (rail + header + main) and the four screens follow Helm's
+   inline-style + CSS-variable approach (see App.tsx and screens/*). This
+   file holds only the root sizing and a couple of chat-specific helpers
+   that are awkward to express inline (the sanitized-body reset).
+   ============================================================ */
+
+#root {
+  height: 100vh;
+}
+
+/* The Workshop reading pane renders server-sanitized markdown→HTML. Give the
+   common tags calm, paper-appropriate defaults so a notification body reads
+   like a document, not raw markup. Links inside are already neutralized to
+   dead text by the server; we also strip their affordance here defensively. */
+.ch-body {
+  font-family: var(--font-serif);
+  font-size: var(--type-read-size);
+  line-height: var(--type-read-line);
+  color: var(--paper-ink);
+}
+.ch-body > :first-child { margin-top: 0; }
+.ch-body > :last-child { margin-bottom: 0; }
+.ch-body p { margin: 0 0 12px; }
+.ch-body h1, .ch-body h2, .ch-body h3 {
+  font-family: var(--font-serif);
+  color: var(--paper-ink);
+  line-height: 1.3;
+  margin: 20px 0 8px;
+}
+.ch-body h1 { font-size: 22px; font-weight: 600; }
+.ch-body h2 { font-size: 19px; font-weight: 600; }
+.ch-body h3 { font-size: 17px; font-weight: 600; }
+.ch-body ul, .ch-body ol { margin: 0 0 12px; padding-left: 24px; }
+.ch-body li { margin: 2px 0; }
+.ch-body code {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  background: var(--paper-inset);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--paper-ink);
+}
+.ch-body pre {
+  background: var(--paper-inset);
+  border: 1px solid var(--paper-hairline);
+  border-radius: var(--radius-control);
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 0 0 12px;
+}
+.ch-body pre code { background: transparent; padding: 0; }
+.ch-body blockquote {
+  margin: 0 0 12px;
+  padding-left: 14px;
+  border-left: 3px solid var(--paper-hairline);
+  color: var(--paper-ink-muted);
+}
+/* A link the server neutralized still arrives as an <a> with no href; render it
+   as calm dead text (the anti-phishing rule — the only live link is the MC
+   deep-link rendered by the screen chrome, never inside the body). */
+.ch-body a {
+  color: var(--paper-ink);
+  text-decoration: underline dotted;
+  cursor: default;
+  pointer-events: none;
+}
+.ch-body img { display: none; }

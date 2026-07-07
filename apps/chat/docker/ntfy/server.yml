@@ -1,0 +1,28 @@
+# chat_ntfy — self-hosted ntfy, SINK ONLY (D-14; PLAN §8).
+#
+# Chat is the ONLY publisher. This is device-subscription plumbing, NOT a suite
+# identity system — suite identity stays entirely in auth. Two tokens exist (created
+# out-of-band via `ntfy token add`): one WRITE token for Chat (CHAT_NTFY_TOKEN) and
+# one READ-only subscription token for the operator's devices. Default ACL is
+# deny-all; nobody else can read or write.
+#
+# VERIFY-AT-BUILD (carried forward from RESEARCH.md, PLAN §8): reference-mode
+# precision, the license/ACL flags below, and that `upstream-base-url` matches the
+# current ntfy release semantics.
+
+base-url: "https://ntfy.suite.local"          # set to ntfy.<SUITE_DOMAIN> at deploy
+listen-http: ":80"
+
+# Deny-all by default: only token-bearing principals (Chat write, operator read) act.
+auth-file: "/var/cache/ntfy/auth.db"
+auth-default-access: "deny-all"
+
+# Reference mode: only the message REFERENCE transits the public upstream so the iOS
+# app wakes via APNs; content is fetched from THIS self-hosted server. The markdown
+# body is never sent here at all (PLAN §8) — Chat pushes only title + tag + click.
+upstream-base-url: "https://ntfy.sh"
+
+cache-file: "/var/cache/ntfy/cache.db"
+cache-duration: "12h"                          # a push buffer, never a source of truth
+attachment-cache-dir: ""                        # no attachments
+behind-proxy: true

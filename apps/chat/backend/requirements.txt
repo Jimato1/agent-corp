@@ -1,0 +1,12 @@
+# chat backend — runtime dependencies (Standard risk class).
+# No third-party JWT library: JWS validation is hand-rolled over `cryptography`,
+# matching the house pattern in platform/auth. ntfy is reached with stdlib urllib
+# (it is a sink, not a dependency worth a client library).
+
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.9.0
+pydantic-settings>=2.6.0
+
+# Asymmetric JWS verification (EdDSA / ES256) against auth's published JWKS.
+cryptography>=42,<45

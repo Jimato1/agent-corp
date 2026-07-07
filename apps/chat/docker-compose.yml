@@ -1,0 +1,76 @@
+# chat — the doorbell + its outbound push sink. Standard risk class.
+#
+# Reached only via the proxy over the shared `edge` network (DEPLOYMENT §1/§2):
+# NO published host port, so forward-auth headers cannot be forged from the LAN.
+# `chat_ntfy` is the sink-ONLY sidecar (D-14/D-10): Chat is its sole publisher; it
+# holds NO suite identity logic. It is proxied at `ntfy.<SUITE_DOMAIN>` as a
+# deliberate forward-auth-EXEMPT route (device apps can't OIDC), compensated by a
+# deny-all ntfy ACL + tokens (see docker/ntfy/server.yml).
+
+services:
+  chat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chat:latest
+    restart: unless-stopped
+    networks: [edge]
+    environment:
+      - SUITE_DOMAIN=${SUITE_DOMAIN:-suite.local}
+      - AUTH_VERIFY_PORT=8089
+      - CHAT_AUTH_ISSUER=${CHAT_AUTH_ISSUER:-https://auth.${SUITE_DOMAIN:-suite.local}/}
+      - CHAT_AUTH_JWKS_URL=${CHAT_AUTH_JWKS_URL:-http://auth:8089/jwks}
+      - CHAT_AUTH_AUDIENCE=chat
+      - CHAT_DB_PATH=/app/data/chat.sqlite3
+      - CHAT_BACKUP_DIR=/app/data/backups
+      - CHAT_DB_SIZE_GUARD_GB=2.0
+      - CHAT_NTFY_URL=http://chat_ntfy:80
+      - CHAT_NTFY_TOPIC=chat
+      - CHAT_NTFY_TOKEN=${CHAT_NTFY_TOKEN:-}
+      - CHAT_RATE_POST_PER_HOUR=60
+      - CHAT_RATE_ESCALATION_PER_HOUR=10
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    volumes:
+      - chat_data:/app/data            # canonical SQLite + nightly backups (DISK-backed)
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    depends_on:
+      - chat_ntfy
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512m }
+        reservations: { memory: 128m }
+
+  chat_ntfy:
+    image: binwiederhier/ntfy:v2.11.0     # VERIFY-AT-BUILD: pin the current release + digest
+    command: ["serve", "--config", "/etc/ntfy/server.yml"]
+    restart: unless-stopped
+    networks: [edge]
+    environment:
+      - TZ=UTC
+    volumes:
+      - ./docker/ntfy/server.yml:/etc/ntfy/server.yml:ro
+      - chat_ntfy_cache:/var/cache/ntfy   # push buffer only — NEVER a source of truth
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:80/v1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  chat_data:
+  chat_ntfy_cache:
+
+networks:
+  edge:
+    external: true          # the shared proxy network (DEPLOYMENT §1). For local dev
+    # without an external proxy net, comment `external: true` so compose creates it.
