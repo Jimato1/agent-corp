@@ -1,6 +1,6 @@
 # CONTRACT — agent-runtime → auth: key-provisioning (C7) + token-binding (C8)
 
-> **Status: FROZEN (runtime side), 2026-07-04 — awaiting auth countersign.** Producer of the enrollment/rotation/revocation client: **agent-runtime**. Counterparty/authority: **auth**. Reconciles runtime RESEARCH §4.8 (seams C7/C8) with auth settled decisions **#6** (TPM-sealed non-exportable keys for any principal holding `gateway:execute`) / **#7** (DPoP-first, mTLS fallback) and auth open Q3 (key lifecycle). `auth-apps-tokens-scopes.md` §3 names this the runtime's ONLY auth seam ("No RS scopes; it hosts agents"). Per the seam rule (ARCHITECTURE §13), this doc — not either app's prose — binds both sides; **the agent-runtime Stage-4 client is built against exactly this, and hardens only when auth countersigns.**
+> **Status: COUNTERSIGNED (both sides), 2026-07-06.** Runtime side FROZEN 2026-07-04; **auth countersigned 2026-07-06 (auth COUNTERSIGN session #2)** — verdict + point-by-point reconciliation in `auth-apps-tokens-scopes.md` §12, with five ADDITIVE clarifications folded into §7 below (none blocking, none a semantics change). Producer of the enrollment/rotation/revocation client: **agent-runtime**. Counterparty/authority: **auth**. Reconciles runtime RESEARCH §4.8 (seams C7/C8) with auth settled decisions **#6** (TPM-sealed non-exportable keys for any principal holding a holder/destructive scope) / **#7** (DPoP-first, mTLS fallback). `auth-apps-tokens-scopes.md` §3 names this the runtime's ONLY auth seam ("No RS scopes; it hosts agents"). Per the seam rule (ARCHITECTURE §13), this doc — not either app's prose — binds both sides; **the agent-runtime Stage-4 client is built against exactly this, and now hardens as auth has countersigned** (the concrete `attestation` byte-format still finalizes at the G1 hardware spike — §6).
 
 ## 0. The invariant that decides every field
 
@@ -52,4 +52,19 @@ Per-host TPM capability (container-reachable `/dev/tpmrm0`, `TPM2_Create` with t
 
 ## 7. Change rule
 
-Semantics change only by amending this doc with **both** agent-runtime and auth sessions citing it. New fields are additive. **auth owes the countersign** (EK allow-list ownership confirmation, accepted attestation format, CSR-vs-JWK default, rotation/revocation endpoint shapes) at its next session.
+Semantics change only by amending this doc with **both** agent-runtime and auth sessions citing it. New fields are additive. ~~**auth owes the countersign** at its next session.~~ **DONE — auth countersigned 2026-07-06** (`auth-apps-tokens-scopes.md` §12).
+
+### 7a. auth countersign disposition (2026-07-06) — the four items auth owed, answered
+
+- **EK allow-list ownership → CONFIRMED auth's.** auth owns the EK allow-list and verifies `attestation` + `ek_cert_chain` against it at enroll/activate time; the runtime's own local refusal to enroll an executor on a non-attested node is **defense-in-depth only** (§2 stands verbatim).
+- **Accepted attestation format → SHAPE accepted; BYTES finalize at G1.** The TPM2_Certify statement over `{fixedTPM, fixedParent, public area}` under an AK is the right shape; the concrete byte-format + EK-cert-chain validation are validated end-to-end with auth at the **G1 hardware spike** before `attestation` is "final" (§6 — mutually flagged; not a blocker to the countersign).
+- **CSR-vs-JWK default → JWK/DPoP is the DEFAULT** (decision #7); the PKCS#10 `csr` / mTLS `x5t#S256` path is the **verified fallback** only. The mTLS internal-CA ("auth's own vs a separate service") stays an operator/auth sub-decision made at G5 — it does not gate this contract.
+- **Rotation/revocation endpoint shapes → CONFIRMED**, with one clarification (below): rotate = fresh TPM key + re-enroll (§1); revoke = auth account-disable + host de-attestation; revocation is auth-owned, runtime cannot self-revoke another principal (matches auth PLAN §3.6).
+
+### 7b. Five ADDITIVE clarifications (from auth §12 — additive, not semantics changes)
+
+1. **`kid` on the enrollment RESPONSE.** §1 specs the request; auth assigns the JWK `kid` and the **enrollment response (auth→runtime) returns `kid` (+ confirms `sub`)** so the runtime signs proofs/tokens under the correct `kid`.
+2. **Enrollment is a two-phase, operator-owned ceremony.** Because `sub` is auth-minted yet appears in the §1 request, ordering is: operator creates the principal in auth (auth mints `sub`) → hands `sub` to the runtime → runtime enrolls the TPM-born key against it. Neither side hard-codes a one-shot mint-and-enroll.
+3. **Rotation is overlapping-validity, not a hard cut.** auth keeps the old `kid` valid (`rotating`) for ≥ max token TTL while the new `kid` is `active`; the runtime **must not hard-revoke/delete the old key at the instant of rotation** — it lets it lapse across auth's overlap window (refines §4's "age out within one TTL").
+4. **mTLS-fallback internal-CA ownership stays open (G5)** and does not block the countersign (see 7a).
+5. **Scope = runtime-hosted AGENT principals only.** Holder-key provisioning for **`svc:gateway`** (`vault:read-credential`) and **`svc:tier-approver`** (`board:approve`) — both `kind=service`, not runtime-hosted — is each host-service's own deployment concern under the SAME decision-#6 non-exportable-key + trust-domain-isolation invariant (auth PLAN §3.4/§3.6), NOT via this seam.
