@@ -1,0 +1,141 @@
+/* ============================================================
+   Helm — Color System
+   A dark control-room base ("Instrument") with a single warm-paper
+   reading surface ("Workshop"). Every color below has ONE job.
+
+   THE AFFECTIVE SPINE — three colors, fixed jobs, never crossed:
+     Signal-cyan  = "interactive"      (focus, selection, the safe action)
+     Halt-gold    = "safely stopped"   (kill engaged / failed-closed)
+     Danger-red   = "your destructive finger" (always behind friction)
+
+   Everything else is rationed and appears only on STATE, never decoration.
+   Color is never the only signal — every state also carries a glyph + label.
+   ============================================================ */
+
+:root {
+  /* -- SURFACES · cool near-black · the Instrument base -------------------
+     A tight value ramp. Panels separate by ONE step + a 1px hairline,
+     never by shadow. */
+  --surface-backdrop:      #0A0C10; /* app backdrop, behind everything     */
+  --surface-screen:        #0E1116; /* screen background                   */
+  --surface-panel:         #12161C; /* panel / card                        */
+  --surface-raised:        #171C24; /* raised panel / header / side-rail   */
+  --surface-inset:         #1E242E; /* inset wells, table row-stripe, code */
+  --surface-control:       #262E39; /* control fill                        */
+  --border-hairline:       #323C49; /* default 1px separators              */
+  --border-strong:         #45525F; /* stronger borders / control outlines */
+
+  /* -- INK RAMP · text on the dark base ----------------------------------
+     --ink-muted is the MINIMUM for anything that must be read.
+     Never go dimmer than muted for readable content. */
+  --ink-primary:           #EEF2F6; /* primary text & counts               */
+  --ink-secondary:         #C2CBD5; /* secondary text                      */
+  --ink-muted:             #94A1AE; /* muted labels / metadata (min. read) */
+  --ink-disabled:          #66727F; /* disabled only                       */
+
+  /* -- WORKSHOP · warm-paper reading surface (document panes ONLY) --------
+     A lit sheet on the dark desk. Never used for shell, tables, or any
+     safety component. */
+  --paper-page:            #F5F3ED; /* warm off-white page                 */
+  --paper-ink:             #1C1E22; /* body text on paper                  */
+  --paper-inset:           #EAE7DE; /* insets on paper                     */
+  --paper-hairline:        #D8D4C8; /* hairlines on paper                  */
+  --paper-ink-muted:       #6A6A62; /* muted metadata on paper             */
+
+  /* ======================================================================
+     THE AFFECTIVE SPINE — three colors with fixed jobs
+     ====================================================================== */
+
+  /* Signal-cyan = INTERACTIVE. Focus rings, selection, active nav, and the
+     primary SAFE action. Deliberately NOT green. */
+  --signal-cyan:           #29B6D8;
+  --signal-cyan-hover:     #45C4E2;
+  --signal-cyan-press:     #1F9CBB;
+  --signal-cyan-wash:      #0C2630; /* tinted fill behind cyan selection   */
+  --signal-cyan-ink:       #A6E4F2; /* cyan text on dark                   */
+
+  /* Halt-gold = the SYSTEM is safely stopped and working. Kill engaged, or
+     a dependency is down and we failed CLOSED. Calm, NOT red. Always a band. */
+  --halt-gold:             #F2842B; /* band fill-accent / primary halt hue */
+  --halt-gold-ink:         #FFD8A8; /* text inside a gold band             */
+  --halt-gold-wash:        #2E1D0B; /* gold band background wash           */
+  --halt-gold-edge:        #6E4A1E; /* gold band hairline / striping edge  */
+
+  /* Danger-red = the OPERATOR's own finger on something destructive.
+     Lift a stop, break-glass, revoke, delete, purge, widen a permission.
+     Always sits behind a confirm ceremony. */
+  --danger-red:            #E5594E;
+  --danger-red-hover:      #EE6D62;
+  --danger-red-press:      #C8483F;
+  --danger-red-ink:        #F6B7B1; /* red text on dark                    */
+  --danger-red-wash:       #2C1210; /* red consequence-block wash          */
+
+  /* ======================================================================
+     RATIONED STATE COLORS — appear only on state, never as decoration
+     ====================================================================== */
+  --state-green:           #46B98A; /* healthy / verified (external check) */
+  --state-green-ink:       #A6E4CC;
+  --state-green-wash:      #0E2620;
+  --state-amber:           #E8B84B; /* attention / single-source / pending */
+  --state-amber-ink:       #F5D98C;
+  --state-amber-wash:      #2A2210;
+  --state-violet:          #A98CE8; /* draining (past last reversible pt)  */
+  --state-violet-ink:      #D3C3F5;
+  --state-violet-wash:     #1E1730;
+
+  /* ======================================================================
+     SEMANTIC ALIASES — reference these in components, not raw hues.
+     ====================================================================== */
+
+  /* Text */
+  --text-primary:          var(--ink-primary);
+  --text-secondary:        var(--ink-secondary);
+  --text-muted:            var(--ink-muted);
+  --text-disabled:         var(--ink-disabled);
+  --text-link:             var(--signal-cyan);
+  --text-on-accent:        #08171C;   /* dark ink on a cyan fill           */
+
+  /* Surfaces */
+  --bg-app:                var(--surface-backdrop);
+  --bg-screen:             var(--surface-screen);
+  --bg-card:               var(--surface-panel);
+  --bg-raised:             var(--surface-raised);
+  --bg-well:               var(--surface-inset);
+  --bg-control:            var(--surface-control);
+
+  /* Borders */
+  --border-default:        var(--border-hairline);
+  --border-emphasis:       var(--border-strong);
+  --border-focus:          var(--signal-cyan);
+
+  /* Interactive (the SAFE / primary action) */
+  --interactive:           var(--signal-cyan);
+  --interactive-hover:     var(--signal-cyan-hover);
+  --interactive-press:     var(--signal-cyan-press);
+  --focus-ring:            var(--signal-cyan);
+  --selection-bg:          var(--signal-cyan-wash);
+
+  /* Safety semantics */
+  --halt:                  var(--halt-gold);
+  --halt-text:             var(--halt-gold-ink);
+  --halt-bg:               var(--halt-gold-wash);
+  --danger:               var(--danger-red);
+  --danger-text:          var(--danger-red-ink);
+  --danger-bg:            var(--danger-red-wash);
+
+  /* Provenance / trust tiers (the TierBadge families) */
+  --tier-verified:         var(--state-green);   /* ✔ external verifier    */
+  --tier-corroborated:     var(--signal-cyan);   /* ⧉ cross-referenced     */
+  --tier-single:           var(--state-amber);   /* ◑ single-source        */
+  --tier-untrusted:        var(--state-amber);   /* ⚠ striped-amber        */
+
+  /* Honest-stop triad */
+  --stop-confirmed:        var(--state-green);   /* ✔ acknowledged         */
+  --stop-pending:          var(--state-amber);   /* ◐ may still act         */
+  --stop-draining:         var(--state-violet);  /* ⇉ past reversible point */
+
+  /* Liveness / freshness */
+  --live-healthy:          var(--state-green);
+  --live-stale:            var(--state-amber);   /* ▲ STALE, never green    */
+  --live-down:             var(--halt-gold);     /* safety signal degrades  */
+}
