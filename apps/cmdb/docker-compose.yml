@@ -1,0 +1,66 @@
+# cmdb — the policy brain (inventory + policy decision point). CRITICAL-INFRA.
+#
+# Reached only via the proxy over the shared `edge` network (DEPLOYMENT §1/§2):
+# NO published host port, so forward-auth headers cannot be forged from the LAN.
+# CMDB holds NO credentials and executes NOTHING — it NEVER joins `creds`.
+#
+# Two volumes (DEPLOYMENT §5): `cmdb_data` (SQLite: the CANONICAL decision_log +
+# hash-chained policy_change_log, plus the rebuildable Wazuh mirror + the CMDB-local
+# verdict-signing key) and `cmdb_policy` (the CANONICAL git-backed markdown policy repo —
+# ARCH §10 requires a CONFIGURED REMOTE; set CMDB_POLICY_REPO_REMOTE + provision it).
+
+services:
+  cmdb:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cmdb:latest
+    restart: unless-stopped
+    networks: [edge]
+    environment:
+      - SUITE_DOMAIN=${SUITE_DOMAIN:-suite.local}
+      - AUTH_VERIFY_PORT=8089
+      - CMDB_AUTH_ISSUER=${CMDB_AUTH_ISSUER:-https://auth.${SUITE_DOMAIN:-suite.local}/}
+      - CMDB_AUTH_JWKS_URL=${CMDB_AUTH_JWKS_URL:-http://auth:8089/jwks}
+      - CMDB_AUTH_AUDIENCE=cmdb
+      - CMDB_DB_PATH=/app/data/cmdb.sqlite3
+      - CMDB_POLICY_REPO_PATH=/app/policy
+      - CMDB_POLICY_REPO_REMOTE=origin
+      # ARCH §10: a canonical store's local-only .git is a BUILD FAILURE. Keep true in prod;
+      # provision the remote (CMDB_POLICY_REPO_REMOTE) so boot-integrity + push-before-effect hold.
+      - CMDB_REQUIRE_REMOTE=${CMDB_REQUIRE_REMOTE:-true}
+      - CMDB_VERDICT_KEY_PATH=/app/data/verdict_ed25519.key
+      - CMDB_VERDICT_KID=${CMDB_VERDICT_KID:-cmdb-verdict-1}
+      # A11 seam: the sod-critical live denylist check (auth-exposed API). Empty => sod-critical
+      # writes FAIL CLOSED (never set CMDB_ALLOW_UNCHECKABLE_SODCRITICAL=true in prod).
+      - CMDB_REVOCATION_CHECK_URL=${CMDB_REVOCATION_CHECK_URL:-}
+      # Wazuh discovery feed (read-only RBAC account). Interim env secret (A8: Vault svc:cmdb path).
+      - CMDB_WAZUH_ENABLED=${CMDB_WAZUH_ENABLED:-false}
+      - CMDB_WAZUH_URL=${CMDB_WAZUH_URL:-https://wazuh:55000}
+      - CMDB_WAZUH_USER=${CMDB_WAZUH_USER:-}
+      - CMDB_WAZUH_PASSWORD=${CMDB_WAZUH_PASSWORD:-}
+      # Board escalation intake (D-6c). Empty => degraded-but-honest (queue locally, flag loudly).
+      - CMDB_BOARD_ESCALATION_URL=${CMDB_BOARD_ESCALATION_URL:-}
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    volumes:
+      - cmdb_data:/app/data       # canonical SQLite logs + verdict key (DISK-backed)
+      - cmdb_policy:/app/policy    # canonical git policy repo (MUST have a configured remote)
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512m }
+        reservations: { memory: 128m }
+
+networks:
+  edge:
+    external: true
+
+volumes:
+  cmdb_data:
+  cmdb_policy:

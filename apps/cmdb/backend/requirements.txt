@@ -1,0 +1,23 @@
+# cmdb backend — runtime dependencies (Critical-infra risk class).
+#
+# No third-party JWT library: JWS validation (inbound auth tokens) AND outbound
+# verdict-token signing are hand-rolled over `cryptography`, matching the house
+# pattern in platform/auth. git plumbing is shelled out to the system `git` binary
+# (installed in the runtime image) — no GitPython dependency.
+
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.9.0
+pydantic-settings>=2.6.0
+
+# Frontmatter policy parsing (canonical markdown store).
+PyYAML>=6.0.2
+
+# RRULE expansion for maintenance windows (research §4 stack). zoneinfo is stdlib;
+# tzdata is bundled so the container carries the IANA zone database explicitly.
+python-dateutil>=2.9.0
+tzdata>=2024.2
+
+# Asymmetric JWS: verify auth's at+jwt (EdDSA/ES256) AND sign the CMDB-local Ed25519
+# verdict token (a DIFFERENT trust root from auth, by design — verdict-token §1).
+cryptography>=42,<45
