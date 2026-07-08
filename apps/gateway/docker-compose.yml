@@ -1,0 +1,81 @@
+# gateway — compose fragment (DEPLOYMENT §1/§2/§3). Critical-infra.
+#
+# Networks: `edge` (proxy → UI/MCP), `creds` (vault + gateway ONLY — the redeem mTLS hop),
+# `data_gateway` (gateway + its PRIVATE Postgres ONLY; invariant exception #1, D-8).
+# No host ports (only the proxy publishes). auth resolved at auth:8089.
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agentcorp/gateway:0.1.0
+    container_name: gateway
+    environment:
+      GATEWAY_PORT: "8080"
+      GATEWAY_DB_URL: "postgresql://gw_app@gateway_postgres:5432/gateway"
+      GATEWAY_SIGNING_KEY_FILE: "/run/secrets/gateway_audit_key"   # mounted secret, NOT in image (O1)
+      GATEWAY_BOARD_URL: "http://board:8080"
+      GATEWAY_CMDB_URL: "http://cmdb:8080"
+      GATEWAY_VAULT_URL: "https://vault:8080"
+      GATEWAY_NOTES_URL: "http://notes:8080"
+      GATEWAY_MC_URL: "http://mc:8080"
+      GATEWAY_INTROSPECT_URL: "http://auth:8089/introspect"
+      GATEWAY_AUTH_JWKS_URL: "http://auth:8089/jwks"
+      GATEWAY_AUTH_ISSUER: "https://auth.${SUITE_DOMAIN}/"
+      GATEWAY_AUTH_AUDIENCE: "gateway"
+      AUTH_VERIFY_PORT: "8089"
+      SUITE_DOMAIN: "${SUITE_DOMAIN}"
+      GATEWAY_WAZUH_ENABLED: "true"
+      GATEWAY_WAZUH_INDEXER_URL: "https://wazuh-indexer:9200"
+      GATEWAY_WAZUH_API_URL: "https://wazuh:55000"
+    volumes:
+      - gateway_data:/app/data
+      - gateway_playbooks:/app/playbooks:ro
+    secrets:
+      - gateway_audit_key
+      - gateway_client_cert     # creds-mTLS hop client cert (also the cnf x5t#S256 channel, §13)
+      - gateway_client_key
+      - vault_ca
+    networks: [edge, creds, data_gateway]
+    depends_on: [gateway_postgres]
+    restart: unless-stopped
+
+  # The gateway-PRIVATE Postgres (D-8). data_gateway ONLY — nothing else ever connects.
+  gateway_postgres:
+    image: postgres:16
+    container_name: gateway_postgres
+    environment:
+      POSTGRES_DB: gateway
+      POSTGRES_USER: gw_owner
+      POSTGRES_PASSWORD_FILE: /run/secrets/gw_owner_pw
+    volumes:
+      - gateway_pgdata:/var/lib/postgresql/data
+      - ./roles.sql:/docker-entrypoint-initdb.d/10-roles.sql:ro   # append-only role grants
+    secrets: [gw_owner_pw]
+    networks: [data_gateway]
+    restart: unless-stopped
+
+volumes:
+  gateway_data:
+  gateway_pgdata:
+  gateway_playbooks:
+
+networks:
+  edge:
+    external: true
+  creds:
+    external: true
+  data_gateway:
+    external: true
+
+secrets:
+  gateway_audit_key:
+    external: true
+  gateway_client_cert:
+    external: true
+  gateway_client_key:
+    external: true
+  vault_ca:
+    external: true
+  gw_owner_pw:
+    external: true

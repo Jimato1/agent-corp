@@ -1,0 +1,13 @@
+# Gateway runtime deps (Critical-infra). Pin by ==<version>@sha in production.
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+pydantic-settings>=2.2
+cryptography>=42            # Ed25519 signing/verify (audit chain, verdict, DPoP) — the house crypto lib
+httpx>=0.27                 # Board/CMDB/Vault/MC/Notes clients (mTLS on the Vault hop)
+psycopg[binary]>=3.1        # gateway-private Postgres (D-8): append-only chain + advisory-lock mutex
+PyYAML>=6.0                 # playbook-invocation parse (Notes plan bytes)
+# D-14: the execution engine is EMBEDDED ansible-runner, PLAYBOOK-ONLY. Heavy transitive
+# (ansible-core >= 2.19) — installed in the runtime image, import-guarded so unit tests run
+# without it (the runner is behind an interface; tests inject a fake dispatcher).
+ansible-runner>=2.4

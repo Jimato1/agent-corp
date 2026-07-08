@@ -1,0 +1,28 @@
+/* ============================================================
+   CMDB — app shell layout
+   The shell (rail + header + main) and all screens follow Helm's
+   inline-style + CSS-variable approach (see App.tsx and screens/*).
+   CMDB is a dark-only Instrument: there is NO Workshop reading pane,
+   no paper surface, no long-form prose body — policy is authored
+   through typed forms and viewed as diffs. This file holds only the
+   root sizing and a couple of console-specific helpers.
+   ============================================================ */
+
+#root {
+  height: 100vh;
+}
+
+/* The out-of-band verification banner and the SAFE-STOPPED band both need to
+   sit flush above screen content; screens render them inline. Nothing here
+   overrides the shared component <style> injections. */
+
+/* A mono block for canonical YAML/diff snippets shown read-only in policy
+   editors (never a reading-measure document — machine truth only). */
+.cm-canonical {
+  font-family: var(--font-mono);
+  font-feature-settings: var(--figures-tabular);
+  font-size: 12px;
+  line-height: 20px;
+  white-space: pre;
+  overflow-x: auto;
+}

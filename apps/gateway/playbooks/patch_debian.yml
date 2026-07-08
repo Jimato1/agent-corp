@@ -1,0 +1,39 @@
+---
+# patch_debian — an ADMIN-AUTHORED, vetted, parameterized playbook (D-14). The agent NEVER
+# writes or names commands here; it names the plan, the Gateway runs THIS file after the
+# four-check chain. `extravars` are schema-validated + tagged !unsafe by the wrapper; there is
+# no `command`/`shell`/`raw` task that interpolates agent input. Snapshot-first (rollback path).
+- name: patch_debian (snapshot-first apt security upgrade)
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    packages: []
+    reboot_if_needed: false
+  tasks:
+    - name: Take a pre-patch snapshot (rollback path — mandatory on Debian-family)
+      ansible.builtin.command:
+        cmd: /usr/local/sbin/gw-snapshot create pre-patch
+      changed_when: true
+
+    - name: apt-get update
+      ansible.builtin.apt:
+        update_cache: true
+        lock_timeout: "{{ dpkg_lock_timeout | default(300) }}"
+
+    - name: Upgrade only the allowlisted packages (never a free-form command)
+      ansible.builtin.apt:
+        name: "{{ packages }}"
+        state: latest
+        only_upgrade: true
+        lock_timeout: "{{ dpkg_lock_timeout | default(300) }}"
+      when: packages | length > 0
+
+    - name: Check whether a reboot is required
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_marker
+
+    - name: Reboot if required and permitted by the plan
+      ansible.builtin.reboot:
+      when: reboot_if_needed | bool and reboot_marker.stat.exists
